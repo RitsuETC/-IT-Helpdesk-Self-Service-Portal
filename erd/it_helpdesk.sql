@@ -1,4 +1,4 @@
--- phpMyAdmin SQL Dump
+-- phpMyAdmin SQL Dump (Fixed)
 -- version 5.2.3
 -- https://www.phpmyadmin.net/
 --
@@ -8,6 +8,7 @@
 -- PHP Version: 8.5.7
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET FOREIGN_KEY_CHECKS = 0;
 START TRANSACTION;
 SET time_zone = "+00:00";
 
@@ -24,30 +25,12 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `asset`
+-- Table structure for table `unit`
 --
 
-CREATE TABLE `asset` (
-  `id_asset` int(11) NOT NULL,
-  `asset_code` varchar(255) NOT NULL,
-  `id_ruangan` int(11) NOT NULL,
-  `status` enum('repair','broken') NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `knowledge_article`
---
-
-CREATE TABLE `knowledge_article` (
+CREATE TABLE `unit` (
   `id` int(11) NOT NULL,
-  `id_categori` int(11) NOT NULL,
-  `judul` varchar(255) NOT NULL,
-  `content` text NOT NULL,
-  `level` enum('Level_1','Level_2','Level_3') NOT NULL,
-  `helpful` int(11) NOT NULL DEFAULT 0,
-  `unhelpful` int(11) NOT NULL DEFAULT 0
+  `ruangan` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -88,6 +71,35 @@ CREATE TABLE `login` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `asset`
+--
+
+CREATE TABLE `asset` (
+  `id_asset` int(11) NOT NULL,
+  `asset_code` varchar(255) NOT NULL,
+  `id_ruangan` int(11) NOT NULL,
+  `status` enum('repair','broken') NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `knowledge_article`
+--
+
+CREATE TABLE `knowledge_article` (
+  `id` int(11) NOT NULL,
+  `id_categori` int(11) NOT NULL,
+  `judul` varchar(255) NOT NULL,
+  `content` text NOT NULL,
+  `level` enum('Level_1','Level_2','Level_3') NOT NULL,
+  `helpful` int(11) NOT NULL DEFAULT 0,
+  `unhelpful` int(11) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `tiket`
 --
 
@@ -113,17 +125,6 @@ CREATE TABLE `troubleshooting` (
   `lampiran` int(11) NOT NULL,
   `tindakan` text NOT NULL,
   `hasil` text NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `unit`
---
-
-CREATE TABLE `unit` (
-  `id` int(11) NOT NULL,
-  `ruangan` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -191,80 +192,62 @@ ALTER TABLE `unit`
 -- AUTO_INCREMENT for dumped tables
 --
 
---
--- AUTO_INCREMENT for table `asset`
---
 ALTER TABLE `asset`
   MODIFY `id_asset` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `knowledge_article`
---
 ALTER TABLE `knowledge_article`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `knowledge_kategori`
---
 ALTER TABLE `knowledge_kategori`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `login`
---
 ALTER TABLE `login`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `tiket`
---
 ALTER TABLE `tiket`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `troubleshooting`
---
 ALTER TABLE `troubleshooting`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `unit`
---
 ALTER TABLE `unit`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
+-- (diberi nama unik agar tidak bentrok saat import)
 --
 
 --
 -- Constraints for table `asset`
 --
 ALTER TABLE `asset`
-  ADD CONSTRAINT `1` FOREIGN KEY (`id_ruangan`) REFERENCES `unit` (`id`);
+  ADD CONSTRAINT `fk_asset_id_ruangan` FOREIGN KEY (`id_ruangan`) REFERENCES `unit` (`id`);
 
 --
 -- Constraints for table `knowledge_article`
 --
 ALTER TABLE `knowledge_article`
-  ADD CONSTRAINT `1` FOREIGN KEY (`id_categori`) REFERENCES `knowledge_kategori` (`id`);
+  ADD CONSTRAINT `fk_knowledge_article_id_categori` FOREIGN KEY (`id_categori`) REFERENCES `knowledge_kategori` (`id`);
 
 --
 -- Constraints for table `tiket`
 --
 ALTER TABLE `tiket`
-  ADD CONSTRAINT `1` FOREIGN KEY (`categori`) REFERENCES `knowledge_kategori` (`id`),
-  ADD CONSTRAINT `2` FOREIGN KEY (`ruangan`) REFERENCES `unit` (`id`),
-  ADD CONSTRAINT `3` FOREIGN KEY (`prioritas`) REFERENCES `level` (`level`),
-  ADD CONSTRAINT `4` FOREIGN KEY (`akun`) REFERENCES `login` (`id`);
+  ADD CONSTRAINT `fk_tiket_categori` FOREIGN KEY (`categori`) REFERENCES `knowledge_kategori` (`id`),
+  ADD CONSTRAINT `fk_tiket_ruangan` FOREIGN KEY (`ruangan`) REFERENCES `unit` (`id`),
+  ADD CONSTRAINT `fk_tiket_prioritas` FOREIGN KEY (`prioritas`) REFERENCES `level` (`level`),
+  ADD CONSTRAINT `fk_tiket_akun` FOREIGN KEY (`akun`) REFERENCES `login` (`id`);
 
 --
 -- Constraints for table `troubleshooting`
 --
 ALTER TABLE `troubleshooting`
-  ADD CONSTRAINT `1` FOREIGN KEY (`id_tiket`) REFERENCES `tiket` (`id`);
+  ADD CONSTRAINT `fk_troubleshooting_id_tiket` FOREIGN KEY (`id_tiket`) REFERENCES `tiket` (`id`);
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+SET FOREIGN_KEY_CHECKS = 1;
