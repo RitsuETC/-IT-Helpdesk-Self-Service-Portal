@@ -1,12 +1,14 @@
-const mysql = require("mysql2/promise");
+const { Pool } = require("pg");
 require("dotenv").config();
 
-const db = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL belum diatur. Isi backend/.env dengan connection string PostgreSQL Supabase.");
+}
+
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_SSL === "false" ? false : { rejectUnauthorized: false },
+  connectionTimeoutMillis: 10000,
 });
 
 module.exports = db;

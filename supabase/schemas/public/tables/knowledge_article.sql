@@ -3,6 +3,7 @@ create table "public"."knowledge_article" (
   "id_categori" integer                not null,
   "judul"       character varying(255) not null,
   "content"     text                   not null,
+  "video_url"   character varying(500),
   "helpful"     integer                not null default 0,
   "unhelpful"   integer                not null default 0,
   constraint "knowledge_article_pkey" primary key (id),

@@ -29,7 +29,7 @@ app.get("/", (req, res) => {
 
 app.get("/api/test-db", async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT 1 AS test");
+    const { rows } = await db.query("SELECT 1 AS test");
 
     res.json({
       message: "Database berhasil terhubung",
