@@ -8,6 +8,7 @@ const authRoutes = require("./routes/auth");
 const ticketRoutes = require("./routes/ticket");
 const knowledgeRoutes = require("./routes/knowledge");
 const troubleshootingRoutes = require("./routes/troubleshooting");
+const adminRoutes = require("./routes/admin");
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/knowledge", knowledgeRoutes);
 app.use("/api/troubleshooting", troubleshootingRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/", (req, res) => {
   res.json({

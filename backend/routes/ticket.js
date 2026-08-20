@@ -5,13 +5,32 @@ const authorizeRole = require("../middleware/roleMiddleware");
 
 const router = express.Router();
 
+let categoryColumn;
+async function getCategoryColumn() {
+  if (categoryColumn) return categoryColumn;
+  const [columns] = await db.query("SHOW COLUMNS FROM tiket");
+  categoryColumn = columns.some((column) => column.Field === "kategori") ? "kategori" : "categori";
+  return categoryColumn;
+}
+
+async function ensurePriorityLevels() {
+  await db.query(
+    "INSERT IGNORE INTO `level` (`level`) VALUES ('level_1'), ('level_2'), ('level_3')"
+  );
+}
+
 // GET tiket milik user yang sedang login
 router.get("/", verifyToken, async (req, res) => {
   try {
     const akun = req.user.id;
+    const kategori = await getCategoryColumn();
 
     const [rows] = await db.query(
-      `SELECT * FROM tiket WHERE akun = ? ORDER BY id DESC`,
+      `SELECT t.*, u.ruangan AS nama_ruangan, k.nama_kategori
+       FROM tiket t
+       JOIN unit u ON u.id = t.ruangan
+       JOIN knowledge_kategori k ON k.id = t.${kategori}
+       WHERE t.akun = ? ORDER BY t.id DESC`,
       [akun]
     );
 
@@ -29,12 +48,24 @@ router.get("/", verifyToken, async (req, res) => {
   }
 });
 
+router.get("/meta/options", verifyToken, async (_req, res) => {
+  try {
+    await ensurePriorityLevels();
+    const [categories] = await db.query("SELECT id, nama_kategori FROM knowledge_kategori ORDER BY nama_kategori");
+    const [rooms] = await db.query("SELECT id, ruangan FROM unit ORDER BY ruangan");
+    const [priorities] = await db.query("SELECT `level` FROM `level` ORDER BY `level`");
+    res.json({ data: { categories, rooms, priorities } });
+  } catch (error) {
+    res.status(500).json({ message: "Gagal mengambil pilihan tiket", error: error.message });
+  }
+});
+
 // POST tiket
 router.post("/", verifyToken, async (req, res) => {
   try {
     const {
       judul,
-      categori,
+      kategori,
       ruangan,
       prioritas,
       deskripsi,
@@ -43,7 +74,7 @@ router.post("/", verifyToken, async (req, res) => {
     // Validasi input
     if (
       !judul ||
-      !categori ||
+      !kategori ||
       !ruangan ||
       !prioritas ||
       !deskripsi
@@ -56,13 +87,14 @@ router.post("/", verifyToken, async (req, res) => {
     // Akun diambil dari JWT
     const akun = req.user.id;
 
+    const categoryColumn = await getCategoryColumn();
     const [result] = await db.query(
       `INSERT INTO tiket 
-      (judul, categori, ruangan, prioritas, deskripsi, akun)
+      (judul, ${categoryColumn}, ruangan, prioritas, deskripsi, akun)
       VALUES (?, ?, ?, ?, ?, ?)`,
       [
         judul,
-        categori,
+        kategori,
         ruangan,
         prioritas,
         deskripsi,
@@ -75,7 +107,7 @@ router.post("/", verifyToken, async (req, res) => {
       ticket: {
         id: result.insertId,
         judul,
-        categori,
+        kategori,
         ruangan,
         prioritas,
         deskripsi,
@@ -86,7 +118,7 @@ router.post("/", verifyToken, async (req, res) => {
     console.error("Create ticket error:", error);
 
     res.status(500).json({
-      message: "Gagal membuat tiket",
+      message: `Gagal membuat tiket: ${error.message}`,
       error: error.message,
     });
   }
