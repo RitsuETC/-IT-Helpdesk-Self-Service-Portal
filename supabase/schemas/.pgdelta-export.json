@@ -1,0 +1,26 @@
+{
+  "formatVersion": 1,
+  "redactSecrets": true,
+  "scope": "database",
+  "profile": "supabase",
+  "defaultOwner": "postgres",
+  "files": [
+    "_cluster/extensions/pgcrypto.sql",
+    "_cluster/extensions/uuid-ossp.sql",
+    "public/default_privileges.sql",
+    "public/schema.sql",
+    "public/tables/asset.sql",
+    "public/tables/knowledge_article.sql",
+    "public/tables/knowledge_kategori.sql",
+    "public/tables/level.sql",
+    "public/tables/login.sql",
+    "public/tables/tiket.sql",
+    "public/tables/troubleshooting.sql",
+    "public/tables/unit.sql",
+    "public/types/asset_status_enum.sql",
+    "public/types/knowledge_level_enum.sql",
+    "public/types/login_role_enum.sql",
+    "public/types/priority_level_enum.sql",
+    "public/types/tiket_status_enum.sql"
+  ]
+}
