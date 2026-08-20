@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import likeImage from '../../../bg/Like.png'
-import searchImage from '../../../bg/search.png'
+import likeImage from './assets/like.png'
+import searchImage from './assets/search.png'
 
 function youtubeThumbnail(url) {
   const id = url?.match(/(?:youtu\.be\/|v=|embed\/)([^?&/]+)/)?.[1]

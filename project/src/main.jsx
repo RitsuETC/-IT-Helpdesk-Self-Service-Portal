@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import { useEffect, useState } from 'react'
 import './style.css'
-import ummuhaniLogo from '../../../bg/logo_Ummuhani (1).png'
+import ummuhaniLogo from './assets/ummuhani-logo.png'
 import { api } from './api.js'
 import Dashboard from './dashboard.jsx'
 import Troubleshooting from './troubleshooting.jsx'
