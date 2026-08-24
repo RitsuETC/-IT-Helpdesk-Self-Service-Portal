@@ -48,7 +48,7 @@ function App() {
       <button className="logo-button" onClick={() => session && setPage('dashboard')} aria-label="Ke Dashboard"><img className="logo" src={ummuhaniLogo} alt="Ummuhani" /></button>
       <h1 className="header-title">IT Helpdesk</h1>
       {session && <nav aria-label="Navigasi utama">
-        <button onClick={() => setPage('dashboard')}>Dashboard</button><button onClick={() => setPage('troubleshooting')}>Troubleshooting</button><button onClick={() => setPage('tickets')}>Tiket Saya</button>
+        <button onClick={() => setPage('dashboard')}>Dashboard</button><button onClick={() => setPage('troubleshooting')}>Troubleshooting</button><button onClick={() => setPage('tickets')}>Tiket Saya</button><button onClick={() => setPage('ticket-history')}>Riwayat Tiket</button>
         <button onClick={() => setPage('knowledge')}>Knowledge Base</button><button onClick={() => setShowSidebar(true)}>User</button>
       </nav>}
       <span className="account" aria-hidden="true">●</span>
@@ -63,6 +63,7 @@ function App() {
     {session && page === 'dashboard' && <Dashboard token={session.token} user={session.user} onTroubleshooting={() => setPage('troubleshooting')} onTickets={() => setPage('tickets')} onKnowledge={() => setPage('knowledge')} />}
     {session && page === 'troubleshooting' && <Troubleshooting articles={articles} onOpenArticle={(article) => { setSelectedArticle(article); setPage('knowledge') }} />}
     {session && page === 'tickets' && <Tickets token={session.token} user={session.user} onError={setNotice} />}
+    {session && page === 'ticket-history' && <Tickets token={session.token} user={session.user} onError={setNotice} historyOnly />}
     {session && page === 'knowledge' && <Knowledge articles={articles} initialArticle={selectedArticle} />}
     {session?.user.role === 'admin' && page === 'admin' && <Admin token={session.token} articles={articles} onChanged={loadArticles} onError={setNotice} />}
 

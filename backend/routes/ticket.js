@@ -177,6 +177,60 @@ router.post("/", verifyToken, async (req, res) => {
   }
 });
 
+// ADMIN dapat mengubah status semua tiket, TEKNISI hanya tiket yang ditugaskan kepadanya.
+router.patch(
+  "/:id/status",
+  verifyToken,
+  authorizeRole("admin", "teknisi"),
+  async (req, res) => {
+    try {
+      const allowedStatuses = [
+        "NEW",
+        "ASSIGNED",
+        "IN_PROGRESS",
+        "WAITING",
+        "RESOLVED",
+        "CLOSED",
+      ];
+      const status = String(req.body.status || "").toUpperCase();
+
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({ message: "Status tiket tidak valid" });
+      }
+
+      const ticket = await db.query(
+        "SELECT id, teknisi FROM tiket WHERE id = $1 LIMIT 1",
+        [req.params.id]
+      );
+
+      if (!ticket.rowCount) {
+        return res.status(404).json({ message: "Tiket tidak ditemukan" });
+      }
+
+      if (
+        req.user.role === "teknisi" &&
+        Number(ticket.rows[0].teknisi) !== Number(req.user.id)
+      ) {
+        return res.status(403).json({
+          message: "Tiket ini bukan ditugaskan kepada Anda",
+        });
+      }
+
+      const { rows } = await db.query(
+        "UPDATE tiket SET status = $1 WHERE id = $2 RETURNING id, status",
+        [status, req.params.id]
+      );
+
+      res.json({ message: "Status tiket berhasil diperbarui", data: rows[0] });
+    } catch (error) {
+      res.status(500).json({
+        message: "Gagal memperbarui status tiket",
+        error: error.message,
+      });
+    }
+  }
+);
+
 // ADMIN menugaskan teknisi
 router.patch(
   "/:id/assign",
