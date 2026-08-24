@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import likeImage from './assets/like.png'
 import searchImage from './assets/search.png'
 
@@ -7,10 +7,11 @@ function youtubeThumbnail(url) {
   return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : ''
 }
 
-function Knowledge({ articles }) {
+function Knowledge({ articles, initialArticle }) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
   const [selectedArticle, setSelectedArticle] = useState(null)
+  useEffect(() => { if (initialArticle) setSelectedArticle(initialArticle) }, [initialArticle])
   const visibleArticles = useMemo(() => articles.filter((article) => (category === 'all' || article.nama_kategori === category) && article.judul.toLowerCase().includes(query.toLowerCase())), [query, category, articles])
 
   return <section className="knowledge-page"><h2>Knowledge</h2><div className="knowledge-filter"><label><img src={searchImage} alt="" /><input value={query} onChange={(event) => setQuery(event.target.value)} aria-label="Cari artikel" /></label>

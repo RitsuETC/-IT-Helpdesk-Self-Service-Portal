@@ -17,6 +17,7 @@ function App() {
   const [showSidebar, setShowSidebar] = useState(false)
   const [articles, setArticles] = useState([])
   const [notice, setNotice] = useState('')
+  const [selectedArticle, setSelectedArticle] = useState(null)
 
   const loadArticles = async () => {
     if (!session) return
@@ -60,9 +61,9 @@ function App() {
       <button className="login" type="submit">Login</button>
     </form></section>}
     {session && page === 'dashboard' && <Dashboard token={session.token} user={session.user} onTroubleshooting={() => setPage('troubleshooting')} onTickets={() => setPage('tickets')} onKnowledge={() => setPage('knowledge')} />}
-    {session && page === 'troubleshooting' && <Troubleshooting articles={articles} />}
-    {session && page === 'tickets' && <Tickets token={session.token} onError={setNotice} />}
-    {session && page === 'knowledge' && <Knowledge articles={articles} />}
+    {session && page === 'troubleshooting' && <Troubleshooting articles={articles} onOpenArticle={(article) => { setSelectedArticle(article); setPage('knowledge') }} />}
+    {session && page === 'tickets' && <Tickets token={session.token} user={session.user} onError={setNotice} />}
+    {session && page === 'knowledge' && <Knowledge articles={articles} initialArticle={selectedArticle} />}
     {session?.user.role === 'admin' && page === 'admin' && <Admin token={session.token} articles={articles} onChanged={loadArticles} onError={setNotice} />}
 
     {showSidebar && <div className="sidebar-backdrop" onClick={() => setShowSidebar(false)}><aside className="account-sidebar" aria-label="Menu akun" onClick={(event) => event.stopPropagation()}>

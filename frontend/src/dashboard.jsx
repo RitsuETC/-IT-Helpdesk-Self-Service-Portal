@@ -8,8 +8,10 @@ function Dashboard({ token, user, onTroubleshooting, onTickets, onKnowledge }) {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    api('/tickets', { token }).then((result) => setTickets(result.data)).catch((err) => setError(err.message))
-  }, [token])
+    api('/tickets', { token })
+      .then((result) => setTickets(result.data.filter((ticket) => Number(ticket.akun) === Number(user.id))))
+      .catch((err) => setError(err.message))
+  }, [token, user.id])
 
   return <section className="dashboard">
     <p className="eyebrow">Dashboard</p><h2>Hai, {user.username}<br />Ada yang bisa kami bantu?</h2>
