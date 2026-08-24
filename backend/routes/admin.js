@@ -27,6 +27,23 @@ router.post("/categories", async (req, res) => {
   } catch (error) { res.status(500).json({ message: "Gagal menambah kategori", error: error.message }); }
 });
 
+router.delete("/categories/:id", async (req, res) => {
+  try {
+    const usage = await db.query(
+      `SELECT
+        (SELECT count(*) FROM tiket WHERE categori = $1) +
+        (SELECT count(*) FROM knowledge_article WHERE id_categori = $1) AS total`,
+      [req.params.id]
+    );
+    if (Number(usage.rows[0].total)) {
+      return res.status(409).json({ message: "Kategori masih dipakai tiket atau Knowledge Base dan tidak dapat dihapus" });
+    }
+    const result = await db.query("DELETE FROM knowledge_kategori WHERE id = $1", [req.params.id]);
+    if (!result.rowCount) return res.status(404).json({ message: "Kategori tidak ditemukan" });
+    res.json({ message: "Kategori berhasil dihapus" });
+  } catch (error) { res.status(500).json({ message: "Gagal menghapus kategori", error: error.message }); }
+});
+
 router.post("/rooms", async (req, res) => {
   try {
     const room = req.body.ruangan?.trim();
@@ -34,6 +51,16 @@ router.post("/rooms", async (req, res) => {
     const { rows } = await db.query("INSERT INTO unit (ruangan) VALUES ($1) RETURNING id, ruangan", [room]);
     res.status(201).json({ data: rows[0] });
   } catch (error) { res.status(500).json({ message: "Gagal menambah ruangan", error: error.message }); }
+});
+
+router.delete("/rooms/:id", async (req, res) => {
+  try {
+    const usage = await db.query("SELECT count(*) AS total FROM tiket WHERE ruangan = $1", [req.params.id]);
+    if (Number(usage.rows[0].total)) return res.status(409).json({ message: "Ruangan masih dipakai tiket dan tidak dapat dihapus" });
+    const result = await db.query("DELETE FROM unit WHERE id = $1", [req.params.id]);
+    if (!result.rowCount) return res.status(404).json({ message: "Ruangan tidak ditemukan" });
+    res.json({ message: "Ruangan berhasil dihapus" });
+  } catch (error) { res.status(500).json({ message: "Gagal menghapus ruangan", error: error.message }); }
 });
 
 router.patch("/users/:id/role", async (req, res) => {
@@ -56,6 +83,17 @@ router.post("/users", async (req, res) => {
     const { rows } = await db.query('INSERT INTO login ("Nama", email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, "Nama" AS nama, email, role', [nama.trim(), email.trim(), hash, role]);
     res.status(201).json({ data: rows[0] });
   } catch (error) { res.status(500).json({ message: "Gagal membuat akun", error: error.message }); }
+});
+
+router.delete("/users/:id", async (req, res) => {
+  try {
+    if (Number(req.params.id) === req.user.id) return res.status(400).json({ message: "Anda tidak dapat menghapus akun sendiri" });
+    const usage = await db.query("SELECT count(*) AS total FROM tiket WHERE akun = $1 OR teknisi = $1", [req.params.id]);
+    if (Number(usage.rows[0].total)) return res.status(409).json({ message: "Akun memiliki riwayat tiket dan tidak dapat dihapus" });
+    const result = await db.query("DELETE FROM login WHERE id = $1", [req.params.id]);
+    if (!result.rowCount) return res.status(404).json({ message: "Akun tidak ditemukan" });
+    res.json({ message: "Akun berhasil dihapus" });
+  } catch (error) { res.status(500).json({ message: "Gagal menghapus akun", error: error.message }); }
 });
 
 module.exports = router;
