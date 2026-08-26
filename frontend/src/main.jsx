@@ -49,7 +49,7 @@ function App() {
       <h1 className="header-title">IT Helpdesk</h1>
       {session && <nav aria-label="Navigasi utama">
         <button onClick={() => setPage('dashboard')}>Dashboard</button><button onClick={() => setPage('troubleshooting')}>Troubleshooting</button><button onClick={() => setPage('tickets')}>Tiket Saya</button><button onClick={() => setPage('ticket-history')}>Riwayat Tiket</button>
-        <button onClick={() => setPage('knowledge')}>Knowledge Base</button><button onClick={() => setShowSidebar(true)}>User</button>
+        <button onClick={() => { setSelectedArticle(null); setPage('knowledge') }}>Knowledge Base</button><button onClick={() => setShowSidebar(true)}>User</button>
       </nav>}
       <span className="account" aria-hidden="true">●</span>
     </header>

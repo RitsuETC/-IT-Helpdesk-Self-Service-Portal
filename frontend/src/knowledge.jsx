@@ -11,7 +11,13 @@ function Knowledge({ articles, initialArticle }) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
   const [selectedArticle, setSelectedArticle] = useState(null)
-  useEffect(() => { if (initialArticle) setSelectedArticle(initialArticle) }, [initialArticle])
+  useEffect(() => {
+    if (!initialArticle) return
+    // ensure the initial article still exists in the current articles list
+    const found = articles.find((a) => Number(a.id) === Number(initialArticle.id))
+    if (found) setSelectedArticle(found)
+    else setSelectedArticle(null)
+  }, [initialArticle, articles])
   const visibleArticles = useMemo(() => articles.filter((article) => (category === 'all' || article.nama_kategori === category) && article.judul.toLowerCase().includes(query.toLowerCase())), [query, category, articles])
 
   return <section className="knowledge-page"><h2>Knowledge</h2><div className="knowledge-filter"><label><img src={searchImage} alt="" /><input value={query} onChange={(event) => setQuery(event.target.value)} aria-label="Cari artikel" /></label>
