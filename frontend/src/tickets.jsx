@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from './api.js'
+import { confirmAction } from './confirm.js'
 
 const priorityClass = (value) => ({ level_1: 'critical', level_2: 'high', level_3: 'medium' }[String(value).toLowerCase()] || 'medium')
 const ticketStatuses = ['NEW', 'ASSIGNED', 'IN_PROGRESS', 'WAITING', 'RESOLVED', 'CLOSED']
@@ -60,6 +61,8 @@ function TicketDetail({ token, user, ticket, onBack, onError }) {
   const [troubleshooting, setTroubleshooting] = useState(null)
   const [form, setForm] = useState({ tindakan: '', hasil: '' })
   const [status, setStatus] = useState(ticket.status)
+  const [users, setUsers] = useState([])
+  const [selectedTeknisi, setSelectedTeknisi] = useState(ticket.teknisi || '')
   const isAdmin = user.role === 'admin'
   const assignedTechnician = user.role === 'teknisi' && Number(ticket.teknisi) === Number(user.id)
   const canManage = isAdmin || assignedTechnician
@@ -75,10 +78,20 @@ function TicketDetail({ token, user, ticket, onBack, onError }) {
     }
   }
   useEffect(() => { loadTroubleshooting() }, [ticket.id, token])
+  useEffect(() => {
+    if (isAdmin) {
+      api('/admin/setup', { token }).then((res) => {
+        const teknisiList = (res.data.users || []).filter((u) => u.role === 'teknisi')
+        setUsers(teknisiList)
+      }).catch(() => {})
+    }
+  }, [isAdmin, token])
 
   const saveTroubleshooting = async (event) => {
     event.preventDefault()
     try {
+      const confirm = await confirmAction(troubleshooting ? 'Perbarui tindakan tiket?' : 'Simpan tindakan tiket?')
+      if (!confirm) return
       await api(troubleshooting ? `/troubleshooting/${troubleshooting.id}` : '/troubleshooting', {
         token,
         method: troubleshooting ? 'PATCH' : 'POST',
@@ -91,18 +104,23 @@ function TicketDetail({ token, user, ticket, onBack, onError }) {
   const saveStatus = async (event) => {
     event.preventDefault()
     try {
-      const result = await api(`/tickets/${ticket.id}/status`, {
-        token,
-        method: 'PATCH',
-        body: { status },
-      })
+      const confirm = await confirmAction(`Perbarui status tiket menjadi ${status}?`)
+      if (!confirm) return
+      const body = { status }
+      if (isAdmin && status === 'ASSIGNED' && selectedTeknisi) body.teknisi = Number(selectedTeknisi)
+      const result = await api(`/tickets/${ticket.id}/status`, { token, method: 'PATCH', body })
       setStatus(result.data.status)
     } catch (error) { onError(error.message) }
   }
 
+  const fmt = (v) => v ? new Date(v).toLocaleString() : '-'
   return <section className="ticket-detail"><header className="detail-header"><button onClick={onBack} aria-label="Kembali">‹</button><h2>Detail Tiket</h2></header><h3>{ticket.judul}</h3>
-    <dl><dt>ID Tiket</dt><dd>HD-{ticket.id}</dd>{(isAdmin || user.role === 'teknisi') && <><dt>Pelapor</dt><dd>{ticket.pelapor_nama || '-'}</dd></>}<dt>Ruangan</dt><dd>{ticket.nama_ruangan}</dd><dt>Masalah</dt><dd>{ticket.deskripsi}</dd><dt>Prioritas</dt><dd><span className={`priority-dot ${priorityClass(ticket.prioritas)}`} /></dd><dt>Status</dt><dd>{status}</dd></dl>
-    {canManage && <form className="ticket-status-form" onSubmit={saveStatus}><label>Status Tiket<select value={status} onChange={(event) => setStatus(event.target.value)}>{ticketStatuses.map((item) => <option key={item} value={item}>{item}</option>)}</select></label><button type="submit">Perbarui Status</button></form>}
+    <dl><dt>ID Tiket</dt><dd>HD-{ticket.id}</dd>{(isAdmin || user.role === 'teknisi') && <><dt>Pelapor</dt><dd>{ticket.pelapor_nama || '-'}</dd></>}<dt>Ruangan</dt><dd>{ticket.nama_ruangan}</dd><dt>Masalah</dt><dd>{ticket.deskripsi}</dd><dt>Prioritas</dt><dd><span className={`priority-dot ${priorityClass(ticket.prioritas)}`} /></dd><dt>Status</dt><dd>{status}</dd><dt>Dibuat</dt><dd>{fmt(ticket.created_at)}</dd><dt>Diselesaikan</dt><dd>{fmt(ticket.resolved_at)}</dd><dt>Ditutup</dt><dd>{fmt(ticket.closed_at)}</dd></dl>
+    {canManage && <form className="ticket-status-form" onSubmit={saveStatus}>
+      <label>Status Tiket<select value={status} onChange={(event) => setStatus(event.target.value)}>{ticketStatuses.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+      {isAdmin && status === 'ASSIGNED' && <label>Pilih Teknisi<select value={selectedTeknisi} onChange={(e) => setSelectedTeknisi(e.target.value)}><option value="">Pilih teknisi</option>{users.map((u) => <option key={u.id} value={u.id}>{u.nama} ({u.email})</option>)}</select></label>}
+      <button type="submit">Perbarui Status</button>
+    </form>}
     {canManage ? <form className="staff-ticket-form" onSubmit={saveTroubleshooting}><label>Tindakan<textarea value={form.tindakan} onChange={(event) => setForm({ ...form, tindakan: event.target.value })} required /></label><label>Hasil<textarea value={form.hasil} onChange={(event) => setForm({ ...form, hasil: event.target.value })} required /></label><button className="save-ticket">{troubleshooting ? 'Perbarui' : 'Simpan'}</button></form> : <><label>Tindakan<textarea value={troubleshooting?.tindakan || ''} readOnly /></label><label>Hasil<textarea value={troubleshooting?.hasil || ticket.solusi || ''} readOnly /></label>{user.role === 'teknisi' && <p className="ticket-access-note">Tindakan hanya dapat diisi pada tiket yang ditugaskan kepada Anda.</p>}</>}
   </section>
 }

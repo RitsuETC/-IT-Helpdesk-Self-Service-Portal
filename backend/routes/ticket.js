@@ -207,6 +207,8 @@ router.patch(
 
       const status = String(req.body.status || "").toUpperCase();
 
+      console.log(`[PATCH /:id/status] user.id=${req.user?.id} role=${req.user?.role} requestedStatus=${status} ticketId=${req.params.id}`);
+
       if (!allowedStatuses.includes(status)) {
         return res.status(400).json({
           message: "Status tiket tidak valid",
@@ -217,6 +219,33 @@ router.patch(
         "SELECT id, teknisi FROM tiket WHERE id = $1 LIMIT 1",
         [req.params.id]
       );
+
+      console.log("[PATCH /:id/status] ticket query result:", ticket.rows[0]);
+
+      // Jika ingin mengatur status ke ASSIGNED harus ada teknisi yang ditetapkan.
+      // Namun admin dapat menyertakan `teknisi` di body untuk sekaligus menugaskan.
+      const providedTeknisi = req.body?.teknisi;
+
+      if (status === "ASSIGNED" && (ticket.rows[0].teknisi === null || ticket.rows[0].teknisi === undefined) && !providedTeknisi) {
+        return res.status(400).json({
+          message: "Tidak dapat mengubah status menjadi ASSIGNED tanpa teknisi. Sertakan `teknisi` atau gunakan endpoint /:id/assign."
+        });
+      }
+
+      let teknisiToSet = null;
+      if (providedTeknisi) {
+        // validasi teknisi yang diberikan
+        const technician = await db.query(
+          'SELECT id, "Nama" AS nama, email, role FROM login WHERE id = $1 AND role = $2 LIMIT 1',
+          [providedTeknisi, 'teknisi']
+        );
+
+        if (!technician.rowCount) {
+          return res.status(400).json({ message: 'Akun yang dipilih bukan teknisi' });
+        }
+
+        teknisiToSet = providedTeknisi;
+      }
 
       if (!ticket.rowCount) {
         return res.status(404).json({
@@ -236,25 +265,29 @@ router.patch(
       const { rows } = await db.query(
         `UPDATE tiket
          SET
-           status = $1,
+           teknisi = COALESCE($3, teknisi),
+           status = $1::public.tiket_status_enum,
            resolved_at = CASE
-             WHEN $1 = 'RESOLVED' AND resolved_at IS NULL
+             WHEN $1::public.tiket_status_enum = 'RESOLVED' AND resolved_at IS NULL
              THEN NOW()
              ELSE resolved_at
            END,
            closed_at = CASE
-             WHEN $1 = 'CLOSED' AND closed_at IS NULL
+             WHEN $1::public.tiket_status_enum = 'CLOSED' AND closed_at IS NULL
              THEN NOW()
              ELSE closed_at
            END
          WHERE id = $2
          RETURNING
            id,
+           teknisi,
            status,
            resolved_at,
            closed_at`,
-        [status, req.params.id]
+        [status, req.params.id, teknisiToSet]
       );
+
+        console.log(`[PATCH /:id/status] updated ticket ${req.params.id} -> ${status}`);
 
       res.json({
         message: "Status tiket berhasil diperbarui",
@@ -276,7 +309,7 @@ router.patch(
   authorizeRole("admin"),
   async (req, res) => {
     try {
-      const { teknisi } = req.body;
+      const { teknisi, status: requestedStatus } = req.body;
 
       if (!teknisi) {
         return res.status(400).json({
@@ -306,15 +339,44 @@ router.patch(
         });
       }
 
-      if (ticket.rows[0].status !== "NEW") {
+      const allowedStatuses = [
+        "NEW",
+        "ASSIGNED",
+        "IN_PROGRESS",
+        "WAITING",
+        "RESOLVED",
+        "CLOSED",
+      ];
+
+      const status = String(requestedStatus || "ASSIGNED").toUpperCase();
+
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({ message: "Status tidak valid" });
+      }
+
+      // Jika ingin mengubah menjadi ASSIGNED, pastikan tiket saat ini NEW
+      if (status === "ASSIGNED" && ticket.rows[0].status !== "NEW") {
         return res.status(400).json({
           message: `Tiket tidak dapat di-assign karena status saat ini ${ticket.rows[0].status}`,
         });
       }
 
-      await db.query(
-        "UPDATE tiket SET teknisi = $1, status = 'ASSIGNED' WHERE id = $2",
-        [teknisi, req.params.id]
+      const { rows } = await db.query(
+        `UPDATE tiket
+         SET
+           teknisi = $1,
+           status = $2::public.tiket_status_enum,
+           resolved_at = CASE
+             WHEN $2::public.tiket_status_enum = 'RESOLVED' AND resolved_at IS NULL THEN NOW()
+             ELSE resolved_at
+           END,
+           closed_at = CASE
+             WHEN $2::public.tiket_status_enum = 'CLOSED' AND closed_at IS NULL THEN NOW()
+             ELSE closed_at
+           END
+         WHERE id = $3
+         RETURNING id, teknisi, status, resolved_at, closed_at`,
+        [teknisi, status, req.params.id]
       );
 
       res.json({
@@ -322,7 +384,9 @@ router.patch(
         data: {
           tiket_id: Number(req.params.id),
           teknisi: technician.rows[0],
-          status: "ASSIGNED",
+          status: rows[0].status,
+          resolved_at: rows[0].resolved_at,
+          closed_at: rows[0].closed_at,
         },
       });
     } catch (error) {
@@ -341,10 +405,13 @@ router.patch(
   authorizeRole("teknisi"),
   async (req, res) => {
     try {
+      console.log(`[PATCH /:id/start] user.id=${req.user?.id} role=${req.user?.role} ticketId=${req.params.id}`);
       const ticket = await db.query(
         "SELECT id, teknisi, status FROM tiket WHERE id = $1 LIMIT 1",
         [req.params.id]
       );
+
+      console.log("[PATCH /:id/start] ticket query result:", ticket.rows[0]);
 
       if (!ticket.rowCount) {
         return res.status(404).json({
@@ -352,7 +419,7 @@ router.patch(
         });
       }
 
-      if (ticket.rows[0].teknisi !== req.user.id) {
+      if (Number(ticket.rows[0].teknisi) !== Number(req.user.id)) {
         return res.status(403).json({
           message: "Tiket ini bukan ditugaskan kepada Anda",
         });
@@ -393,6 +460,7 @@ router.patch(
   authorizeRole("teknisi"),
   async (req, res) => {
     try {
+      console.log(`[PATCH /:id/resolve] user.id=${req.user?.id} role=${req.user?.role} ticketId=${req.params.id}`);
       const { solusi } = req.body;
 
       if (!solusi?.trim()) {
@@ -406,13 +474,15 @@ router.patch(
         [req.params.id]
       );
 
+      console.log("[PATCH /:id/resolve] ticket query result:", ticket.rows[0]);
+
       if (!ticket.rowCount) {
         return res.status(404).json({
           message: "Tiket tidak ditemukan",
         });
       }
 
-      if (ticket.rows[0].teknisi !== req.user.id) {
+      if (Number(ticket.rows[0].teknisi) !== Number(req.user.id)) {
         return res.status(403).json({
           message: "Tiket ini bukan ditugaskan kepada Anda",
         });
@@ -473,7 +543,7 @@ router.patch("/:id/close", verifyToken, async (req, res) => {
       });
     }
 
-    if (ticket.rows[0].akun !== req.user.id) {
+    if (Number(ticket.rows[0].akun) !== Number(req.user.id)) {
       return res.status(403).json({
         message: "Anda tidak memiliki akses untuk menutup tiket ini",
       });

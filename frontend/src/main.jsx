@@ -65,7 +65,7 @@ function App() {
     {session && page === 'tickets' && <Tickets token={session.token} user={session.user} onError={setNotice} />}
     {session && page === 'ticket-history' && <Tickets token={session.token} user={session.user} onError={setNotice} historyOnly />}
     {session && page === 'knowledge' && <Knowledge articles={articles} initialArticle={selectedArticle} />}
-    {session?.user.role === 'admin' && page === 'admin' && <Admin token={session.token} articles={articles} onChanged={loadArticles} onError={setNotice} />}
+    {(session?.user.role === 'admin' || session?.user.role === 'teknisi') && page === 'admin' && <Admin token={session.token} user={session.user} articles={articles} onChanged={loadArticles} onError={setNotice} />}
 
     {showSidebar && <div className="sidebar-backdrop" onClick={() => setShowSidebar(false)}><aside className="account-sidebar" aria-label="Menu akun" onClick={(event) => event.stopPropagation()}>
       <button className="sidebar-close" onClick={() => setShowSidebar(false)} aria-label="Tutup menu">×</button><img src={ummuhaniLogo} alt="Ummuhani" />
