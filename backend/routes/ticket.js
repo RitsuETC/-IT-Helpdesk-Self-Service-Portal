@@ -142,8 +142,16 @@ router.post("/", verifyToken, async (req, res) => {
 
     const { rows } = await db.query(
       `INSERT INTO tiket
-        (judul, categori, ruangan, prioritas, deskripsi, akun)
-       VALUES ($1, $2, $3, $4, $5, $6)
+        (
+          judul,
+          categori,
+          ruangan,
+          prioritas,
+          deskripsi,
+          akun,
+          created_at
+        )
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())
        RETURNING
         id,
         judul,
@@ -152,7 +160,10 @@ router.post("/", verifyToken, async (req, res) => {
         prioritas,
         deskripsi,
         akun,
-        status`,
+        status,
+        created_at,
+        resolved_at,
+        closed_at`,
       [
         judul.trim(),
         kategori,
@@ -177,7 +188,8 @@ router.post("/", verifyToken, async (req, res) => {
   }
 });
 
-// ADMIN dapat mengubah status semua tiket, TEKNISI hanya tiket yang ditugaskan kepadanya.
+// ADMIN dapat mengubah status semua tiket,
+// TEKNISI hanya tiket yang ditugaskan kepadanya.
 router.patch(
   "/:id/status",
   verifyToken,
@@ -192,10 +204,13 @@ router.patch(
         "RESOLVED",
         "CLOSED",
       ];
+
       const status = String(req.body.status || "").toUpperCase();
 
       if (!allowedStatuses.includes(status)) {
-        return res.status(400).json({ message: "Status tiket tidak valid" });
+        return res.status(400).json({
+          message: "Status tiket tidak valid",
+        });
       }
 
       const ticket = await db.query(
@@ -204,7 +219,9 @@ router.patch(
       );
 
       if (!ticket.rowCount) {
-        return res.status(404).json({ message: "Tiket tidak ditemukan" });
+        return res.status(404).json({
+          message: "Tiket tidak ditemukan",
+        });
       }
 
       if (
@@ -217,11 +234,32 @@ router.patch(
       }
 
       const { rows } = await db.query(
-        "UPDATE tiket SET status = $1 WHERE id = $2 RETURNING id, status",
+        `UPDATE tiket
+         SET
+           status = $1,
+           resolved_at = CASE
+             WHEN $1 = 'RESOLVED' AND resolved_at IS NULL
+             THEN NOW()
+             ELSE resolved_at
+           END,
+           closed_at = CASE
+             WHEN $1 = 'CLOSED' AND closed_at IS NULL
+             THEN NOW()
+             ELSE closed_at
+           END
+         WHERE id = $2
+         RETURNING
+           id,
+           status,
+           resolved_at,
+           closed_at`,
         [status, req.params.id]
       );
 
-      res.json({ message: "Status tiket berhasil diperbarui", data: rows[0] });
+      res.json({
+        message: "Status tiket berhasil diperbarui",
+        data: rows[0],
+      });
     } catch (error) {
       res.status(500).json({
         message: "Gagal memperbarui status tiket",
@@ -386,8 +424,19 @@ router.patch(
         });
       }
 
-      await db.query(
-        "UPDATE tiket SET solusi = $1, status = 'RESOLVED' WHERE id = $2",
+      const { rows } = await db.query(
+        `UPDATE tiket
+         SET
+           solusi = $1,
+           status = 'RESOLVED',
+           resolved_at = NOW()
+         WHERE id = $2
+         RETURNING
+           id,
+           teknisi,
+           solusi,
+           status,
+           resolved_at`,
         [solusi.trim(), req.params.id]
       );
 
@@ -396,8 +445,9 @@ router.patch(
         data: {
           tiket_id: Number(req.params.id),
           teknisi_id: req.user.id,
-          solusi: solusi.trim(),
-          status: "RESOLVED",
+          solusi: rows[0].solusi,
+          status: rows[0].status,
+          resolved_at: rows[0].resolved_at,
         },
       });
     } catch (error) {
@@ -435,8 +485,17 @@ router.patch("/:id/close", verifyToken, async (req, res) => {
       });
     }
 
-    await db.query(
-      "UPDATE tiket SET status = 'CLOSED' WHERE id = $1",
+    const { rows } = await db.query(
+      `UPDATE tiket
+       SET
+         status = 'CLOSED',
+         closed_at = NOW()
+       WHERE id = $1
+       RETURNING
+         id,
+         akun,
+         status,
+         closed_at`,
       [req.params.id]
     );
 
@@ -445,7 +504,8 @@ router.patch("/:id/close", verifyToken, async (req, res) => {
       data: {
         tiket_id: Number(req.params.id),
         akun_id: req.user.id,
-        status: "CLOSED",
+        status: rows[0].status,
+        closed_at: rows[0].closed_at,
       },
     });
   } catch (error) {
