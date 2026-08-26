@@ -67,7 +67,8 @@ router.post("/", verifyToken, async (req, res) => {
        RETURNING id, id_tiket, lampiran, tindakan, hasil`,
       [
         id_tiket,
-        lampiran || null,
+        // DB expects integer for lampiran; use 0 when not provided
+        lampiran !== undefined && lampiran !== null ? lampiran : 0,
         tindakan.trim(),
         hasil.trim(),
       ]
@@ -243,8 +244,9 @@ router.patch("/:id", verifyToken, async (req, res) => {
     }
 
     // Nilai lama digunakan jika field tidak dikirim
-    const updatedLampiran =
+    let updatedLampiran =
       lampiran !== undefined ? lampiran : data.lampiran;
+    if (updatedLampiran === null || updatedLampiran === undefined) updatedLampiran = 0;
 
     const updatedTindakan =
       tindakan !== undefined ? tindakan.trim() : data.tindakan;

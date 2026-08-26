@@ -18,8 +18,17 @@ const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5173")
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error("Origin tidak diizinkan oleh CORS"));
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    // Allow any localhost origin during development (different Vite ports like 5173/5174)
+    try {
+      const url = new URL(origin);
+      const host = url.hostname;
+      if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return callback(null, true);
+    } catch (e) {
+      // ignore invalid origin parsing
+    }
+    return callback(new Error('Origin tidak diizinkan oleh CORS'));
   },
 }));
 app.use(express.json());
