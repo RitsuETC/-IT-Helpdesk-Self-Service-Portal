@@ -21,8 +21,19 @@ function App() {
 
   const loadArticles = async () => {
     if (!session) return
-    try { setArticles((await api('/knowledge', { token: session.token })).data) }
-    catch (error) { setNotice(error.message) }
+    try {
+      setArticles((await api('/knowledge', { token: session.token })).data)
+    } catch (error) {
+      // If token expired/invalid, silently logout and avoid blocking popup on reload
+      if (error && error.status === 401) {
+        localStorage.removeItem('helpdesk-session')
+        setSession(null)
+        setArticles([])
+        setPage('login')
+        return
+      }
+      setNotice(error.message)
+    }
   }
 
   useEffect(() => { loadArticles() }, [session])

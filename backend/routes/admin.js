@@ -96,4 +96,12 @@ router.delete("/users/:id", async (req, res) => {
   } catch (error) { res.status(500).json({ message: "Gagal menghapus akun", error: error.message }); }
 });
 
+// List recorded invalid/expired tokens (for admin debugging)
+router.get('/invalid-tokens', async (_req, res) => {
+  try {
+    const result = await db.query('SELECT id, token_preview, user_id, reason, ip, user_agent, created_at FROM invalid_tokens ORDER BY created_at DESC LIMIT 500');
+    res.json({ data: result.rows });
+  } catch (error) { res.status(500).json({ message: 'Gagal mengambil daftar token tidak valid', error: error.message }); }
+});
+
 module.exports = router;

@@ -10,6 +10,10 @@ export async function api(path, { token, method = 'GET', body } = {}) {
     ...(body ? { body: JSON.stringify(body) } : {}),
   })
   const result = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(result.message || 'Permintaan gagal diproses')
+  if (!response.ok) {
+    const err = new Error(result.message || 'Permintaan gagal diproses')
+    err.status = response.status
+    throw err
+  }
   return result
 }
