@@ -3,7 +3,7 @@ import { api } from './api.js'
 import { confirmAction } from './confirm.js'
 
 const priorityClass = (value) => ({ level_1: 'critical', level_2: 'high', level_3: 'medium' }[String(value).toLowerCase()] || 'medium')
-const ticketStatuses = ['NEW', 'ASSIGNED', 'IN_PROGRESS', 'WAITING', 'RESOLVED', 'CLOSED']
+const ticketStatuses = ['NEW', 'ASSIGNED', 'WAITING', 'RESOLVED', 'CLOSED']
 
 function TicketCard({ ticket, onClick, showReporter }) {
   return <button className="ticket-card" onClick={() => onClick(ticket)}>
