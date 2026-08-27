@@ -96,11 +96,42 @@ function App() {
     </header>
 
     {notice && <p className="app-notice" role="alert">{notice}</p>}
-    {page === 'login' && <section className="login-card" aria-label="Login"><form onSubmit={handleLogin}>
-      <label>Username<input name="username" autoComplete="username" required /></label>
-      <label>Password<input name="password" type="password" autoComplete="current-password" required /></label>
-      <button className="login" type="submit">Login</button>
-    </form></section>}
+   {page === 'login' && (
+  <section className="login-card" aria-label="Login">
+    <div className="login-brand">
+      <img src={ummuhaniLogo} alt="Ummuhani" />
+      <h2>IT Helpdesk</h2>
+      <p>Self-Service Portal</p>
+    </div>
+
+    <form onSubmit={handleLogin}>
+      <label>
+        Username
+        <input
+          name="username"
+          autoComplete="username"
+          placeholder="Masukkan username"
+          required
+        />
+      </label>
+
+      <label>
+        Password
+        <input
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          placeholder="Masukkan password"
+          required
+        />
+      </label>
+
+      <button className="login" type="submit">
+        Login
+      </button>
+    </form>
+  </section>
+)}
     {session && page === 'dashboard' && <Dashboard token={session.token} user={session.user} onTroubleshooting={() => setPage('troubleshooting')} onTickets={() => setPage('tickets')} onKnowledge={() => setPage('knowledge')} />}
     {session && page === 'troubleshooting' && <Troubleshooting articles={articles} onOpenArticle={(article) => { setSelectedArticle(article); setPage('knowledge') }} />}
     {session && page === 'tickets' && <Tickets token={session.token} user={session.user} onError={setNotice} />}
