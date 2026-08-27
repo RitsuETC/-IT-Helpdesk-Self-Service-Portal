@@ -1264,11 +1264,16 @@ td {
 
 .knowledge-card span {
   display: -webkit-box;
+  display: -moz-box;
+  display: box;
   margin-top: 7px;
   overflow: hidden;
   color: #68746d;
   -webkit-box-orient: vertical;
+  -moz-box-orient: vertical;
+  box-orient: vertical;
   -webkit-line-clamp: 4;
+  line-clamp: 4;
 }
 
 .knowledge-modal-backdrop {
