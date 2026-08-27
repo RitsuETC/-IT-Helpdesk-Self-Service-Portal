@@ -18,6 +18,7 @@ function App() {
   const [articles, setArticles] = useState([])
   const [notice, setNotice] = useState('')
   const [selectedArticle, setSelectedArticle] = useState(null)
+  const [unreadNotifications, setUnreadNotifications] = useState(0)
 
   const loadArticles = async () => {
     if (!session) return
@@ -37,6 +38,26 @@ function App() {
   }
 
   useEffect(() => { loadArticles() }, [session])
+
+  useEffect(() => {
+    let timer
+    async function loadUnread() {
+      if (!session) return setUnreadNotifications(0)
+      try {
+        if (session.user.role === 'admin' || session.user.role === 'teknisi') {
+          const res = await api('/notifications/unread/count', { token: session.token })
+          setUnreadNotifications(res.data.unread || 0)
+        } else {
+          setUnreadNotifications(0)
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+    loadUnread()
+    timer = setInterval(loadUnread, 30000)
+    return () => clearInterval(timer)
+  }, [session])
 
   const handleLogin = async (event) => {
     event.preventDefault(); setNotice('')
@@ -59,8 +80,17 @@ function App() {
       <button className="logo-button" onClick={() => session && setPage('dashboard')} aria-label="Ke Dashboard"><img className="logo" src={ummuhaniLogo} alt="Ummuhani" /></button>
       <h1 className="header-title">IT Helpdesk</h1>
       {session && <nav aria-label="Navigasi utama">
-        <button onClick={() => setPage('dashboard')}>Dashboard</button><button onClick={() => setPage('troubleshooting')}>Troubleshooting</button><button onClick={() => setPage('tickets')}>Tiket Saya</button><button onClick={() => setPage('ticket-history')}>Riwayat Tiket</button>
-        <button onClick={() => { setSelectedArticle(null); setPage('knowledge') }}>Knowledge Base</button><button onClick={() => setShowSidebar(true)}>Akun</button>
+        <button onClick={() => setPage('dashboard')}>Dashboard</button>
+        <button onClick={() => setPage('troubleshooting')}>Troubleshooting</button>
+        <button onClick={() => setPage('tickets')} style={{ position: 'relative' }}>
+          Tiket Saya
+          {(session.user.role === 'admin' || session.user.role === 'teknisi') && unreadNotifications > 0 && (
+            <span className="nav-badge">{unreadNotifications}</span>
+          )}
+        </button>
+        <button onClick={() => setPage('ticket-history')}>Riwayat Tiket</button>
+        <button onClick={() => { setSelectedArticle(null); setPage('knowledge') }}>Knowledge Base</button>
+        <button onClick={() => setShowSidebar(true)}>Akun</button>
       </nav>}
       <span className="account" aria-hidden="true">●</span>
     </header>

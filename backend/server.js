@@ -9,6 +9,7 @@ const ticketRoutes = require("./routes/ticket");
 const knowledgeRoutes = require("./routes/knowledge");
 const troubleshootingRoutes = require("./routes/troubleshooting");
 const adminRoutes = require("./routes/admin");
+const notificationsRoutes = require("./routes/notifications");
 
 const app = express();
 const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5173")
@@ -38,6 +39,7 @@ app.use("/api/tickets", ticketRoutes);
 app.use("/api/knowledge", knowledgeRoutes);
 app.use("/api/troubleshooting", troubleshootingRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/notifications", notificationsRoutes);
 
 app.get("/", (req, res) => {
   res.json({

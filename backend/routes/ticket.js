@@ -174,6 +174,19 @@ router.post("/", verifyToken, async (req, res) => {
       ]
     );
 
+    // Create notifications for all admins and teknisi
+    try {
+      const notifMsg = `Tiket baru: ${rows[0].judul}`;
+      await db.query(
+        `INSERT INTO notifications (user_id, tiket_id, message)
+         SELECT id, $1, $2 FROM login WHERE role IN ('admin','teknisi')`,
+        [rows[0].id, notifMsg]
+      );
+    } catch (notifErr) {
+      console.error('Failed to insert notifications:', notifErr.message);
+      // do not fail ticket creation because notification insert failed
+    }
+
     res.status(201).json({
       message: "Tiket berhasil dibuat",
       ticket: rows[0],

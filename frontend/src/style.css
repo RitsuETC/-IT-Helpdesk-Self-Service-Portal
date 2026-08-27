@@ -19,6 +19,9 @@ button, input { font: inherit; }
   margin: 0; /* Menghilangkan margin default yang mungkin mengganggu penengahan */
   font: clamp(11px, 2.8vw, 17px)/1 monospace; color: #249d16;
 }
+
+/* badge for nav notifications */
+.nav-badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; background: #d8203c; color: #fff; border-radius: 12px; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 1px 0 rgba(0,0,0,0.12); }
 .account { width: 14px; height: 14px; border-radius: 50%; background: #75c947; color: #75c947; box-shadow: 0 10px 0 -2px #75c947; }
 nav { display: flex; gap: clamp(8px, 1.6vw, 20px); white-space: nowrap; }
 nav button { padding: 0; border: 0; background: none; color: #168c0a; font-size: clamp(10px, 1.15vw, 13px); cursor: pointer; }
