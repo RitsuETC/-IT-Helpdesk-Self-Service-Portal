@@ -52,7 +52,7 @@ th { padding: 0 8px 5px; font-weight: normal; border-bottom: 1px solid #fff; } t
 
 .search { width: min(100%, 240px); height: 34px; display: flex; align-items: center; gap: 7px; margin: 0 0 14px; padding: 0 14px; border-radius: 20px; background: #168e08; color: #fff; }.search img { width: 17px; height: 17px; object-fit: contain; }.search input { height: auto; border: 0; outline: 0; background: transparent; color: #fff; font-size: 12px; }.search input::placeholder { color: #fff; }
 .section-label { margin-top: 14px; }.problem-types { display: flex; flex-wrap: wrap; gap: 12px; max-width: 310px; }.problem-types button { width: 70px; height: 28px; border: 1px solid #3ba528; background: #168e08; color: #fff; font-size: 11px; cursor: pointer; }
-.popular-problems { width: min(100%, 620px); display: grid; gap: 9px; padding: 16px; background: #168e08; }.popular-problems button { width: 180px; height: 20px; display: flex; align-items: center; gap: 7px; border: 0; background: #fff; color: #168c0a; font-size: 11px; text-align: left; cursor: pointer; }.popular-problems span { color: #168e08; }
+.popular-problems { width: min(100%, 620px); display: grid; gap: 9px; padding: 16px; background: #168e08; }.popular-problems button { width: 250px; height: 20px; display: flex; align-items: center; gap: 7px; border: 0; background: #fff; color: #168c0a; font-size: 11px; text-align: left; cursor: pointer; }.popular-problems span { color: #168e08; }
 
 .tickets-page { width: min(100% - 48px, 720px); min-height: 360px; margin: 14px auto; padding: 4px 22px 18px; border: 1px solid #444; color: #000; }
 .tickets-heading { margin: 8px 0 14px; color: #168c0a; font-size: 19px; }
