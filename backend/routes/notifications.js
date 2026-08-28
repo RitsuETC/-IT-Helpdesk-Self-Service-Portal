@@ -10,7 +10,19 @@ router.use(verifyToken);
 router.get('/', async (req, res) => {
   try {
     const { rows } = await db.query(
-      'SELECT id, tiket_id, message, is_read, created_at FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 200',
+      `SELECT 
+          n.id,
+          n.tiket_id,
+          n.message,
+          n.is_read,
+          n.created_at
+       FROM notifications n
+       JOIN tiket t
+         ON t.id = n.tiket_id
+       WHERE n.user_id = $1
+         AND t.status NOT IN ('RESOLVED', 'CLOSED')
+       ORDER BY n.created_at DESC
+       LIMIT 200`,
       [req.user.id]
     );
     res.json({ data: rows });
@@ -33,7 +45,15 @@ router.patch('/:id/read', async (req, res) => {
 // Unread count
 router.get('/unread/count', async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT count(*) AS cnt FROM notifications WHERE user_id = $1 AND is_read = FALSE', [req.user.id]);
+    const { rows } = await db.query(
+      `SELECT count(*) AS cnt 
+       FROM notifications n
+       JOIN tiket t ON t.id = n.tiket_id
+       WHERE n.user_id = $1 
+         AND n.is_read = FALSE
+         AND t.status NOT IN ('RESOLVED', 'CLOSED')`,
+      [req.user.id]
+    );
     res.json({ data: { unread: Number(rows[0].cnt) } });
   } catch (error) {
     res.status(500).json({ message: 'Gagal mengambil jumlah notifikasi belum dibaca', error: error.message });
