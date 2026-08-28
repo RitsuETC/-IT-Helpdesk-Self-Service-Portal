@@ -21,7 +21,7 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Username atau password salah" });
     }
 
-    const token = jwt.sign({ id: user.id, username: user.nama, role: user.role }, process.env.JWT_SECRET, { expiresIn: "2h" });
+    const token = jwt.sign({ id: user.id, username: user.nama, role: user.role }, process.env.JWT_SECRET, { expiresIn: "3d" });
     res.json({ message: "Login berhasil", token, user: { id: user.id, username: user.nama, email: user.email, role: user.role } });
   } catch (error) {
     console.error("Login error:", error);
