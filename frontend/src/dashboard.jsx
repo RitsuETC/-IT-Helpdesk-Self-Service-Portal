@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from './api.js'
 
-const statuses = [['Total', null], ['Baru', 'NEW'], ['Diproses', 'IN_PROGRESS'], ['Menunggu', 'WAITING'], ['Selesai', 'RESOLVED']]
+const statuses = [['Total', null], ['Baru', 'NEW'], ['Menunggu', 'WAITING'], ['Selesai', 'RESOLVED']]
 
 function Dashboard({ token, user, onTroubleshooting, onTickets, onKnowledge }) {
   const [tickets, setTickets] = useState([])
