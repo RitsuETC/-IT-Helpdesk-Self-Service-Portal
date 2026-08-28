@@ -30,7 +30,7 @@ useEffect(() => {
 
   const timer = setInterval(() => {
     loadTickets()
-  }, 5000)
+  }, 3000)
 
   if (!historyOnly) {
     api('/tickets/meta/options', { token })
