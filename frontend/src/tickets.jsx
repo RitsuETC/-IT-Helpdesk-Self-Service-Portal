@@ -25,10 +25,21 @@ function Tickets({ token, user, onError, historyOnly = false }) {
   const loadTickets = async () => {
     try { setTickets((await api('/tickets', { token })).data) } catch (error) { onError(error.message) }
   }
-  useEffect(() => {
+useEffect(() => {
+  loadTickets()
+
+  const timer = setInterval(() => {
     loadTickets()
-    if (!historyOnly) api('/tickets/meta/options', { token }).then((result) => setOptions(result.data)).catch((error) => onError(error.message))
-  }, [token, historyOnly])
+  }, 5000)
+
+  if (!historyOnly) {
+    api('/tickets/meta/options', { token })
+      .then((result) => setOptions(result.data))
+      .catch((error) => onError(error.message))
+  }
+
+  return () => clearInterval(timer)
+}, [token, historyOnly])
 
   const createTicket = async (event) => {
     event.preventDefault()

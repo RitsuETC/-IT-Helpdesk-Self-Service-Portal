@@ -55,7 +55,7 @@ function App() {
       }
     }
     loadUnread()
-    timer = setInterval(loadUnread, 30000)
+    timer = setInterval(loadUnread, 3000)
     return () => clearInterval(timer)
   }, [session])
 
