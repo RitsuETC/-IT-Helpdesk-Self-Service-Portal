@@ -12,7 +12,6 @@ import Admin from './admin.jsx'
 const savedSession = JSON.parse(localStorage.getItem('helpdesk-session') || 'null')
 
 function App() {
-  // 1. Default halaman selalu ke 'dashboard'
   const [page, setPage] = useState('dashboard')
   const [session, setSession] = useState(savedSession)
   const [showLoginModal, setShowLoginModal] = useState(false)
@@ -24,9 +23,8 @@ function App() {
 
   const loadArticles = async () => {
     try {
-      // Mengirim token jika ada, atau fetch publik jika tidak ada session
       const res = await api('/knowledge', session ? { token: session.token } : {})
-      setArticles(res.data)
+      setArticles(res.data || [])
     } catch (error) {
       if (error && error.status === 401) {
         localStorage.removeItem('helpdesk-session')
@@ -72,7 +70,7 @@ function App() {
       const nextSession = { token: result.token, user: result.user }
       localStorage.setItem('helpdesk-session', JSON.stringify(nextSession))
       setSession(nextSession)
-      setShowLoginModal(false) // Tutup modal login setelah sukses
+      setShowLoginModal(false)
     } catch (error) { 
       setNotice(error.message) 
     }
@@ -93,11 +91,19 @@ function App() {
         </button>
         <h1 className="header-title">IT Helpdesk</h1>
 
-        {/* Header Navigasi Publik & User */}
         <nav aria-label="Navigasi utama">
           <button onClick={() => setPage('dashboard')}>Dashboard</button>
           <button onClick={() => setPage('troubleshooting')}>Troubleshooting</button>
-          <button onClick={() => setPage('tickets')} style={{ position: 'relative' }}>
+          <button 
+            onClick={() => {
+              if (!session) {
+                setShowLoginModal(true)
+              } else {
+                setPage('tickets')
+              }
+            }} 
+            style={{ position: 'relative' }}
+          >
             Tiket Saya
             {session && (session.user.role === 'admin' || session.user.role === 'teknisi') && unreadNotifications > 0 && (
               <span className="nav-badge">{unreadNotifications}</span>
@@ -106,7 +112,6 @@ function App() {
           <button onClick={() => setPage('ticket-history')}>Riwayat Tiket</button>
           <button onClick={() => { setSelectedArticle(null); setPage('knowledge') }}>Knowledge Base</button>
           
-          {/* Tombol Akun / Login */}
           {session ? (
             <button onClick={() => setShowSidebar(true)}>Akun</button>
           ) : (
@@ -118,7 +123,6 @@ function App() {
 
       {notice && <p className="app-notice" role="alert">{notice}</p>}
 
-      {/* Konten Utama */}
       {page === 'dashboard' && (
         <Dashboard 
           token={session?.token} 
@@ -126,6 +130,7 @@ function App() {
           onTroubleshooting={() => setPage('troubleshooting')} 
           onTickets={() => setPage('tickets')} 
           onKnowledge={() => setPage('knowledge')} 
+          onRequireLogin={() => setShowLoginModal(true)}
         />
       )}
       
@@ -141,7 +146,7 @@ function App() {
           token={session?.token} 
           user={session?.user} 
           onError={setNotice} 
-          onRequireLogin={() => setShowLoginModal(true)} 
+          onRequireLogin={() => setShowLoginModal(true)}
         />
       )}
       
@@ -172,7 +177,6 @@ function App() {
         />
       )}
 
-      {/* Popup / Modal Login */}
       {showLoginModal && (
         <div className="modal-backdrop" onClick={() => setShowLoginModal(false)}>
           <section className="login-card" aria-label="Login" onClick={(e) => e.stopPropagation()}>
@@ -213,51 +217,70 @@ function App() {
         </div>
       )}
 
-      {/* Sidebar Akun */}
       {showSidebar && session && (
         <div className="sidebar-backdrop" onClick={() => setShowSidebar(false)}>
-          <aside className="account-sidebar" aria-label="Menu akun" onClick={(event) => event.stopPropagation()}>
-            <button className="sidebar-close" onClick={() => setShowSidebar(false)} aria-label="Tutup menu">×</button>
-            <img src={ummuhaniLogo} alt="Ummuhani" />
-            <h2>Akun</h2>
-            <section className="profile-card">
-              <span className="profile-initial">{session.user.username[0].toUpperCase()}</span>
-              <div>
-                <b>{session.user.username}</b>
-                <small>{session.user.email}</small>
-                <em>{session.user.role}</em>
-              </div>
-            </section>
-            <nav aria-label="Navigasi utama">
-  <button onClick={() => setPage('dashboard')}>Dashboard</button>
-  <button onClick={() => setPage('troubleshooting')}>Troubleshooting</button>
-  
-  {/* GANTI TOMBOL TIKET SAYA DENGAN YANG INI */}
-  <button 
-    onClick={() => {
-      if (!session) {
-        setShowLoginModal(true) // Jika belum login, buka popup login
-      } else {
-        setPage('tickets')       // Jika sudah login, baru pindah halaman
-      }
-    }} 
-    style={{ position: 'relative' }}
-  >
-    Tiket Saya
-    {session && (session.user.role === 'admin' || session.user.role === 'teknisi') && unreadNotifications > 0 && (
-      <span className="nav-badge">{unreadNotifications}</span>
-    )}
-  </button>
+          <aside 
+            className="account-sidebar" 
+            aria-label="Menu akun" 
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              boxSizing: 'border-box',
+              padding: '20px',
+              maxWidth: '320px',
+              width: '100%',
+              height: '100vh',
+              position: 'fixed',
+              right: 0,
+              top: 0,
+              backgroundColor: '#ffffff',
+              zIndex: 1000,
+              boxShadow: '-2px 0 10px rgba(0,0,0,0.1)'
+            }}
+          >
+            <div>
+              <button className="sidebar-close" onClick={() => setShowSidebar(false)} aria-label="Tutup menu">×</button>
+              <img 
+                src={ummuhaniLogo} 
+                alt="Ummuhani" 
+                style={{ width: '120px', height: 'auto', display: 'block', margin: '0 auto 16px auto' }} 
+              />
+              <h2 style={{ fontSize: '1.25rem', marginBottom: '16px', textAlign: 'center' }}>Akun</h2>
+              <section className="profile-card">
+                <span className="profile-initial">{session.user.username[0].toUpperCase()}</span>
+                <div>
+                  <b>{session.user.username}</b>
+                  <small>{session.user.email}</small>
+                  <em>{session.user.role}</em>
+                </div>
+              </section>
+            </div>
 
-  <button onClick={() => setPage('ticket-history')}>Riwayat Tiket</button>
-  <button onClick={() => { setSelectedArticle(null); setPage('knowledge') }}>Knowledge Base</button>
-  
-  {session ? (
-    <button onClick={() => setShowSidebar(true)}>Akun</button>
-  ) : (
-    <button className="login-nav-btn" onClick={() => setShowLoginModal(true)}>Login</button>
-  )}
-</nav>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', marginTop: 'auto' }}>
+              {session.user.role === 'admin' && (
+                <button className="admin-menu" onClick={() => { setShowSidebar(false); setPage('admin') }}>
+                  Admin Knowledge
+                </button>
+              )}
+              <button 
+                className="logout" 
+                onClick={logout}
+                style={{
+                  backgroundColor: '#dc2626',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  width: '100%'
+                }}
+              >
+                Logout
+              </button>
+            </div>
           </aside>
         </div>
       )}
