@@ -130,7 +130,10 @@ function App() {
 
         <div className="account-action">
           {session ? (
-            <button onClick={() => setShowSidebar(true)}>Akun</button>
+            <button className="account" onClick={() => setShowSidebar(true)}>
+              <span>👤</span>
+              <span>Akun</span>
+            </button>
           ) : (
             <button className="login-nav-btn" onClick={() => setShowLoginModal(true)}>Login</button>
           )}
