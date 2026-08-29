@@ -117,6 +117,100 @@ router.get("/meta/options", verifyToken, async (_req, res) => {
   }
 });
 
+// GET ringkasan statistik tiket sesuai role user
+router.get("/stats", verifyToken, async (req, res) => {
+  try {
+    let whereClause = "";
+    const params = [];
+
+    if (req.user.role === "user") {
+      whereClause = " WHERE t.akun = $1 ";
+      params.push(req.user.id);
+    }
+
+    const { rows } = await db.query(
+      `SELECT
+         COUNT(*) AS total,
+         COUNT(*) FILTER (WHERE t.status = 'NEW') AS new,
+         COUNT(*) FILTER (WHERE t.status IN ('ASSIGNED', 'IN_PROGRESS', 'WAITING')) AS process,
+         COUNT(*) FILTER (WHERE t.status IN ('RESOLVED', 'CLOSED')) AS resolved
+       FROM tiket t
+       ${whereClause}`,
+      params
+    );
+
+    const data = rows[0] || { total: 0, new: 0, process: 0, resolved: 0 };
+
+    res.json({
+      data: {
+        total: Number(data.total || 0),
+        new: Number(data.new || 0),
+        process: Number(data.process || 0),
+        resolved: Number(data.resolved || 0),
+      },
+    });
+  } catch (error) {
+    console.error("Get ticket stats error:", error);
+    res.status(500).json({
+      message: "Gagal mengambil statistik tiket",
+      error: error.message,
+    });
+  }
+});
+
+// ADMIN/TEKNISI dapat mengubah prioritas tiket
+router.patch(
+  "/:id/priority",
+  verifyToken,
+  authorizeRole("admin", "teknisi"),
+  async (req, res) => {
+    try {
+      const validPriorities = ["level_1", "level_2", "level_3"];
+      const priority = String(req.body?.prioritas || "").toLowerCase();
+
+      if (!validPriorities.includes(priority)) {
+        return res.status(400).json({ message: "Prioritas tiket tidak valid" });
+      }
+
+      const ticket = await db.query(
+        "SELECT id, teknisi FROM tiket WHERE id = $1 LIMIT 1",
+        [req.params.id]
+      );
+
+      if (!ticket.rowCount) {
+        return res.status(404).json({ message: "Tiket tidak ditemukan" });
+      }
+
+      if (
+        req.user.role === "teknisi" &&
+        Number(ticket.rows[0].teknisi) !== Number(req.user.id)
+      ) {
+        return res.status(403).json({
+          message: "Tiket ini bukan ditugaskan kepada Anda",
+        });
+      }
+
+      const { rows } = await db.query(
+        `UPDATE tiket
+         SET prioritas = $1::public.priority_level_enum
+         WHERE id = $2
+         RETURNING id, prioritas`,
+        [priority, req.params.id]
+      );
+
+      res.json({
+        message: "Prioritas tiket berhasil diperbarui",
+        data: rows[0],
+      });
+    } catch (error) {
+      res.status(500).json({
+        message: "Gagal memperbarui prioritas tiket",
+        error: error.message,
+      });
+    }
+  }
+);
+
 // POST membuat tiket
 router.post("/", verifyToken, async (req, res) => {
   try {

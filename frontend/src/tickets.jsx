@@ -228,6 +228,7 @@ function TicketDetail({ token, user, ticket, onBack, onError }) {
   const [troubleshooting, setTroubleshooting] = useState(null)
   const [form, setForm] = useState({ tindakan: '', hasil: '' })
   const [status, setStatus] = useState(ticket.status)
+  const [priority, setPriority] = useState(ticket.prioritas || 'level_3')
   const [users, setUsers] = useState([])
   const [selectedTeknisi, setSelectedTeknisi] = useState(ticket.teknisi || '')
   
@@ -284,6 +285,20 @@ function TicketDetail({ token, user, ticket, onBack, onError }) {
     } catch (error) { onError(error.message) }
   }
 
+  const savePriority = async (event) => {
+    event.preventDefault()
+    try {
+      const confirm = await confirmAction(`Perbarui prioritas tiket menjadi ${priority}?`)
+      if (!confirm) return
+      const result = await api(`/tickets/${ticket.id}/priority`, {
+        token,
+        method: 'PATCH',
+        body: { prioritas: priority },
+      })
+      setPriority(result.data.prioritas || priority)
+    } catch (error) { onError(error.message) }
+  }
+
   const fmt = (v) => v ? new Date(v).toLocaleString() : '-'
   
   return (
@@ -300,7 +315,7 @@ function TicketDetail({ token, user, ticket, onBack, onError }) {
         <dt>Masalah</dt><dd>{ticket.deskripsi}</dd>
         
         {isStaff && (
-          <><dt>Prioritas</dt><dd><span className={`priority-dot ${priorityClass(ticket.prioritas)}`} /></dd></>
+          <><dt>Prioritas</dt><dd><span className={`priority-dot ${priorityClass(priority)}`} /></dd></>
         )}
         
         <dt>Status</dt><dd>{status}</dd>
@@ -310,22 +325,35 @@ function TicketDetail({ token, user, ticket, onBack, onError }) {
       </dl>
 
       {canManage && (
-        <form className="ticket-status-form" onSubmit={saveStatus}>
-          <label>Status Tiket
-            <select value={status} onChange={(event) => setStatus(event.target.value)}>
-              {ticketStatuses.map((item) => <option key={item} value={item}>{item}</option>)}
-            </select>
-          </label>
-          {isAdmin && status === 'ASSIGNED' && (
-            <label>Pilih Teknisi
-              <select value={selectedTeknisi} onChange={(e) => setSelectedTeknisi(e.target.value)}>
-                <option value="">Pilih teknisi</option>
-                {users.map((u) => <option key={u.id} value={u.id}>{u.nama} ({u.email})</option>)}
+        <>
+          <form className="ticket-status-form" onSubmit={saveStatus}>
+            <label>Status Tiket
+              <select value={status} onChange={(event) => setStatus(event.target.value)}>
+                {ticketStatuses.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
-          )}
-          <button type="submit">Perbarui Status</button>
-        </form>
+            {isAdmin && status === 'ASSIGNED' && (
+              <label>Pilih Teknisi
+                <select value={selectedTeknisi} onChange={(e) => setSelectedTeknisi(e.target.value)}>
+                  <option value="">Pilih teknisi</option>
+                  {users.map((u) => <option key={u.id} value={u.id}>{u.nama} ({u.email})</option>)}
+                </select>
+              </label>
+            )}
+            <button type="submit">Perbarui Status</button>
+          </form>
+
+          <form className="ticket-status-form" onSubmit={savePriority}>
+            <label>Prioritas Tiket
+              <select value={priority} onChange={(event) => setPriority(event.target.value)}>
+                <option value="level_1">Critical — Level 1</option>
+                <option value="level_2">High — Level 2</option>
+                <option value="level_3">Medium — Level 3</option>
+              </select>
+            </label>
+            <button type="submit">Perbarui Prioritas</button>
+          </form>
+        </>
       )}
 
       {canManage ? (

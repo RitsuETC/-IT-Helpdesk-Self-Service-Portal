@@ -28,6 +28,14 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
 
   useEffect(() => {
     loadData()
+
+    if (!token) return
+
+    const timer = setInterval(() => {
+      loadData()
+    }, 3000)
+
+    return () => clearInterval(timer)
   }, [token])
 
   const nextSlide = () => {
