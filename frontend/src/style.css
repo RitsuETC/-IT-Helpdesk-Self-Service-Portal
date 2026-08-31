@@ -1245,7 +1245,8 @@ td {
   border: 0;
   outline: 0;
   background: transparent;
-  font-size: 11px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .knowledge-filter select {
@@ -1253,8 +1254,8 @@ td {
   border: 1px solid #d8e2db;
   border-radius: 10px;
   background: #fff;
-  color: #39483e;
-  font: bold 11px Arial, sans-serif;
+  color: #1f2937;
+  font: bold 12px Arial, sans-serif;
   outline: none;
 }
 
@@ -1272,8 +1273,8 @@ td {
   border: 1px solid #dce5df;
   border-radius: 12px;
   background: #fff;
-  color: #29362e;
-  font: 11px/1.45 Arial, sans-serif;
+  color: #1f2937;
+  font: 12px/1.45 Arial, sans-serif;
   text-align: left;
   cursor: pointer;
   box-shadow: 0 5px 16px rgb(20 60 30 / .04);
@@ -1290,13 +1291,15 @@ td {
   margin-bottom: 4px;
   color: var(--green);
   text-align: left;
+  font-size: 13px;
 }
 
 .knowledge-card span {
   display: -webkit-box;
   margin-top: 7px;
   overflow: hidden;
-  color: #68746d;
+  color: #374151;
+  font-weight: 500;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
 }
@@ -1315,13 +1318,13 @@ td {
 
 .knowledge-detail {
   position: relative;
-  width: min(95%, 900px);
-  max-height: 85vh;
+  width: min(92%, 760px);
+  max-height: 82vh;
   overflow-y: auto;
   margin: auto;
-  padding: 40px;
+  padding: 28px;
   background: #fff;
-  color: #172033;
+  color: #111827;
   border-radius: 16px;
   box-shadow: 0 10px 30px rgb(0 0 0 / .15);
   box-sizing: border-box;
@@ -1329,19 +1332,20 @@ td {
 
 .knowledge-detail > h2 {
   width: max-content;
-  min-width: 180px;
+  min-width: 160px;
   margin: 0 auto 8px;
-  padding: 8px 15px;
+  padding: 8px 16px;
   border-radius: 8px;
   background: var(--green);
   color: #fff;
   font-size: 18px;
+  font-weight: bold;
 }
 
 .knowledge-detail > p {
-  margin: 0 0 20px;
-  color: #68746d;
-  font: 11px Arial, sans-serif;
+  margin: 0 0 18px;
+  color: #1f2937;
+  font: 700 14px Arial, sans-serif;
   text-align: center;
 }
 
@@ -1349,18 +1353,18 @@ td {
 .knowledge-back,
 .knowledge-close-btn {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 34px;
-  height: 34px;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
   border: 1px solid #d3ded6;
   border-radius: 50%;
   background: #f8fafc;
-  color: #3f5045;
+  color: #1f2937;
   display: flex;
   align-items: center;
   justify-content: center;
-  font: bold 14px Arial, sans-serif;
+  font: bold 16px Arial, sans-serif;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -1375,21 +1379,22 @@ td {
 .knowledge-detail-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  gap: 16px;
   align-items: start;
 }
 
 .knowledge-detail-content > p {
-  height: 280px !important;
-  min-height: 280px !important;
+  height: 220px !important;
+  min-height: 220px !important;
   margin: 0;
-  padding: 13px;
+  padding: 16px;
   overflow: auto;
   border: 1px solid #dce5df;
   border-radius: 10px;
   background: #f5f8f6;
-  color: #4c5951;
-  font: 11px/1.6 Arial, sans-serif;
+  color: #111827;
+  font: 14px/1.65 Arial, sans-serif;
+  font-weight: 600;
   text-align: left;
 }
 
@@ -1403,8 +1408,8 @@ td {
 .knowledge-media .video-empty,
 .knowledge-media .video-embed {
   width: 100%;
-  height: 280px !important;
-  min-height: 280px !important;
+  height: 220px !important;
+  min-height: 220px !important;
   display: grid !important;
   place-items: center !important;
   border-radius: 10px;
@@ -1422,14 +1427,16 @@ td {
 }
 
 .video-link span {
-  font-size: 11px;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 .video-empty {
   padding: 10px;
   background: #eef2ef;
-  color: #68746d;
-  font-size: 11px;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 .video-embed {
