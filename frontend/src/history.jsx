@@ -38,10 +38,12 @@ export default function HistoryCarousel({ token, user, onError }) {
   const change = (dir) => {
     if (tickets.length <= VISIBLE_COUNT) return
     setHistoryIndex((prev) => {
-      const max = Math.max(0, tickets.length - VISIBLE_COUNT)
-      const next = prev + dir
-      if (next < 0) return 0
-      if (next > max) return max
+      const start = Math.floor(prev / VISIBLE_COUNT) * VISIBLE_COUNT
+      const totalPages = Math.ceil(tickets.length / VISIBLE_COUNT)
+      const maxStart = Math.max(0, (totalPages - 1) * VISIBLE_COUNT)
+      const next = start + dir * VISIBLE_COUNT
+      if (next < 0) return maxStart
+      if (next > maxStart) return 0
       return next
     })
   }

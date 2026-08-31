@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from './api.js'
+import { TicketDetail } from './tickets.jsx'
 
 export default function Dashboard({ token, user, onTroubleshooting, onTickets, onKnowledge, onRequireLogin, showHistory = true }) {
   const [stats, setStats] = useState({ total: 0, new: 0, process: 0, resolved: 0 })
@@ -8,6 +9,7 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
   const [currentIndex, setCurrentIndex] = useState(0)
   const [historyIndex, setHistoryIndex] = useState(0)
   const [showAllModal, setShowAllModal] = useState(false)
+  const [selectedTicket, setSelectedTicket] = useState(null)
 
   const loadData = async () => {
     try {
@@ -39,22 +41,40 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
     return () => clearInterval(timer)
   }, [token])
 
+  // Active tickets exclude RESOLVED and CLOSED
+  const activeTickets = tickets.filter((t) => !['RESOLVED', 'CLOSED'].includes(t.status))
+
   const nextSlide = () => {
-    if (tickets.length > 0) {
-      setCurrentIndex((prev) => (prev + 1) % tickets.length)
-    }
+    if (activeTickets.length === 0) return
+    setCurrentIndex((prev) => {
+      const start = Math.floor(prev / VISIBLE_COUNT) * VISIBLE_COUNT
+      const totalPages = Math.ceil(activeTickets.length / VISIBLE_COUNT)
+      const maxStart = Math.max(0, (totalPages - 1) * VISIBLE_COUNT)
+      const next = start + VISIBLE_COUNT
+      return next > maxStart ? 0 : next
+    })
   }
 
   const prevSlide = () => {
-    if (tickets.length > 0) {
-      setCurrentIndex((prev) => (prev - 1 + tickets.length) % tickets.length)
-    }
+    if (activeTickets.length === 0) return
+    setCurrentIndex((prev) => {
+      const start = Math.floor(prev / VISIBLE_COUNT) * VISIBLE_COUNT
+      const totalPages = Math.ceil(activeTickets.length / VISIBLE_COUNT)
+      const maxStart = Math.max(0, (totalPages - 1) * VISIBLE_COUNT)
+      const next = start - VISIBLE_COUNT
+      return next < 0 ? maxStart : next
+    })
   }
 
   const VISIBLE_COUNT = 5
-  const visibleActiveTickets = tickets.slice(currentIndex, currentIndex + VISIBLE_COUNT)
+  const visibleActiveTickets = activeTickets.slice(currentIndex, currentIndex + VISIBLE_COUNT)
   const historyTickets = tickets.filter((ticket) => ['RESOLVED', 'CLOSED'].includes(ticket.status))
   const visibleHistoryTickets = historyTickets.slice(historyIndex, historyIndex + VISIBLE_COUNT)
+
+  // Clamp currentIndex when activeTickets length changes
+  useEffect(() => {
+    if (currentIndex >= activeTickets.length) setCurrentIndex(0)
+  }, [activeTickets.length])
 
   const changeHistory = (direction) => {
     if (historyTickets.length <= VISIBLE_COUNT) return
@@ -110,33 +130,33 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
           </button>
 
           {/* Controls Slide (1/15) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button 
               onClick={prevSlide} 
-              disabled={tickets.length === 0}
+              disabled={activeTickets.length === 0}
               style={{
                 background: 'rgba(255, 255, 255, 0.15)',
                 border: 'none',
                 color: '#fff',
-                width: '32px',
+                  width: '32px',
                 height: '32px',
                 borderRadius: '50%',
-                cursor: tickets.length === 0 ? 'not-allowed' : 'pointer',
-                display: 'flex',
+                  cursor: activeTickets.length === 0 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '0.9rem',
-                opacity: tickets.length === 0 ? 0.4 : 1
+                  opacity: activeTickets.length === 0 ? 0.4 : 1
               }}
             >
               ‹
             </button>
             <span style={{ fontSize: '0.85rem', fontWeight: '600', minWidth: '36px', textAlign: 'center', opacity: 0.9 }}>
-              {tickets.length > 0 ? `${currentIndex + 1}/${tickets.length}` : '0/0'}
+              {activeTickets.length > 0 ? `${currentIndex + 1}/${activeTickets.length}` : '0/0'}
             </span>
             <button 
               onClick={nextSlide} 
-              disabled={tickets.length === 0}
+              disabled={activeTickets.length === 0}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -145,12 +165,12 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
                 width: '32px',
                 height: '32px',
                 borderRadius: '50%',
-                cursor: tickets.length === 0 ? 'not-allowed' : 'pointer',
+                cursor: activeTickets.length === 0 ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '0.9rem',
-                opacity: tickets.length === 0 ? 0.4 : 1
+                opacity: activeTickets.length === 0 ? 0.4 : 1
               }}
             >
               ›
@@ -364,30 +384,46 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
                     </tr>
                   ) : (
                     tickets.map((t) => (
-                      <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '12px 16px', fontWeight: '700', color: '#0f172a' }}>{t.code || `HD-${t.id}`}</td>
-                        <td style={{ padding: '12px 16px', color: '#334155' }}>{t.title || t.category || '-'}</td>
-                        <td style={{ padding: '12px 16px' }}>
-                          <span style={{
-                            padding: '4px 10px',
-                            borderRadius: '12px',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            backgroundColor: t.status === 'NEW' ? '#fef3c7' : t.status === 'RESOLVED' ? '#dcfce7' : '#dbeafe',
-                            color: t.status === 'NEW' ? '#92400e' : t.status === 'RESOLVED' ? '#166534' : '#1e40af'
-                          }}>
-                            {t.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '12px 16px', color: '#64748b' }}>
-                          {t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}
-                        </td>
-                      </tr>
-                    ))
+                          <tr
+                            key={t.id}
+                            onClick={() => {
+                              if (!t.status || (t.status !== 'RESOLVED' && t.status !== 'CLOSED')) {
+                                setSelectedTicket(t)
+                              }
+                            }}
+                            style={{ borderBottom: '1px solid #f1f5f9', cursor: (!t.status || (t.status !== 'RESOLVED' && t.status !== 'CLOSED')) ? 'pointer' : 'default' }}
+                          >
+                            <td style={{ padding: '12px 16px', fontWeight: '700', color: '#0f172a' }}>{t.code || `HD-${t.id}`}</td>
+                            <td style={{ padding: '12px 16px', color: '#334155' }}>{t.title || t.category || '-'}</td>
+                            <td style={{ padding: '12px 16px' }}>
+                              <span style={{
+                                padding: '4px 10px',
+                                borderRadius: '12px',
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                backgroundColor: t.status === 'NEW' ? '#fef3c7' : t.status === 'RESOLVED' ? '#dcfce7' : '#dbeafe',
+                                color: t.status === 'NEW' ? '#92400e' : t.status === 'RESOLVED' ? '#166534' : '#1e40af'
+                              }}>
+                                {t.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 16px', color: '#64748b' }}>
+                              {t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}
+                            </td>
+                          </tr>
+                        ))
                   )}
                 </tbody>
               </table>
             </div>
+
+            {selectedTicket && (
+              <div onClick={() => setSelectedTicket(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
+                <div onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: 900, background: '#fff', borderRadius: 12, padding: 20, maxHeight: '90vh', overflowY: 'auto' }}>
+                  <TicketDetail token={token} user={user} ticket={selectedTicket} onBack={() => setSelectedTicket(null)} onError={(m) => console.error(m)} />
+                </div>
+              </div>
+            )}
 
             <div style={{ marginTop: '20px', textAlign: 'right' }}>
               <button 
