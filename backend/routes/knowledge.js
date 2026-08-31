@@ -21,7 +21,7 @@ function articleQuery(video, where = "") {
     FROM knowledge_article ka JOIN knowledge_kategori kc ON kc.id = ka.id_categori ${where}`;
 }
 
-router.get("/", verifyToken, async (_req, res) => {
+router.get("/", async (_req, res) => {
   try {
     const video = await videoColumn();
     const { rows } = await db.query(`${articleQuery(video)} ORDER BY ka.id ASC`);
@@ -29,14 +29,14 @@ router.get("/", verifyToken, async (_req, res) => {
   } catch (error) { res.status(500).json({ message: "Gagal mengambil knowledge article", error: error.message }); }
 });
 
-router.get("/categories", verifyToken, async (_req, res) => {
+router.get("/categories", async (_req, res) => {
   try {
     const { rows } = await db.query("SELECT id, nama_kategori FROM knowledge_kategori ORDER BY nama_kategori ASC");
     res.json({ data: rows });
   } catch (error) { res.status(500).json({ message: "Gagal mengambil kategori", error: error.message }); }
 });
 
-router.get("/:id", verifyToken, async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
     const video = await videoColumn();
     const { rows } = await db.query(`${articleQuery(video, "WHERE ka.id = $1")} LIMIT 1`, [req.params.id]);

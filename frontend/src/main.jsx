@@ -33,7 +33,11 @@ function App() {
         setArticles([])
         return
       }
-      setNotice(error.message)
+      if (!session) {
+        setArticles([])
+      } else {
+        setNotice(error.message)
+      }
     }
   }
 
