@@ -15,6 +15,9 @@ function Knowledge({ articles, initialArticle }) {
   const [category, setCategory] = useState('all')
   const [selectedArticle, setSelectedArticle] = useState(null)
   
+  // State baru untuk popup teks lengkap
+  const [showFullTextModal, setShowFullTextModal] = useState(false)
+  
   useEffect(() => {
     if (!initialArticle) return
     const found = articles.find((a) => Number(a.id) === Number(initialArticle.id))
@@ -28,6 +31,9 @@ function Knowledge({ articles, initialArticle }) {
       article.judul.toLowerCase().includes(query.toLowerCase())
     ), [query, category, articles]
   )
+
+  // Simulasi batas karakter untuk memunculkan tombol "Lihat Selengkapnya" (misal 150 karakter)
+  const isLongText = selectedArticle?.content?.length > 150
 
   return (
     <section className="knowledge-page">
@@ -64,7 +70,20 @@ function Knowledge({ articles, initialArticle }) {
             <h2>{selectedArticle.judul}</h2>
             <p><b>Kategori:</b> {selectedArticle.nama_kategori}</p>
             <div className="knowledge-detail-content">
-              <p>{selectedArticle.content}</p>
+              
+              {/* Kotak Teks dengan Tombol Lihat Selengkapnya */}
+              <div className="knowledge-text-box-wrapper">
+                <p>{selectedArticle.content}</p>
+                {isLongText && (
+                  <button 
+                    className="read-more-btn" 
+                    onClick={() => setShowFullTextModal(true)}
+                  >
+                    Lihat Selengkapnya &raquo;
+                  </button>
+                )}
+              </div>
+
               <div className="knowledge-media">
                 {selectedArticle.video_url ? (
                   youtubeId(selectedArticle.video_url) ? (
@@ -88,6 +107,21 @@ function Knowledge({ articles, initialArticle }) {
               </div>
             </div>
           </article>
+        </div>
+      )}
+
+      {/* Sub-Modal untuk Pop-up Teks Lengkap */}
+      {showFullTextModal && selectedArticle && (
+        <div className="knowledge-modal-backdrop" style={{ zIndex: 1200 }}>
+          <div className="knowledge-fulltext-modal">
+            <button className="knowledge-close-btn" onClick={() => setShowFullTextModal(false)} aria-label="Tutup">
+              ✕
+            </button>
+            <h3>{selectedArticle.judul}</h3>
+            <div className="fulltext-body">
+              <p>{selectedArticle.content}</p>
+            </div>
+          </div>
         </div>
       )}
     </section>

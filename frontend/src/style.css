@@ -1459,6 +1459,83 @@ td {
   border-radius: 7px;
   background: var(--green);
 }
+
+/* Pembungkus box teks agar tombol "Lihat Selengkapnya" bisa ditaruh di bawahnya */
+.knowledge-text-box-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 220px !important;
+}
+
+.knowledge-text-box-wrapper > p {
+  flex: 1;
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+  border: 1px solid #dce5df;
+  border-radius: 10px;
+  background: #f5f8f6;
+  color: #111827;
+  font: 14px/1.65 Arial, sans-serif;
+  font-weight: 600;
+  text-align: left;
+}
+
+/* Tombol Lihat Selengkapnya */
+.read-more-btn {
+  margin-top: 8px;
+  background: transparent;
+  border: none;
+  color: var(--green);
+  font: bold 13px Arial, sans-serif;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  width: max-content;
+  transition: opacity 0.2s;
+}
+
+.read-more-btn:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* Modal Pop-up khusus Teks Lengkap */
+.knowledge-fulltext-modal {
+  position: relative;
+  width: min(90%, 600px);
+  max-height: 80vh;
+  background: #fff;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 15px 35px rgb(0 0 0 / 0.2);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.knowledge-fulltext-modal h3 {
+  margin: 0 0 15px 0;
+  color: var(--green);
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.fulltext-body {
+  overflow-y: auto;
+  max-height: 60vh;
+  padding-right: 5px;
+}
+
+.fulltext-body p {
+  margin: 0;
+  color: #111827;
+  font: 14px/1.7 Arial, sans-serif;
+  font-weight: 500;
+  text-align: left;
+  white-space: pre-wrap;
+}
 /* =========================================================
    ADMIN PANEL
    ========================================================= */
