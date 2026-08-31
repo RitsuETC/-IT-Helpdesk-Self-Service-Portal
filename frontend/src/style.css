@@ -1315,11 +1315,11 @@ td {
 
 .knowledge-detail {
   position: relative;
-  width: min(100%, 720px);
-  max-height: 90vh;
+  width: min(95%, 900px);
+  max-height: 85vh;
   overflow-y: auto;
   margin: auto;
-  padding: 30px;
+  padding: 40px;
   background: #fff;
   color: #172033;
   border-radius: 16px;
@@ -1345,7 +1345,7 @@ td {
   text-align: center;
 }
 
-/* Tombol Close/Back dipercantik di pojok kanan atas */
+/* Tombol Close/Back di pojok kanan atas */
 .knowledge-back,
 .knowledge-close-btn {
   position: absolute;
@@ -1380,8 +1380,8 @@ td {
 }
 
 .knowledge-detail-content > p {
-  height: 200px !important;
-  min-height: 200px !important;
+  height: 280px !important;
+  min-height: 280px !important;
   margin: 0;
   padding: 13px;
   overflow: auto;
@@ -1403,8 +1403,8 @@ td {
 .knowledge-media .video-empty,
 .knowledge-media .video-embed {
   width: 100%;
-  height: 200px !important;
-  min-height: 200px !important;
+  height: 280px !important;
+  min-height: 280px !important;
   display: grid !important;
   place-items: center !important;
   border-radius: 10px;
@@ -1452,7 +1452,6 @@ td {
   border-radius: 7px;
   background: var(--green);
 }
-
 /* =========================================================
    ADMIN PANEL
    ========================================================= */
