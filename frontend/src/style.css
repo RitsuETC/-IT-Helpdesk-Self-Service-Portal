@@ -1303,28 +1303,34 @@ td {
 
 .knowledge-modal-backdrop {
   position: fixed;
-  z-index: 30;
+  z-index: 1100;
   inset: 0;
-  background: rgb(15 30 20 / .42);
-  overflow-y: auto;
-  backdrop-filter: blur(3px);
+  background: rgb(15 30 20 / .5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
 }
 
 .knowledge-detail {
   position: relative;
-  width: min(94%, 700px);
-  min-height: 100dvh;
-  margin: 0 auto;
+  width: min(100%, 720px);
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: auto;
   padding: 30px;
   background: #fff;
   color: #172033;
-  box-shadow: 0 0 50px rgb(0 0 0 / .12);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / .15);
+  box-sizing: border-box;
 }
 
 .knowledge-detail > h2 {
   width: max-content;
   min-width: 180px;
-  margin: 0 auto 12px;
+  margin: 0 auto 8px;
   padding: 8px 15px;
   border-radius: 8px;
   background: var(--green);
@@ -1333,28 +1339,37 @@ td {
 }
 
 .knowledge-detail > p {
-  margin: 0 0 15px;
+  margin: 0 0 20px;
   color: #68746d;
   font: 11px Arial, sans-serif;
   text-align: center;
 }
 
-.knowledge-back {
+/* Tombol Close/Back dipercantik di pojok kanan atas */
+.knowledge-back,
+.knowledge-close-btn {
   position: absolute;
-  top: 28px;
-  left: 25px;
-  width: 36px;
-  height: 36px;
+  top: 20px;
+  right: 20px;
+  width: 34px;
+  height: 34px;
   border: 1px solid #d3ded6;
   border-radius: 50%;
-  background: #fff;
+  background: #f8fafc;
   color: #3f5045;
-  font: 27px/20px Arial;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: bold 14px Arial, sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.knowledge-back:hover {
+.knowledge-back:hover,
+.knowledge-close-btn:hover {
   background: var(--green-light);
   color: var(--green);
+  border-color: var(--green);
 }
 
 .knowledge-detail-content {
@@ -1375,6 +1390,7 @@ td {
   background: #f5f8f6;
   color: #4c5951;
   font: 11px/1.6 Arial, sans-serif;
+  text-align: left;
 }
 
 .knowledge-media {
