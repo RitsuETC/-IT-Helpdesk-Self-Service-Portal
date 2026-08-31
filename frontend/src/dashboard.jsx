@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { api } from './api.js'
 
-export default function Dashboard({ token, user, onTroubleshooting, onTickets, onKnowledge, onRequireLogin }) {
+export default function Dashboard({ token, user, onTroubleshooting, onTickets, onKnowledge, onRequireLogin, showHistory = true }) {
   const [stats, setStats] = useState({ total: 0, new: 0, process: 0, resolved: 0 })
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [historyIndex, setHistoryIndex] = useState(0)
   const [showAllModal, setShowAllModal] = useState(false)
 
   const loadData = async () => {
@@ -50,7 +51,21 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
     }
   }
 
-  const activeTicket = tickets[currentIndex]
+  const VISIBLE_COUNT = 5
+  const visibleActiveTickets = tickets.slice(currentIndex, currentIndex + VISIBLE_COUNT)
+  const historyTickets = tickets.filter((ticket) => ['RESOLVED', 'CLOSED'].includes(ticket.status))
+  const visibleHistoryTickets = historyTickets.slice(historyIndex, historyIndex + VISIBLE_COUNT)
+
+  const changeHistory = (direction) => {
+    if (historyTickets.length <= VISIBLE_COUNT) return
+    setHistoryIndex((prev) => {
+      const maxIndex = Math.max(0, historyTickets.length - VISIBLE_COUNT)
+      const next = prev + direction
+      if (next < 0) return 0
+      if (next > maxIndex) return maxIndex
+      return next
+    })
+  }
 
   return (
     <div style={{ width: '100%', fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -145,7 +160,7 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
 
         {/* Tabel Widget Langsung tanpa Garis Atas */}
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', color: '#fff', textAlign: 'left', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+            <table style={{ width: '100%', color: '#fff', textAlign: 'left', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
             <thead>
               <tr style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.775rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 <th style={{ paddingBottom: '8px', fontWeight: '600' }}>ID TIKET</th>
@@ -174,28 +189,106 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
                   </td>
                 </tr>
               ) : (
-                <tr style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
-                  <td style={{ paddingTop: '10px', fontWeight: '700', letterSpacing: '0.02em' }}>{activeTicket.code || `HD-${activeTicket.id}`}</td>
-                  <td style={{ paddingTop: '10px', opacity: 0.95 }}>{activeTicket.reporter_name || user?.username || '-'}</td>
-                  <td style={{ paddingTop: '10px', opacity: 0.95 }}>{activeTicket.category || activeTicket.device || '-'}</td>
-                  <td style={{ paddingTop: '10px', textAlign: 'right' }}>
-                    <span style={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                      padding: '4px 10px',
-                      borderRadius: '12px',
-                      fontSize: '0.75rem',
-                      fontWeight: '700',
-                      letterSpacing: '0.03em'
-                    }}>
-                      {activeTicket.status}
-                    </span>
-                  </td>
-                </tr>
+                visibleActiveTickets.map((activeTicket) => (
+                  <tr key={activeTicket.id} style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
+                    <td style={{ paddingTop: '10px', fontWeight: '700', letterSpacing: '0.02em' }}>{activeTicket.code || `HD-${activeTicket.id}`}</td>
+                    <td style={{ paddingTop: '10px', opacity: 0.95 }}>{activeTicket.reporter_name || user?.username || '-'}</td>
+                    <td style={{ paddingTop: '10px', opacity: 0.95 }}>{activeTicket.category || activeTicket.device || '-'}</td>
+                    <td style={{ paddingTop: '10px', textAlign: 'right' }}>
+                      <span style={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        padding: '4px 10px',
+                        borderRadius: '12px',
+                        fontSize: '0.75rem',
+                        fontWeight: '700',
+                        letterSpacing: '0.03em'
+                      }}>
+                        {activeTicket.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {showHistory && (
+      <div style={{ marginTop: '16px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <h3 style={{ margin: 0, fontSize: '1rem', color: '#0f172a' }}>Riwayat Tiket</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => changeHistory(-1)}
+              disabled={historyTickets.length <= 2}
+              style={{
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                border: '1px solid #cbd5e1',
+                background: '#fff',
+                color: '#334155',
+                cursor: historyTickets.length <= 2 ? 'not-allowed' : 'pointer',
+                opacity: historyTickets.length <= 2 ? 0.5 : 1,
+                fontSize: '1rem'
+              }}
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              onClick={() => changeHistory(1)}
+              disabled={historyTickets.length <= 2}
+              style={{
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                border: '1px solid #cbd5e1',
+                background: '#fff',
+                color: '#334155',
+                cursor: historyTickets.length <= 2 ? 'not-allowed' : 'pointer',
+                opacity: historyTickets.length <= 2 ? 0.5 : 1,
+                fontSize: '1rem'
+              }}
+            >
+              ›
+            </button>
+          </div>
+        </div>
+
+        {historyTickets.length === 0 ? (
+          <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>Belum ada tiket yang selesai atau ditutup.</p>
+        ) : (
+          <div style={{ display: 'grid', gap: '12px' }}>
+            {visibleHistoryTickets.map((ticket) => (
+              <div key={ticket.id} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <strong style={{ color: '#0f172a', fontSize: '0.82rem' }}>{ticket.code || `HD-${ticket.id}`}</strong>
+                  <span style={{
+                    backgroundColor: ticket.status === 'CLOSED' ? '#e2e8f0' : '#dcfce7',
+                    color: ticket.status === 'CLOSED' ? '#334155' : '#166534',
+                    borderRadius: '999px',
+                    padding: '4px 8px',
+                    fontSize: '0.68rem',
+                    fontWeight: '700'
+                  }}>
+                    {ticket.status}
+                  </span>
+                </div>
+                <div style={{ color: '#334155', fontSize: '0.85rem', fontWeight: '600', marginBottom: '4px' }}>
+                  {ticket.title || ticket.category || ticket.device || 'Tiket'}
+                </div>
+                <div style={{ color: '#64748b', fontSize: '0.75rem' }}>
+                  {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : 'Tanggal tidak tersedia'}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      )}
 
       {/* Modal Pop-up Seluruh Tiket */}
       {showAllModal && (

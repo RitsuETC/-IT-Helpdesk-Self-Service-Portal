@@ -374,3 +374,4 @@ function TicketDetail({ token, user, ticket, onBack, onError }) {
 }
 
 export default Tickets
+export { TicketDetail }

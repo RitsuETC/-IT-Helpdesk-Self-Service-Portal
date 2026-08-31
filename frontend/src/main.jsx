@@ -6,6 +6,7 @@ import { api } from './api.js'
 import Dashboard from './dashboard.jsx'
 import Troubleshooting from './troubleshooting.jsx'
 import Tickets from './tickets.jsx'
+import HistoryCarousel from './history.jsx'
 import Knowledge from './knowledge.jsx'
 import Admin from './admin.jsx'
 
@@ -124,7 +125,6 @@ function App() {
               <span className="nav-badge">{unreadNotifications}</span>
             )}
           </button>
-          <button onClick={() => scrollToSection('sec-riwayat')}>Riwayat Tiket</button>
           <button onClick={() => scrollToSection('sec-knowledge')}>Knowledge Base</button>
         </nav>
 
@@ -195,20 +195,15 @@ function App() {
               onTickets={() => setPage('tickets')} 
               onKnowledge={() => scrollToSection('sec-knowledge')} 
               onRequireLogin={() => setShowLoginModal(true)}
+              showHistory={false}
             />
           </div>
 
-          {/* Bento Box 4: Riwayat Tiket */}
+          {/* Bento Box 4: Riwayat Tiket (kembali di kolom kiri) */}
           <div id="sec-riwayat" className="bento-box" style={{ gridColumn: '1 / 2', gridRow: '2 / 3', background: '#ffffff', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
             <h3 style={{ margin: '0 0 12px 0', fontSize: '1.2rem' }}>Riwayat Tiket</h3>
             <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '16px' }}>Daftar penanganan tiket yang telah selesai.</p>
-            <Tickets 
-              token={session?.token} 
-              user={session?.user} 
-              onError={setNotice} 
-              onRequireLogin={() => setShowLoginModal(true)}
-              historyOnly 
-            />
+            <HistoryCarousel token={session?.token} user={session?.user} onError={setNotice} />
           </div>
 
           {/* Bento Box 3: Knowledge Base & Troubleshooting */}
