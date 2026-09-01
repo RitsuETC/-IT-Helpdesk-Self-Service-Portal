@@ -647,7 +647,7 @@ td {
 }
 
 /* =========================================================
-   TICKETS - REVISED & CLEANED LAYOUT
+   TICKETS - FULL FINAL LAYOUT (WITH HIGHER CREATE BUTTON)
    ========================================================= */
 
 .tickets-page {
@@ -677,12 +677,10 @@ td {
 
 .tickets-toolbar {
   position: relative;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 24px;
+  display: block;
+  margin-bottom: 25px;
+  min-height: 40px;
+  padding-right: 10px;
 }
 
 .critical-section {
@@ -709,7 +707,7 @@ td {
   border: 1px solid #ffd1d1;
   border-radius: 14px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   background: #fff7f7;
 }
@@ -719,10 +717,13 @@ td {
   color: #dc3030;
   font-size: 12px;
   font-weight: 600;
+  grid-column: 1 / -1;
 }
 
 .create-ticket {
-  position: static; /* Mengubah dari absolute agar tata letak fleksibel & rapi */
+  position: absolute;
+  top: -14px; /* Dinaikkan lebih tinggi agar posisinya pas di atas */
+  right: 10px;
   min-width: 90px;
   height: 38px;
   padding: 0 16px;
@@ -757,7 +758,7 @@ td {
 }
 
 .priority-filter select {
-  width: 120px;
+  width: 130px;
   height: 36px;
   padding: 0 10px;
   border: 1px solid #d4dfd7;
@@ -765,8 +766,8 @@ td {
   background: #f7faf8;
   color: #26352b;
   font-size: 11px;
-  outline: none;
   font-weight: 600;
+  outline: none;
 }
 
 .priority-filter select:focus {
@@ -776,11 +777,13 @@ td {
 
 .ticket-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
+  margin-top: 20px;
 }
 
-.ticket-card {
+.ticket-card,
+.critical-tickets-list .ticket-card {
   width: 100%;
   max-width: none;
   display: grid;
@@ -866,7 +869,7 @@ td {
 }
 
 /* =========================================================
-   MODAL & DETAIL (Dipertahankan konsisten)
+   MODAL & DETAIL
    ========================================================= */
 
 .modal-backdrop {
