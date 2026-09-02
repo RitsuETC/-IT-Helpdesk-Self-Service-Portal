@@ -647,19 +647,20 @@ td {
 }
 
 /* =========================================================
-   TICKETS - FULL FINAL LAYOUT (WITH HIGHER CREATE BUTTON)
+   TICKETS - UNIFIED CLEAN LAYOUT
    ========================================================= */
 
 .tickets-page {
-  width: min(100% - 48px, 1040px);
+  width: min(100% - 48px, 1000px);
   min-height: 420px;
-  margin: 30px auto 50px;
+  margin: 32px auto 60px;
   padding: 28px;
   border: 1px solid #dce5df;
   border-radius: 16px;
   background: #fff;
-  color: var(--text);
-  box-shadow: 0 10px 30px rgb(0 0 0 / 0.04);
+  color: #1c2839;
+  font-family: Arial, sans-serif;
+  box-shadow: 0 5px 18px rgb(20 60 30 / .04);
 }
 
 .tickets-heading {
@@ -671,31 +672,35 @@ td {
 
 .history-description {
   margin: 0 0 24px;
-  color: var(--muted);
-  font: 13px/1.5 Arial, sans-serif;
+  color: #69766e;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .tickets-toolbar {
   position: relative;
-  display: block;
-  margin-bottom: 25px;
-  min-height: 40px;
-  padding-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e1e8e3;
 }
 
 .critical-section {
   width: 100%;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .critical-label {
   display: inline-block;
-  margin-bottom: 10px;
-  padding: 6px 14px;
+  margin-bottom: 12px;
+  padding: 5px 12px;
   border-radius: 8px;
-  background: #e52525;
+  background: #dc3030;
   color: #fff;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: bold;
   box-shadow: 0 4px 10px rgb(220 30 30 / 0.15);
 }
@@ -705,7 +710,7 @@ td {
   margin-top: 0;
   padding: 16px;
   border: 1px solid #ffd1d1;
-  border-radius: 14px;
+  border-radius: 12px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
@@ -718,20 +723,18 @@ td {
   font-size: 12px;
   font-weight: 600;
   grid-column: 1 / -1;
+  margin: 0;
 }
 
 .create-ticket {
-  position: absolute;
-  top: -14px; /* Dinaikkan lebih tinggi agar posisinya pas di atas */
-  right: 10px;
-  min-width: 90px;
-  height: 38px;
+  position: static;
+  height: 36px;
   padding: 0 16px;
   border: 0;
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--green);
   color: #fff;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -740,30 +743,26 @@ td {
 
 .create-ticket:hover {
   background: var(--green-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgb(22 142 8 / 0.25);
+  transform: translateY(-1px);
 }
 
 .priority-filter {
   display: flex;
   align-items: center;
   gap: 10px;
-  width: max-content;
   margin: 0;
-  padding: 0;
-  background: transparent;
-  color: #4d5c51;
-  font-size: 12px;
+  color: #455249;
+  font-size: 11px;
   font-weight: bold;
 }
 
 .priority-filter select {
-  width: 130px;
+  width: 140px;
   height: 36px;
   padding: 0 10px;
-  border: 1px solid #d4dfd7;
+  border: 1px solid #cfdad2;
   border-radius: 8px;
-  background: #f7faf8;
+  background: #f8faf9;
   color: #26352b;
   font-size: 11px;
   font-weight: 600;
@@ -778,14 +777,12 @@ td {
 .ticket-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-  margin-top: 20px;
+  gap: 16px;
 }
 
 .ticket-card,
 .critical-tickets-list .ticket-card {
   width: 100%;
-  max-width: none;
   display: grid;
   gap: 0;
   padding: 0;
@@ -794,17 +791,17 @@ td {
   border-radius: 12px;
   background: #fff;
   color: #26352b;
-  font: 12px/1.3 Arial, sans-serif;
+  font: 11px/1.3 Arial, sans-serif;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgb(20 60 30 / 0.04);
-  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgb(20 60 30 / 0.03);
+  transition: all 0.2s ease;
 }
 
 .ticket-card:hover {
   border-color: var(--green);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 22px rgb(22 142 8 / 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgb(22 142 8 / 0.06);
 }
 
 .ticket-card div {
@@ -814,16 +811,16 @@ td {
 }
 
 .ticket-card b {
-  padding: 8px 10px;
+  padding: 7px 10px;
   background: #f1f5f2;
   color: #526058;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
 }
 
 .ticket-card span {
   min-width: 0;
-  padding: 8px 10px;
+  padding: 7px 10px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -832,8 +829,8 @@ td {
 }
 
 .priority-dot {
-  width: 10px !important;
-  height: 10px !important;
+  width: 9px !important;
+  height: 9px !important;
   display: inline-block !important;
   align-self: center;
   margin: auto 0 auto 8px;
@@ -843,7 +840,7 @@ td {
 }
 
 .priority-dot.critical {
-  background: #f21111;
+  background: #dc3030;
 }
 
 .priority-dot.high {
@@ -851,7 +848,7 @@ td {
 }
 
 .priority-dot.medium {
-  background: #ffe11a;
+  background: #d5b900;
 }
 
 .priority-dot.low {
@@ -861,9 +858,9 @@ td {
 
 .empty-tickets {
   grid-column: 1 / -1;
-  margin: 40px 0;
+  margin: 30px 0;
   color: #7b877f;
-  font-size: 13px;
+  font-size: 12px;
   text-align: center;
   font-weight: 500;
 }
@@ -885,33 +882,33 @@ td {
 
 .ticket-form {
   position: relative;
-  width: min(100%, 390px);
+  width: min(100%, 420px);
   max-height: 90vh;
   overflow-y: auto;
   display: grid;
-  gap: 13px;
-  padding: 25px;
+  gap: 12px;
+  padding: 24px;
   border: 1px solid #dce6df;
-  border-radius: 18px;
+  border-radius: 16px;
   background: #fff;
   color: #26352b;
-  box-shadow: 0 20px 60px rgb(0 0 0 / 0.18);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.15);
 }
 
 .ticket-form h2 {
   width: max-content;
-  margin: 0 auto 8px;
-  padding: 7px 17px;
+  margin: 0 auto 6px;
+  padding: 6px 14px;
   border-radius: 7px;
   background: var(--green-light);
   color: var(--green);
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .ticket-form label {
   display: grid;
-  gap: 7px;
-  color: #39483e;
+  gap: 6px;
+  color: #455249;
   font: bold 11px Arial, sans-serif;
 }
 
@@ -921,16 +918,17 @@ td {
   width: 100%;
   height: 36px;
   padding: 0 10px;
-  border: 1px solid #d4dfd7;
+  border: 1px solid #cfdad2;
   border-radius: 7px;
   background: #f8faf9;
   color: #26352b;
   outline: none;
+  font-size: 11px;
 }
 
 .ticket-form textarea {
   height: 70px;
-  padding-top: 9px;
+  padding-top: 8px;
   resize: vertical;
 }
 
@@ -943,12 +941,13 @@ td {
 
 .ticket-form button[type="submit"] {
   width: 100%;
-  height: 39px;
+  height: 36px;
   justify-self: center;
   border: 0;
-  border-radius: 8px;
+  border-radius: 7px;
   background: var(--green);
   color: #fff;
+  font-size: 11px;
   font-weight: bold;
   cursor: pointer;
 }
@@ -959,16 +958,16 @@ td {
 
 .ticket-form .close-ticket-form {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 28px;
-  height: 28px;
+  top: 12px;
+  right: 12px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   border: 0;
   border-radius: 50%;
   background: #f0f3f1;
   color: #516057;
-  font: bold 18px/18px Arial;
+  font: bold 16px/26px Arial;
   cursor: pointer;
 }
 
@@ -982,14 +981,14 @@ td {
 
 .ticket-priority-options legend {
   margin-bottom: 4px;
-  color: #39483e;
+  color: #455249;
   font: bold 11px Arial, sans-serif;
 }
 
 .ticket-priority-options label {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   padding: 8px 10px;
   border-left: 4px solid;
   border-radius: 6px;
@@ -1003,28 +1002,28 @@ td {
 }
 
 .ticket-priority-options.critical {
-  border-color: #f10d0d;
-  background: #fff1f1;
+  border-color: #dc3030;
+  background: #fff5f5;
 }
 
 .ticket-priority-options.high {
   border-color: #ff781d;
-  background: #fff4ec;
+  background: #fff8f3;
 }
 
 .ticket-priority-options.medium {
   border-color: #d5b900;
-  background: #fffce7;
+  background: #fffdf2;
 }
 
 .ticket-priority-options span {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
 }
 
 .ticket-priority-options .critical span {
-  background: #f10d0d;
+  background: #dc3030;
 }
 
 .ticket-priority-options .high span {
@@ -1032,7 +1031,29 @@ td {
 }
 
 .ticket-priority-options .medium span {
-  background: #ffe11a;
+  background: #d5b900;
+}
+
+/* =========================================================
+   RESPONSIVE TICKETS
+   ========================================================= */
+
+@media (max-width: 850px) {
+  .ticket-grid,
+  .critical-tickets-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .tickets-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ticket-grid,
+  .critical-tickets-list {
+    grid-template-columns: 1fr;
+  }
 }
 /* =========================================================
    KNOWLEDGE

@@ -158,6 +158,54 @@ router.get("/stats", verifyToken, async (req, res) => {
   }
 });
 
+// GET detail satu tiket berdasarkan ID (BARU DITAMBAHKAN UNTUK MENGATASI 404)
+router.get("/:id", verifyToken, async (req, res) => {
+  try {
+    let query = `
+      SELECT
+        t.*,
+        u.ruangan AS nama_ruangan,
+        k.nama_kategori,
+        pelapor.id AS pelapor_id,
+        pelapor."Nama" AS pelapor_nama,
+        pelapor.email AS pelapor_email,
+        teknisi_user.id AS teknisi_id,
+        teknisi_user."Nama" AS teknisi_nama,
+        teknisi_user.email AS teknisi_email
+      FROM tiket t
+      JOIN unit u ON u.id = t.ruangan
+      JOIN knowledge_kategori k ON k.id = t.categori
+      LEFT JOIN login pelapor ON pelapor.id = t.akun
+      LEFT JOIN login teknisi_user ON teknisi_user.id = t.teknisi AND teknisi_user.role = 'teknisi'
+      WHERE t.id = $1
+    `;
+
+    const params = [req.params.id];
+
+    if (req.user.role === "user") {
+      query += ` AND t.akun = $2`;
+      params.push(req.user.id);
+    }
+
+    const { rows } = await db.query(query, params);
+
+    if (!rows.length) {
+      return res.status(404).json({ message: "Tiket tidak ditemukan" });
+    }
+
+    res.json({
+      message: "Detail tiket berhasil diambil",
+      data: rows[0],
+    });
+  } catch (error) {
+    console.error("Get ticket detail error:", error);
+    res.status(500).json({
+      message: "Gagal mengambil detail tiket",
+      error: error.message,
+    });
+  }
+});
+
 // ADMIN/TEKNISI dapat mengubah prioritas tiket
 router.patch(
   "/:id/priority",
@@ -268,7 +316,6 @@ router.post("/", verifyToken, async (req, res) => {
       ]
     );
 
-    // Create notifications for all admins and teknisi
     try {
       const notifMsg = `Tiket baru: ${rows[0].judul}`;
       await db.query(
@@ -278,7 +325,6 @@ router.post("/", verifyToken, async (req, res) => {
       );
     } catch (notifErr) {
       console.error('Failed to insert notifications:', notifErr.message);
-      // do not fail ticket creation because notification insert failed
     }
 
     res.status(201).json({
@@ -329,8 +375,6 @@ router.patch(
 
       console.log("[PATCH /:id/status] ticket query result:", ticket.rows[0]);
 
-      // Jika ingin mengatur status ke ASSIGNED harus ada teknisi yang ditetapkan.
-      // Namun admin dapat menyertakan `teknisi` di body untuk sekaligus menugaskan.
       const providedTeknisi = req.body?.teknisi;
 
       if (status === "ASSIGNED" && (ticket.rows[0].teknisi === null || ticket.rows[0].teknisi === undefined) && !providedTeknisi) {
@@ -341,7 +385,6 @@ router.patch(
 
       let teknisiToSet = null;
       if (providedTeknisi) {
-        // validasi teknisi yang diberikan
         const technician = await db.query(
           'SELECT id, "Nama" AS nama, email, role FROM login WHERE id = $1 AND role = $2 LIMIT 1',
           [providedTeknisi, 'teknisi']
@@ -461,7 +504,6 @@ router.patch(
         return res.status(400).json({ message: "Status tidak valid" });
       }
 
-      // Jika ingin mengubah menjadi ASSIGNED, pastikan tiket saat ini NEW
       if (status === "ASSIGNED" && ticket.rows[0].status !== "NEW") {
         return res.status(400).json({
           message: `Tiket tidak dapat di-assign karena status saat ini ${ticket.rows[0].status}`,
