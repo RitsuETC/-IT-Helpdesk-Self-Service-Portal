@@ -13,13 +13,14 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
 
   const loadData = async () => {
     try {
-      const statsRes = await api('/tickets/stats', token ? { token } : {})
-      setStats(statsRes.data || { total: 0, new: 0, process: 0, resolved: 0 })
-
       if (token) {
+        const statsRes = await api('/tickets/stats', { token })
+        setStats(statsRes.data || { total: 0, new: 0, process: 0, resolved: 0 })
+
         const listRes = await api('/tickets', { token })
         setTickets(listRes.data || [])
       } else {
+        setStats({ total: 0, new: 0, process: 0, resolved: 0 })
         setTickets([])
       }
     } catch (err) {
