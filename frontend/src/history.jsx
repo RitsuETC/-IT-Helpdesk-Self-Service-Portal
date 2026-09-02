@@ -74,7 +74,7 @@ export default function HistoryCarousel({ token, user, onError }) {
       {selectedTicket && (
         <div onClick={() => setSelectedTicket(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: 900, background: '#fff', borderRadius: 12, padding: 20, maxHeight: '90vh', overflowY: 'auto' }}>
-            <TicketDetail token={token} user={user} ticket={selectedTicket} onBack={() => setSelectedTicket(null)} onError={onError} />
+            <TicketDetail token={token} user={user} ticketId={selectedTicket.id} onBack={() => setSelectedTicket(null)} onError={onError} />
           </div>
         </div>
       )}

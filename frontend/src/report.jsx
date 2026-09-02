@@ -211,23 +211,27 @@ export default function Report({ token, user, onBack }) {
               <h3 style={{ margin: 0, color: '#0f172a' }}>Detail Tiket HD-{selectedTicket.id}</h3>
               <button onClick={() => setSelectedTicket(null)} style={{ background: '#f1f5f9', border: 'none', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div><b>Judul:</b> {selectedTicket.judul}</div>
-              <div><b>Kategori:</b> {selectedTicket.nama_kategori || '-'}</div>
-              <div><b>Pelapor:</b> {selectedTicket.pelapor_nama || '-'}</div>
-              <div><b>Ruangan:</b> {selectedTicket.nama_ruangan || '-'}</div>
-              <div><b>Teknisi:</b> {selectedTicket.teknisi_nama || '-'}</div>
-              <div><b>Prioritas:</b> {selectedTicket.prioritas}</div>
-              <div><b>Status:</b> {selectedTicket.status}</div>
-              <div><b>Dibuat:</b> {formatDate(selectedTicket.created_at)}</div>
-              <div><b>Selesai:</b> {formatDate(selectedTicket.status === 'RESOLVED' ? selectedTicket.resolved_at : selectedTicket.closed_at)}</div>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <b>Tindakan:</b> {selectedTicket.tindakan || '-'}
+            {detailLoading && <p style={{ color: '#64748b' }}>Memuat detail tiket...</p>}
+            {detailError && <p style={{ color: '#dc2626', marginBottom: '12px' }}>{detailError}</p>}
+            {!detailLoading && !detailError && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div><b>Judul:</b> {selectedTicket.judul}</div>
+                <div><b>Kategori:</b> {selectedTicket.nama_kategori || '-'}</div>
+                <div><b>Pelapor:</b> {selectedTicket.pelapor_nama || '-'}</div>
+                <div><b>Ruangan:</b> {selectedTicket.nama_ruangan || '-'}</div>
+                <div><b>Teknisi:</b> {selectedTicket.teknisi_nama || '-'}</div>
+                <div><b>Prioritas:</b> {selectedTicket.prioritas}</div>
+                <div><b>Status:</b> {selectedTicket.status}</div>
+                <div><b>Dibuat:</b> {formatDate(selectedTicket.created_at)}</div>
+                <div><b>Selesai:</b> {formatDate(selectedTicket.status === 'RESOLVED' ? selectedTicket.resolved_at : selectedTicket.closed_at)}</div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <b>Tindakan:</b> {selectedTicket.tindakan || '-'}
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <b>Hasil/Solusi:</b> {selectedTicket.hasil || '-'}
+                </div>
               </div>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <b>Hasil/Solusi:</b> {selectedTicket.hasil || '-'}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}

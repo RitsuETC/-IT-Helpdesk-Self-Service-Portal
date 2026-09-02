@@ -205,7 +205,6 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
           judul: form.get('judul'),
           kategori: form.get('kategori'),
           lokasi: form.get('lokasi'),
-          prioritas: form.get('prioritas'),
           deskripsi: form.get('deskripsi')
         }
       })
@@ -313,26 +312,6 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
               Lokasi / Ruangan
               <input name="lokasi" required placeholder="Contoh: Ruang Kasir Lt. 2" />
             </label>
-
-            <fieldset className="ticket-priority-options">
-              <legend>Prioritas Kendala</legend>
-              <label className="critical">
-                <input type="radio" name="prioritas" value="Critical" required />
-                <span></span> Critical (Darurat/Sistem Down)
-              </label>
-              <label className="high">
-                <input type="radio" name="prioritas" value="High" />
-                <span></span> High (Mengganggu Pekerjaan)
-              </label>
-              <label className="medium">
-                <input type="radio" name="prioritas" value="Medium" defaultChecked />
-                <span></span> Medium (Normal)
-              </label>
-              <label className="low">
-                <input type="radio" name="prioritas" value="Low" />
-                <span></span> Low (Pertanyaan/Permintaan)
-              </label>
-            </fieldset>
 
             <label>
               Deskripsi Masalah

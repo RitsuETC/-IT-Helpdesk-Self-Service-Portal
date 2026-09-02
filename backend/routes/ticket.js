@@ -158,6 +158,167 @@ router.get("/stats", verifyToken, async (req, res) => {
   }
 });
 
+
+router.get("/reports/finished-tickets", verifyToken, authorizeRole("admin", "teknisi"), async (req, res) => {
+  try {
+    const { status, category, date_from, date_to, search } = req.query;
+
+    let query = `
+      SELECT
+        t.id,
+        t.judul,
+        t.prioritas,
+        t.status,
+        t.created_at,
+        t.resolved_at,
+        t.closed_at,
+        k.nama_kategori,
+        u.ruangan AS nama_ruangan,
+        pelapor."Nama" AS pelapor_nama,
+        teknisi_user."Nama" AS teknisi_nama,
+        tr.tindakan,
+        tr.hasil
+      FROM tiket t
+      JOIN unit u ON u.id = t.ruangan
+      JOIN knowledge_kategori k ON k.id = t.categori
+      LEFT JOIN login pelapor ON pelapor.id = t.akun
+      LEFT JOIN login teknisi_user ON teknisi_user.id = t.teknisi AND teknisi_user.role = 'teknisi'
+      LEFT JOIN LATERAL (
+        SELECT tr.tindakan, tr.hasil
+        FROM troubleshooting tr
+        WHERE tr.id_tiket = t.id
+        ORDER BY tr.id DESC
+        LIMIT 1
+      ) tr ON true
+      WHERE t.status IN ('RESOLVED', 'CLOSED')
+    `;
+
+    const params = [];
+    let paramIndex = 1;
+
+    if (req.user.role === 'user') {
+      query += ` AND t.akun = $${paramIndex}`;
+      params.push(req.user.id);
+      paramIndex++;
+    }
+
+    if (status && ['RESOLVED', 'CLOSED'].includes(status.toUpperCase())) {
+      query += ` AND t.status = $${paramIndex}`;
+      params.push(status.toUpperCase());
+      paramIndex++;
+    }
+
+    if (category) {
+      query += ` AND k.nama_kategori ILIKE $${paramIndex}`;
+      params.push(`%${category}%`);
+      paramIndex++;
+    }
+
+    if (date_from) {
+      query += ` AND t.created_at >= $${paramIndex}`;
+      params.push(date_from);
+      paramIndex++;
+    }
+    if (date_to) {
+      query += ` AND t.created_at <= $${paramIndex}`;
+      params.push(date_to + ' 23:59:59');
+      paramIndex++;
+    }
+
+    if (search) {
+      query += ` AND (t.judul ILIKE $${paramIndex} OR pelapor."Nama" ILIKE $${paramIndex} OR u.ruangan ILIKE $${paramIndex})`;
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      paramIndex += 3;
+    }
+
+    query += ` ORDER BY t.created_at DESC`;
+
+    const { rows } = await db.query(query, params);
+    res.json({ data: rows });
+  } catch (error) {
+    console.error("Get report error:", error);
+    res.status(500).json({ message: "Gagal mengambil data laporan", error: error.message });
+  }
+});
+
+router.get("/reports/print", verifyToken, authorizeRole("admin", "teknisi"), async (req, res) => {
+  try {
+    const { status, category, date_from, date_to, search } = req.query;
+
+    let query = `
+      SELECT
+        t.id,
+        t.judul,
+        t.prioritas,
+        t.status,
+        t.created_at,
+        t.resolved_at,
+        t.closed_at,
+        k.nama_kategori,
+        u.ruangan AS nama_ruangan,
+        pelapor."Nama" AS pelapor_nama,
+        teknisi_user."Nama" AS teknisi_nama,
+        tr.tindakan,
+        tr.hasil
+      FROM tiket t
+      JOIN unit u ON u.id = t.ruangan
+      JOIN knowledge_kategori k ON k.id = t.categori
+      LEFT JOIN login pelapor ON pelapor.id = t.akun
+      LEFT JOIN login teknisi_user ON teknisi_user.id = t.teknisi AND teknisi_user.role = 'teknisi'
+      LEFT JOIN LATERAL (
+        SELECT tr.tindakan, tr.hasil
+        FROM troubleshooting tr
+        WHERE tr.id_tiket = t.id
+        ORDER BY tr.id DESC
+        LIMIT 1
+      ) tr ON true
+      WHERE t.status IN ('RESOLVED', 'CLOSED')
+    `;
+
+    const params = [];
+    let paramIndex = 1;
+
+    if (status && ['RESOLVED', 'CLOSED'].includes(status.toUpperCase())) {
+      query += ` AND t.status = $${paramIndex}`;
+      params.push(status.toUpperCase());
+      paramIndex++;
+    }
+
+    if (category) {
+      query += ` AND k.nama_kategori ILIKE $${paramIndex}`;
+      params.push(`%${category}%`);
+      paramIndex++;
+    }
+
+    if (date_from) {
+      query += ` AND t.created_at >= $${paramIndex}`;
+      params.push(date_from);
+      paramIndex++;
+    }
+    if (date_to) {
+      query += ` AND t.created_at <= $${paramIndex}`;
+      params.push(date_to + ' 23:59:59');
+      paramIndex++;
+    }
+
+    if (search) {
+      query += ` AND (t.judul ILIKE $${paramIndex} OR pelapor."Nama" ILIKE $${paramIndex} OR u.ruangan ILIKE $${paramIndex})`;
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      paramIndex += 3;
+    }
+
+    query += ` ORDER BY t.created_at DESC`;
+
+    const { rows } = await db.query(query, params);
+    res.json({ data: rows });
+  } catch (error) {
+    console.error("Get print report error:", error);
+    res.status(500).json({ message: "Gagal mengambil data laporan untuk print", error: error.message });
+  }
+});
+
+
+
 // GET detail satu tiket berdasarkan ID (BARU DITAMBAHKAN UNTUK MENGATASI 404)
 router.get("/:id", verifyToken, async (req, res) => {
   try {
@@ -274,13 +435,15 @@ router.post("/", verifyToken, async (req, res) => {
       !judul?.trim() ||
       !kategori ||
       !ruangan ||
-      !prioritas ||
       !deskripsi?.trim()
     ) {
       return res.status(400).json({
-        message: "Semua data tiket wajib diisi",
+        message: "Semua data tiket wajib diisi (kecuali prioritas)",
       });
     }
+
+    // Set default prioritas jika tidak dikirim
+    const ticketPriority = prioritas || "Medium";
 
     const { rows } = await db.query(
       `INSERT INTO tiket
@@ -310,7 +473,7 @@ router.post("/", verifyToken, async (req, res) => {
         judul.trim(),
         kategori,
         ruangan,
-        prioritas,
+        ticketPriority,
         deskripsi.trim(),
         req.user.id,
       ]
@@ -732,164 +895,6 @@ router.patch("/:id/close", verifyToken, async (req, res) => {
       message: "Gagal menutup tiket",
       error: error.message,
     });
-  }
-});
-
-router.get("/reports/finished-tickets", verifyToken, authorizeRole("admin", "teknisi"), async (req, res) => {
-  try {
-    const { status, category, date_from, date_to, search } = req.query;
-
-    let query = `
-      SELECT
-        t.id,
-        t.judul,
-        t.prioritas,
-        t.status,
-        t.created_at,
-        t.resolved_at,
-        t.closed_at,
-        k.nama_kategori,
-        u.ruangan AS nama_ruangan,
-        pelapor."Nama" AS pelapor_nama,
-        teknisi_user."Nama" AS teknisi_nama,
-        tr.tindakan,
-        tr.hasil
-      FROM tiket t
-      JOIN unit u ON u.id = t.ruangan
-      JOIN knowledge_kategori k ON k.id = t.categori
-      LEFT JOIN login pelapor ON pelapor.id = t.akun
-      LEFT JOIN login teknisi_user ON teknisi_user.id = t.teknisi AND teknisi_user.role = 'teknisi'
-      LEFT JOIN LATERAL (
-        SELECT tr.tindakan, tr.hasil
-        FROM troubleshooting tr
-        WHERE tr.id_tiket = t.id
-        ORDER BY tr.id DESC
-        LIMIT 1
-      ) tr ON true
-      WHERE t.status IN ('RESOLVED', 'CLOSED')
-    `;
-
-    const params = [];
-    let paramIndex = 1;
-
-    if (req.user.role === 'user') {
-      query += ` AND t.akun = $${paramIndex}`;
-      params.push(req.user.id);
-      paramIndex++;
-    }
-
-    if (status && ['RESOLVED', 'CLOSED'].includes(status.toUpperCase())) {
-      query += ` AND t.status = $${paramIndex}`;
-      params.push(status.toUpperCase());
-      paramIndex++;
-    }
-
-    if (category) {
-      query += ` AND k.nama_kategori ILIKE $${paramIndex}`;
-      params.push(`%${category}%`);
-      paramIndex++;
-    }
-
-    if (date_from) {
-      query += ` AND t.created_at >= $${paramIndex}`;
-      params.push(date_from);
-      paramIndex++;
-    }
-    if (date_to) {
-      query += ` AND t.created_at <= $${paramIndex}`;
-      params.push(date_to + ' 23:59:59');
-      paramIndex++;
-    }
-
-    if (search) {
-      query += ` AND (t.judul ILIKE $${paramIndex} OR pelapor."Nama" ILIKE $${paramIndex} OR u.ruangan ILIKE $${paramIndex})`;
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
-      paramIndex += 3;
-    }
-
-    query += ` ORDER BY t.created_at DESC`;
-
-    const { rows } = await db.query(query, params);
-    res.json({ data: rows });
-  } catch (error) {
-    console.error("Get report error:", error);
-    res.status(500).json({ message: "Gagal mengambil data laporan", error: error.message });
-  }
-});
-
-router.get("/reports/print", verifyToken, authorizeRole("admin", "teknisi"), async (req, res) => {
-  try {
-    const { status, category, date_from, date_to, search } = req.query;
-
-    let query = `
-      SELECT
-        t.id,
-        t.judul,
-        t.prioritas,
-        t.status,
-        t.created_at,
-        t.resolved_at,
-        t.closed_at,
-        k.nama_kategori,
-        u.ruangan AS nama_ruangan,
-        pelapor."Nama" AS pelapor_nama,
-        teknisi_user."Nama" AS teknisi_nama,
-        tr.tindakan,
-        tr.hasil
-      FROM tiket t
-      JOIN unit u ON u.id = t.ruangan
-      JOIN knowledge_kategori k ON k.id = t.categori
-      LEFT JOIN login pelapor ON pelapor.id = t.akun
-      LEFT JOIN login teknisi_user ON teknisi_user.id = t.teknisi AND teknisi_user.role = 'teknisi'
-      LEFT JOIN LATERAL (
-        SELECT tr.tindakan, tr.hasil
-        FROM troubleshooting tr
-        WHERE tr.id_tiket = t.id
-        ORDER BY tr.id DESC
-        LIMIT 1
-      ) tr ON true
-      WHERE t.status IN ('RESOLVED', 'CLOSED')
-    `;
-
-    const params = [];
-    let paramIndex = 1;
-
-    if (status && ['RESOLVED', 'CLOSED'].includes(status.toUpperCase())) {
-      query += ` AND t.status = $${paramIndex}`;
-      params.push(status.toUpperCase());
-      paramIndex++;
-    }
-
-    if (category) {
-      query += ` AND k.nama_kategori ILIKE $${paramIndex}`;
-      params.push(`%${category}%`);
-      paramIndex++;
-    }
-
-    if (date_from) {
-      query += ` AND t.created_at >= $${paramIndex}`;
-      params.push(date_from);
-      paramIndex++;
-    }
-    if (date_to) {
-      query += ` AND t.created_at <= $${paramIndex}`;
-      params.push(date_to + ' 23:59:59');
-      paramIndex++;
-    }
-
-    if (search) {
-      query += ` AND (t.judul ILIKE $${paramIndex} OR pelapor."Nama" ILIKE $${paramIndex} OR u.ruangan ILIKE $${paramIndex})`;
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
-      paramIndex += 3;
-    }
-
-    query += ` ORDER BY t.created_at DESC`;
-
-    const { rows } = await db.query(query, params);
-    res.json({ data: rows });
-  } catch (error) {
-    console.error("Get print report error:", error);
-    res.status(500).json({ message: "Gagal mengambil data laporan untuk print", error: error.message });
   }
 });
 
