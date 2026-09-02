@@ -9,6 +9,7 @@ import Tickets from './tickets.jsx'
 import HistoryCarousel from './history.jsx'
 import Knowledge from './knowledge.jsx'
 import Admin from './admin.jsx'
+import Report from './report.jsx'
 
 const savedSession = JSON.parse(localStorage.getItem('helpdesk-session') || 'null')
 
@@ -130,6 +131,7 @@ function App() {
             )}
           </button>
           <button onClick={() => scrollToSection('sec-knowledge')}>Knowledge Base</button>
+          {(session?.user.role === 'admin' || session?.user.role === 'teknisi') && <button onClick={() => { if (!session) { setShowLoginModal(true) } else { setPage('report') } }}>Laporan</button>}
         </nav>
 
         <div className="account-action">
@@ -244,6 +246,15 @@ function App() {
           user={session.user} 
           articles={articles} 
           onChanged={loadArticles} 
+          onError={setNotice} 
+        />
+      )}
+
+      {(session?.user.role === 'admin' || session?.user.role === 'teknisi') && page === 'report' && (
+        <Report 
+          token={session.token} 
+          user={session.user} 
+          onBack={() => setPage('landing')} 
           onError={setNotice} 
         />
       )}
