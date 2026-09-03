@@ -12,7 +12,9 @@ const router = express.Router();
 // ======================================================
 router.post("/", verifyToken, async (req, res) => {
   try {
-    const { id_tiket, lampiran, tindakan, hasil } = req.body;
+    // Accept `hasil` or `hasil_akhir` from different frontends
+    const { id_tiket, lampiran, tindakan } = req.body;
+    const hasil = req.body?.hasil ?? req.body?.hasil_akhir;
 
     if (!id_tiket || !tindakan?.trim() || !hasil?.trim()) {
       return res.status(400).json({
@@ -46,7 +48,7 @@ router.post("/", verifyToken, async (req, res) => {
 
     // TEKNISI hanya boleh menangani tiket yang ditugaskan kepadanya
     if (req.user.role === "teknisi") {
-      if (tiket.teknisi !== req.user.id) {
+      if (Number(tiket.teknisi) !== Number(req.user.id)) {
         return res.status(403).json({
           message: "Tiket ini bukan ditugaskan kepada Anda",
         });
@@ -60,24 +62,37 @@ router.post("/", verifyToken, async (req, res) => {
       });
     }
 
-    const result = await db.query(
-      `INSERT INTO troubleshooting
-        (id_tiket, lampiran, tindakan, hasil)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, id_tiket, lampiran, tindakan, hasil`,
-      [
-        id_tiket,
-        // DB expects integer for lampiran; use 0 when not provided
-        lampiran !== undefined && lampiran !== null ? lampiran : 0,
-        tindakan.trim(),
-        hasil.trim(),
-      ]
+    // Ensure only one troubleshooting record per ticket_id.
+    const existing = await db.query(
+      `SELECT id FROM troubleshooting WHERE id_tiket = $1 ORDER BY id ASC`,
+      [id_tiket]
     );
 
-    res.status(201).json({
-      message: "Data troubleshooting berhasil dibuat",
-      data: result.rows[0],
-    });
+    // If multiple exist (legacy), keep the first and remove duplicates
+    if (existing.rowCount > 1) {
+      const keepId = existing.rows[0].id;
+      await db.query(`DELETE FROM troubleshooting WHERE id_tiket = $1 AND id <> $2`, [id_tiket, keepId]);
+      // reload existing as single
+      existing.rows.splice(1);
+    }
+
+    let row;
+    if (existing.rowCount === 1) {
+      const id = existing.rows[0].id;
+      const updated = await db.query(
+        `UPDATE troubleshooting SET lampiran = $1, tindakan = $2, hasil = $3 WHERE id = $4 RETURNING id, id_tiket, lampiran, tindakan, hasil`,
+        [lampiran !== undefined && lampiran !== null ? lampiran : 0, tindakan.trim(), hasil.trim(), id]
+      );
+      row = updated.rows[0];
+      res.json({ message: 'Data troubleshooting berhasil diperbarui', data: row });
+    } else {
+      const inserted = await db.query(
+        `INSERT INTO troubleshooting (id_tiket, lampiran, tindakan, hasil) VALUES ($1, $2, $3, $4) RETURNING id, id_tiket, lampiran, tindakan, hasil`,
+        [id_tiket, lampiran !== undefined && lampiran !== null ? lampiran : 0, tindakan.trim(), hasil.trim()]
+      );
+      row = inserted.rows[0];
+      res.status(201).json({ message: 'Data troubleshooting berhasil dibuat', data: row });
+    }
   } catch (error) {
     console.error("Create troubleshooting error:", error);
 
@@ -111,55 +126,47 @@ router.get("/:id_tiket", verifyToken, async (req, res) => {
       });
     }
 
-    const tiket = ticket.rows[0];
+      const tiket = ticket.rows[0];
 
-    // ADMIN boleh melihat semua troubleshooting
-    if (req.user.role === "admin") {
-      // lanjut
-    }
+      // ADMIN boleh melihat semua troubleshooting
+      if (req.user.role === "admin") {
+        // lanjut
+      }
 
-    // USER hanya boleh melihat troubleshooting tiket miliknya
-    else if (req.user.role === "user") {
-      if (tiket.akun !== req.user.id) {
+      // USER hanya boleh melihat troubleshooting tiket miliknya
+      else if (req.user.role === "user") {
+        if (Number(tiket.akun) !== Number(req.user.id)) {
+          return res.status(403).json({
+            message:
+              "Anda tidak memiliki akses melihat troubleshooting tiket ini",
+          });
+        }
+      }
+
+      // TEKNISI hanya boleh melihat troubleshooting tiket yang ditugaskan
+      else if (req.user.role === "teknisi") {
+        if (Number(tiket.teknisi) !== Number(req.user.id)) {
+          return res.status(403).json({
+            message: "Tiket ini bukan ditugaskan kepada Anda",
+          });
+        }
+      }
+
+      // Role tidak dikenal
+      else {
         return res.status(403).json({
-          message:
-            "Anda tidak memiliki akses melihat troubleshooting tiket ini",
+          message: "Role tidak memiliki akses melihat troubleshooting",
         });
       }
-    }
-
-    // TEKNISI hanya boleh melihat troubleshooting tiket yang ditugaskan
-    else if (req.user.role === "teknisi") {
-      if (tiket.teknisi !== req.user.id) {
-        return res.status(403).json({
-          message: "Tiket ini bukan ditugaskan kepada Anda",
-        });
-      }
-    }
-
-    // Role tidak dikenal
-    else {
-      return res.status(403).json({
-        message: "Role tidak memiliki akses melihat troubleshooting",
-      });
-    }
 
     const { rows } = await db.query(
-      `SELECT
-        id,
-        id_tiket,
-        lampiran,
-        tindakan,
-        hasil
-       FROM troubleshooting
-       WHERE id_tiket = $1
-       ORDER BY id ASC`,
+      `SELECT id, id_tiket, lampiran, tindakan, hasil FROM troubleshooting WHERE id_tiket = $1 ORDER BY id ASC LIMIT 1`,
       [req.params.id_tiket]
     );
 
     res.json({
       message: "Data troubleshooting berhasil diambil",
-      data: rows,
+      data: rows[0] || null,
     });
   } catch (error) {
     console.error("Get troubleshooting error:", error);

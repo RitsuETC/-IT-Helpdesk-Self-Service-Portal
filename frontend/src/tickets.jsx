@@ -5,6 +5,10 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   const [ticket, setTicket] = useState(null)
   const [loading, setLoading] = useState(true)
   const [actionNotice, setActionNotice] = useState('')
+  const [trouble, setTrouble] = useState(null)
+  const [troublesLoading, setTroublesLoading] = useState(true)
+  const [tindakanVal, setTindakanVal] = useState('')
+  const [hasilVal, setHasilVal] = useState('')
 
   const loadDetail = async () => {
     if (!ticketId) return
@@ -24,8 +28,30 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
     }
   }
 
+  const loadTroubleshooting = async () => {
+    if (!ticketId) return
+    setTroublesLoading(true)
+    try {
+      const res = await api(`/troubleshooting/${ticketId}`, { token })
+      setTrouble(res.data || null)
+      setTindakanVal(res.data?.tindakan || '')
+      setHasilVal(res.data?.hasil || '')
+    } catch (err) {
+      console.error('Failed to load troubleshooting', err)
+      setTrouble(null)
+      setTindakanVal('')
+      setHasilVal('')
+    } finally {
+      setTroublesLoading(false)
+    }
+  }
+
   useEffect(() => {
     loadDetail()
+  }, [ticketId])
+
+  useEffect(() => {
+    loadTroubleshooting()
   }, [ticketId])
 
   const handleUpdateStatus = async (e) => {
@@ -74,6 +100,30 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
       })
       setActionNotice('Tiket berhasil diselesaikan!')
       loadDetail()
+      loadTroubleshooting()
+    } catch (err) {
+      setActionNotice(err.message)
+    }
+  }
+
+  const handleCreateTroubleshooting = async (e) => {
+    e.preventDefault()
+    try {
+      const res = await api('/troubleshooting', {
+        token,
+        method: 'POST',
+        body: {
+          id_tiket: ticketId,
+          tindakan: tindakanVal,
+          hasil_akhir: hasilVal,
+        }
+      })
+      setActionNotice(res.message || 'Tindakan berhasil disimpan')
+      // update local state immediately from response and keep form in sync
+      setTrouble(res.data || null)
+      setTindakanVal(res.data?.tindakan || '')
+      setHasilVal(res.data?.hasil || '')
+      loadDetail()
     } catch (err) {
       setActionNotice(err.message)
     }
@@ -114,7 +164,44 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
 
         <div style={{ border: '1px solid #dce5df', borderRadius: '12px', padding: '16px', background: '#f8faf9' }}>
           <b style={{ display: 'block', marginBottom: '12px', color: '#18241c', fontSize: '11px' }}>Masalah / Deskripsi</b>
-          <p style={{ margin: 0, fontSize: '11px', color: '#455249', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>{ticket.deskripsi}</p>
+            <p style={{ margin: 0, fontSize: '11px', color: '#455249', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>{ticket.deskripsi}</p>
+
+            <div style={{ marginTop: 12 }}>
+              <b style={{ display: 'block', marginBottom: 8 }}>Tindakan / Hasil</b>
+              {troublesLoading ? (
+                <p style={{ color: '#64748b', margin: 0 }}>Memuat tindakan...</p>
+              ) : !trouble ? (
+                <p style={{ color: '#64748b', margin: 0 }}>Belum ada tindakan yang tercatat.</p>
+              ) : (
+                <div style={{ display: 'grid', gap: 8 }}>
+                  <div key={trouble.id} style={{ padding: 10, borderRadius: 8, background: '#fff', border: '1px solid #e6efea' }}>
+                    <div style={{ fontSize: '0.95rem', color: '#0f172a', fontWeight: 700 }}>Tindakan</div>
+                    <div style={{ marginTop: 6, color: '#334155' }}>{trouble.tindakan}</div>
+                    <div style={{ marginTop: 8, fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>Hasil</div>
+                    <div style={{ marginTop: 6, color: '#334155' }}>{trouble.hasil}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Form tambah tindakan untuk Admin/Teknisi */}
+            {isStaff && (
+              <form onSubmit={handleCreateTroubleshooting} style={{ marginTop: 12, display: 'grid', gap: 8 }}>
+                <b style={{ display: 'block', marginBottom: 6 }}>{trouble ? 'Perbarui Tindakan' : 'Tambah Tindakan'}</b>
+                  <label style={{ fontSize: '11px', color: '#455249', display: 'grid', gap: '4px' }}>
+                    Tindakan
+                    <textarea name="tindakan" rows="2" value={tindakanVal} onChange={(e) => setTindakanVal(e.target.value)} required style={{ width: '100%', padding: '8px', border: '1px solid #cfdad2', borderRadius: '7px', fontSize: '11px' }} placeholder="Tuliskan tindakan..." />
+                  </label>
+                  <label style={{ fontSize: '11px', color: '#455249', display: 'grid', gap: '4px' }}>
+                    Hasil
+                    <textarea name="hasil_akhir" rows="2" value={hasilVal} onChange={(e) => setHasilVal(e.target.value)} required style={{ width: '100%', padding: '8px', border: '1px solid #cfdad2', borderRadius: '7px', fontSize: '11px' }} placeholder="Tuliskan hasil..." />
+                  </label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="submit" className="create-ticket" style={{ height: '36px' }}>{trouble ? 'Perbarui' : 'Simpan'}</button>
+                  <button type="button" className="create-ticket" style={{ height: '36px', background: '#eef6f0', color: '#0f172a' }} onClick={() => { setTrouble(null); setTindakanVal(''); setHasilVal(''); loadTroubleshooting(); }}>Refresh</button>
+                </div>
+              </form>
+            )}
         </div>
       </div>
 
@@ -128,9 +215,10 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
               <div style={{ display: 'flex', gap: '8px' }}>
                 <select name="status" defaultValue={ticket.status} style={{ height: '36px', padding: '0 10px', borderRadius: '7px', border: '1px solid #cfdad2', width: '100%', fontSize: '11px' }}>
                   <option value="NEW">NEW</option>
-                  <option value="PROSES">PROSES</option>
-                  <option value="PENDING">PENDING</option>
-                  <option value="SELESAI">SELESAI</option>
+                  <option value="IN_PROGRESS">IN_PROGRESS</option>
+                  <option value="WAITING">WAITING</option>
+                  <option value="RESOLVED">RESOLVED</option>
+                  <option value="CLOSED">CLOSED</option>
                 </select>
                 <button type="submit" className="create-ticket" style={{ height: '36px', whiteSpace: 'nowrap' }}>Perbarui</button>
               </div>
@@ -150,7 +238,9 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
             </form>
           </div>
 
-          <form onSubmit={handleResolve} style={{ display: 'grid', gap: '10px', borderTop: '1px solid #e1e8e3', paddingTop: '16px' }}>
+            {/* Only teknisi should see resolve form */}
+            {user?.role === 'teknisi' && (
+              <form onSubmit={handleResolve} style={{ display: 'grid', gap: '10px', borderTop: '1px solid #e1e8e3', paddingTop: '16px' }}>
             <b style={{ fontSize: '11px', color: '#18241c' }}>Penyelesaian Tiket</b>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <label style={{ fontSize: '11px', color: '#455249', display: 'grid', gap: '4px' }}>
@@ -163,7 +253,8 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
               </label>
             </div>
             <button type="submit" className="create-ticket" style={{ width: '100%', height: '36px', marginTop: '4px' }}>Simpan Penyelesaian</button>
-          </form>
+              </form>
+            )}
         </div>
       )}
     </div>
@@ -175,6 +266,7 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
   const [selectedTicketId, setSelectedTicketId] = useState(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [priorityFilter, setPriorityFilter] = useState('ALL')
+  const [rooms, setRooms] = useState([])
 
   const loadTickets = async () => {
     if (!token) return
@@ -186,11 +278,23 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
     }
   }
 
+  const loadMeta = async () => {
+    if (!token) return
+    try {
+      const res = await api('/tickets/meta/options', { token })
+      setRooms(res.data?.rooms || [])
+    } catch (err) {
+      console.error('Failed to load meta options', err)
+      setRooms([])
+    }
+  }
+
   useEffect(() => {
     if (!token) {
       onRequireLogin()
     } else {
       loadTickets()
+      loadMeta()
     }
   }, [token])
 
@@ -204,7 +308,7 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
         body: {
           judul: form.get('judul'),
           kategori: form.get('kategori'),
-          lokasi: form.get('lokasi'),
+          ruangan: form.get('ruangan'),
           deskripsi: form.get('deskripsi')
         }
       })
@@ -310,7 +414,12 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
 
             <label>
               Lokasi / Ruangan
-              <input name="lokasi" required placeholder="Contoh: Ruang Kasir Lt. 2" />
+              <select name="ruangan" required defaultValue="" style={{ display: 'block' }}>
+                <option value="" disabled>-- Pilih Ruangan --</option>
+                {rooms.map(r => (
+                  <option key={r.id} value={r.id}>{r.ruangan}</option>
+                ))}
+              </select>
             </label>
 
             <label>
