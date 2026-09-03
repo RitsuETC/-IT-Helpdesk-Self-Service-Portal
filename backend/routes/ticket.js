@@ -374,10 +374,22 @@ router.patch(
   authorizeRole("admin", "teknisi"),
   async (req, res) => {
     try {
-      const validPriorities = ["level_1", "level_2", "level_3"];
-      const priority = String(req.body?.prioritas || "").toLowerCase();
+      // Accept either `prioritas` (local) or `priority` (frontend) and map common labels
+      const raw = (req.body?.prioritas ?? req.body?.priority ?? "").toString();
 
-      if (!validPriorities.includes(priority)) {
+      const mapping = {
+        low: "level_3",
+        medium: "level_2",
+        high: "level_1",
+        critical: "level_1",
+        level_1: "level_1",
+        level_2: "level_2",
+        level_3: "level_3",
+      };
+
+      const priorityKey = mapping[raw.toLowerCase()];
+
+      if (!priorityKey) {
         return res.status(400).json({ message: "Prioritas tiket tidak valid" });
       }
 
@@ -404,7 +416,7 @@ router.patch(
          SET prioritas = $1::public.priority_level_enum
          WHERE id = $2
          RETURNING id, prioritas`,
-        [priority, req.params.id]
+        [priorityKey, req.params.id]
       );
 
       res.json({
@@ -427,14 +439,18 @@ router.post("/", verifyToken, async (req, res) => {
       judul,
       kategori,
       ruangan,
+      lokasi,
       prioritas,
       deskripsi,
     } = req.body;
 
+    // Accept `lokasi` from older frontend as alias for `ruangan`
+    const room = ruangan ?? lokasi;
+
     if (
       !judul?.trim() ||
       !kategori ||
-      !ruangan ||
+      !room ||
       !deskripsi?.trim()
     ) {
       return res.status(400).json({
@@ -442,8 +458,44 @@ router.post("/", verifyToken, async (req, res) => {
       });
     }
 
-    // Set default prioritas jika tidak dikirim
-    const ticketPriority = prioritas || "Medium";
+    // Map incoming priority labels to DB enum keys. Default to Medium.
+    const rawPriority = (prioritas ?? req.body?.priority ?? "").toString();
+    const prMap = {
+      low: "level_3",
+      medium: "level_2",
+      high: "level_1",
+      critical: "level_1",
+      level_1: "level_1",
+      level_2: "level_2",
+      level_3: "level_3",
+    };
+    const ticketPriority = prMap[rawPriority.toLowerCase()] || prMap['medium'];
+
+    // Normalize kategori -> id: accept either id or name
+    let kategoriId = kategori;
+    if (typeof kategoriId === 'string' && isNaN(Number(kategoriId))) {
+      const catRes = await db.query(
+        `SELECT id FROM knowledge_kategori WHERE nama_kategori ILIKE $1 LIMIT 1`,
+        [kategoriId]
+      );
+      if (!catRes.rowCount) {
+        return res.status(400).json({ message: 'Kategori tidak ditemukan' });
+      }
+      kategoriId = catRes.rows[0].id;
+    }
+
+    // Normalize room -> id: accept either id or name
+    let roomId = room;
+    if (typeof roomId === 'string' && isNaN(Number(roomId))) {
+      const roomRes = await db.query(
+        `SELECT id FROM unit WHERE ruangan ILIKE $1 LIMIT 1`,
+        [roomId]
+      );
+      if (!roomRes.rowCount) {
+        return res.status(400).json({ message: 'Lokasi/ruangan tidak ditemukan' });
+      }
+      roomId = roomRes.rows[0].id;
+    }
 
     const { rows } = await db.query(
       `INSERT INTO tiket
@@ -471,8 +523,8 @@ router.post("/", verifyToken, async (req, res) => {
         closed_at`,
       [
         judul.trim(),
-        kategori,
-        ruangan,
+        kategoriId,
+        roomId,
         ticketPriority,
         deskripsi.trim(),
         req.user.id,
@@ -773,11 +825,13 @@ router.patch(
   async (req, res) => {
     try {
       console.log(`[PATCH /:id/resolve] user.id=${req.user?.id} role=${req.user?.role} ticketId=${req.params.id}`);
-      const { solusi } = req.body;
+      // Accept either `solusi` (single field) or `tindakan` + `hasil_akhir` (from UI)
+      const { solusi, tindakan, hasil_akhir } = req.body;
 
-      if (!solusi?.trim()) {
+      // If frontend sent tindakan+hasil_akhir, require both
+      if ((!solusi || !String(solusi).trim()) && (!tindakan || !String(tindakan).trim() || !hasil_akhir || !String(hasil_akhir).trim())) {
         return res.status(400).json({
-          message: "Solusi wajib diisi",
+          message: "Solusi atau (tindakan dan hasil_akhir) wajib diisi",
         });
       }
 
@@ -806,6 +860,40 @@ router.patch(
         });
       }
 
+      // If tindakan+hasil_akhir provided, insert into troubleshooting table
+      let finalSolusi = solusi && String(solusi).trim() ? String(solusi).trim() : null;
+      if (!finalSolusi && tindakan && hasil_akhir) {
+        // upsert troubleshooting record: update existing or insert new
+        try {
+          const existing = await db.query(
+            `SELECT id FROM troubleshooting WHERE id_tiket = $1 ORDER BY id ASC`,
+            [req.params.id]
+          );
+
+          if (existing.rowCount > 1) {
+            const keepId = existing.rows[0].id;
+            await db.query(`DELETE FROM troubleshooting WHERE id_tiket = $1 AND id <> $2`, [req.params.id, keepId]);
+            existing.rows.splice(1);
+          }
+
+          if (existing.rowCount === 1) {
+            const id = existing.rows[0].id;
+            await db.query(
+              `UPDATE troubleshooting SET lampiran = $1, tindakan = $2, hasil = $3 WHERE id = $4`,
+              [0, String(tindakan).trim(), String(hasil_akhir).trim(), id]
+            );
+          } else {
+            await db.query(
+              `INSERT INTO troubleshooting (id_tiket, lampiran, tindakan, hasil) VALUES ($1, $2, $3, $4)`,
+              [req.params.id, 0, String(tindakan).trim(), String(hasil_akhir).trim()]
+            );
+          }
+        } catch (e) {
+          console.error('Failed to upsert troubleshooting during resolve:', e.message);
+        }
+        finalSolusi = String(hasil_akhir).trim();
+      }
+
       const { rows } = await db.query(
         `UPDATE tiket
          SET
@@ -819,7 +907,7 @@ router.patch(
            solusi,
            status,
            resolved_at`,
-        [solusi.trim(), req.params.id]
+        [finalSolusi, req.params.id]
       );
 
       res.json({
