@@ -51,7 +51,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
       await api(`/tickets/${ticketId}/priority`, {
         token,
         method: 'PATCH',
-        body: { priority: form.get('priority') }
+        body: { prioritas: form.get('prioritas') }
       })
       setActionNotice('Prioritas berhasil diperbarui!')
       loadDetail()
@@ -64,12 +64,13 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
     e.preventDefault()
     const form = new FormData(e.currentTarget)
     try {
+      const tindakan = form.get('tindakan')
+      const hasilAkhir = form.get('hasil_akhir')
       await api(`/tickets/${ticketId}/resolve`, {
         token,
         method: 'PATCH',
         body: { 
-          tindakan: form.get('tindakan'), 
-          hasil_akhir: form.get('hasil_akhir') 
+          solusi: `Tindakan: ${tindakan} | Hasil Akhir: ${hasilAkhir}` 
         }
       })
       setActionNotice('Tiket berhasil diselesaikan!')
@@ -100,9 +101,9 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           <b style={{ display: 'block', marginBottom: '12px', color: '#18241c', fontSize: '11px' }}>Detail Laporan</b>
           <div style={{ display: 'grid', gap: '8px', fontSize: '11px', color: '#455249' }}>
             <div><strong>ID Tiket:</strong> HD-{ticket.id}</div>
-            <div><strong>Pelapor:</strong> {ticket.pelapor}</div>
-            <div><strong>Lokasi:</strong> {ticket.lokasi}</div>
-            <div><strong>Kategori:</strong> {ticket.kategori}</div>
+            <div><strong>Pelapor:</strong> {ticket.pelapor_nama || ticket.pelapor}</div>
+            <div><strong>Lokasi:</strong> {ticket.nama_ruangan || ticket.lokasi}</div>
+            <div><strong>Kategori:</strong> {ticket.nama_kategori || ticket.kategori}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <strong>Prioritas:</strong> {ticket.prioritas} 
               <span className={`priority-dot ${ticket.prioritas?.toLowerCase()}`}></span>
@@ -128,9 +129,11 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
               <div style={{ display: 'flex', gap: '8px' }}>
                 <select name="status" defaultValue={ticket.status} style={{ height: '36px', padding: '0 10px', borderRadius: '7px', border: '1px solid #cfdad2', width: '100%', fontSize: '11px' }}>
                   <option value="NEW">NEW</option>
-                  <option value="PROSES">PROSES</option>
-                  <option value="PENDING">PENDING</option>
-                  <option value="SELESAI">SELESAI</option>
+                  <option value="ASSIGNED">ASSIGNED</option>
+                  <option value="IN_PROGRESS">IN_PROGRESS</option>
+                  <option value="WAITING">WAITING</option>
+                  <option value="RESOLVED">RESOLVED</option>
+                  <option value="CLOSED">CLOSED</option>
                 </select>
                 <button type="submit" className="create-ticket" style={{ height: '36px', whiteSpace: 'nowrap' }}>Perbarui</button>
               </div>
@@ -139,11 +142,10 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
             <form onSubmit={handleUpdatePriority} style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#455249' }}>Prioritas Tiket</label>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <select name="priority" defaultValue={ticket.prioritas} style={{ height: '36px', padding: '0 10px', borderRadius: '7px', border: '1px solid #cfdad2', width: '100%', fontSize: '11px' }}>
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                  <option value="Critical">Critical</option>
+                <select name="prioritas" defaultValue={ticket.prioritas} style={{ height: '36px', padding: '0 10px', borderRadius: '7px', border: '1px solid #cfdad2', width: '100%', fontSize: '11px' }}>
+                  <option value="level_1">Level 1 (Low)</option>
+                  <option value="level_2">Level 2 (Medium)</option>
+                  <option value="level_3">Level 3 (High)</option>
                 </select>
                 <button type="submit" className="create-ticket" style={{ height: '36px', whiteSpace: 'nowrap' }}>Perbarui</button>
               </div>
