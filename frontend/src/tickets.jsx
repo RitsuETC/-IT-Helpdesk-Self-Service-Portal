@@ -89,9 +89,10 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   const handleResolve = async (e) => {
     e.preventDefault()
     const form = new FormData(e.currentTarget)
+    const tindakan = form.get('tindakan')
+    const hasilAkhir = form.get('hasil_akhir')
+    
     try {
-      const tindakan = form.get('tindakan')
-      const hasilAkhir = form.get('hasil_akhir')
       await api(`/tickets/${ticketId}/resolve`, {
         token,
         method: 'PATCH',
@@ -99,28 +100,26 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           solusi: `Tindakan: ${tindakan} | Hasil Akhir: ${hasilAkhir}` 
         }
       })
-      setActionNotice('Tiket berhasil diselesaikan!')
-      loadDetail()
-      loadTroubleshooting()
     } catch (err) {
       setActionNotice(err.message)
+      return
     }
+
     try {
       const res = await api('/troubleshooting', {
         token,
         method: 'POST',
         body: {
           id_tiket: ticketId,
-          tindakan: tindakanVal,
+          tindakan: tindakan,
           hasil_akhir: hasilVal,
         }
       })
 
-      setActionNotice(res.message || 'Penyelesaian disimpan')
+      setActionNotice(res.message || 'Penyelesaian berhasil disimpan!')
       setTrouble(res.data || null)
-      setTindakanVal(res.data?.tindakan || '')
-      setHasilVal(res.data?.hasil || '')
       loadDetail()
+      loadTroubleshooting()
     } catch (err) {
       setActionNotice(err.message)
     }
@@ -132,20 +131,26 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   const isStaff = user?.role === 'admin' || user?.role === 'teknisi'
 
   return (
-    <div className="tickets-page">
-      <button className="create-ticket" onClick={onBack} style={{ marginBottom: '16px' }}>← Kembali ke Daftar</button>
+    <div className="tickets-page" style={{ backgroundColor: '#ffffff', color: '#1f2937', padding: '24px', borderRadius: '16px', margin: '0 auto', maxWidth: '100%', boxShadow: '0 10px 25px rgba(0, 0, 0, 0.08)' }}>
+      <button 
+        onClick={onBack} 
+        style={{ marginBottom: '16px', backgroundColor: '#0c4a30', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '12px', boxShadow: '0 4px 6px rgba(12, 74, 48, 0.2)', transition: 'transform 0.2s' }}
+      >
+        ← Kembali ke Daftar
+      </button>
       
-      <div className="tickets-toolbar" style={{ display: 'block' }}>
-        <h2 className="tickets-heading">{ticket.judul}</h2>
-        <p className="history-description">Informasi lengkap dan pembaruan status laporan tiket.</p>
+      <div className="tickets-toolbar" style={{ display: 'block', borderBottom: '1px solid #e5e7eb', paddingBottom: '14px', marginBottom: '20px' }}>
+        <h2 className="tickets-heading" style={{ color: '#111827', fontSize: '20px', marginBottom: '4px' }}>{ticket.judul}</h2>
+        <p className="history-description" style={{ color: '#4b5563', fontSize: '13px', margin: 0 }}>Informasi lengkap dan pembaruan status laporan tiket.</p>
       </div>
 
-      {actionNotice && <p style={{ color: 'var(--green)', fontWeight: 'bold', fontSize: '11px', marginBottom: '16px' }}>{actionNotice}</p>}
+      {actionNotice && <p style={{ color: '#15803d', fontWeight: 'bold', fontSize: '12px', marginBottom: '16px', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '8px 12px', borderRadius: '8px' }}>{actionNotice}</p>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-        <div style={{ border: '1px solid #dce5df', borderRadius: '12px', padding: '16px', background: '#f8faf9' }}>
-          <b style={{ display: 'block', marginBottom: '12px', color: '#18241c', fontSize: '11px' }}>Detail Laporan</b>
-          <div style={{ display: 'grid', gap: '8px', fontSize: '11px', color: '#455249' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+        {/* Kotak Detail Laporan (Hijau Tua dengan Efek Mengambang/Shadow) */}
+        <div style={{ border: '1px solid #0c4a30', borderRadius: '12px', padding: '18px', background: '#0c4a30', color: '#ffffff', boxShadow: '0 8px 20px rgba(12, 74, 48, 0.25)' }}>
+          <b style={{ display: 'block', marginBottom: '12px', color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '6px' }}>Detail Laporan</b>
+          <div style={{ display: 'grid', gap: '8px', fontSize: '12px', color: '#f1f5f9' }}>
             <div><strong>ID Tiket:</strong> HD-{ticket.id}</div>
             <div><strong>Pelapor:</strong> {ticket.pelapor_nama || ticket.pelapor}</div>
             <div><strong>Lokasi:</strong> {ticket.nama_ruangan || ticket.lokasi}</div>
@@ -158,41 +163,44 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
             <div><strong>Tanggal:</strong> {new Date(ticket.created_at).toLocaleString()}</div>
           </div>
         </div>
-        <div style={{ border: '1px solid #dce5df', borderRadius: '12px', padding: '16px', background: '#f8faf9' }}>
-          <b style={{ display: 'block', marginBottom: '12px', color: '#18241c', fontSize: '11px' }}>Masalah / Deskripsi</b>
-            <p style={{ margin: 0, fontSize: '11px', color: '#455249', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>{ticket.deskripsi}</p>
+        
+        {/* Kotak Masalah & Deskripsi (Hijau Tua dengan Efek Mengambang/Shadow) */}
+        <div style={{ border: '1px solid #0c4a30', borderRadius: '12px', padding: '18px', background: '#0c4a30', color: '#ffffff', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 8px 20px rgba(12, 74, 48, 0.25)' }}>
+          <div>
+            <b style={{ display: 'block', marginBottom: '8px', color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '6px' }}>Masalah / Deskripsi</b>
+            <p style={{ margin: 0, fontSize: '12px', color: '#f1f5f9', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>{ticket.deskripsi}</p>
+          </div>
 
-            {!isStaff && (
-              <div style={{ marginTop: 12 }}>
-                <b style={{ display: 'block', marginBottom: 8 }}>Tindakan / Hasil</b>
-                {troublesLoading ? (
-                  <p style={{ color: '#64748b', margin: 0 }}>Memuat tindakan...</p>
-                ) : !trouble ? (
-                  <p style={{ color: '#64748b', margin: 0 }}>Belum ada tindakan yang tercatat.</p>
-                ) : (
-                  <div style={{ display: 'grid', gap: 8 }}>
-                    <div key={trouble.id} style={{ padding: 10, borderRadius: 8, background: '#fff', border: '1px solid #e6efea' }}>
-                      <div style={{ fontSize: '0.95rem', color: '#0f172a', fontWeight: 700 }}>Tindakan</div>
-                      <div style={{ marginTop: 6, color: '#334155' }}>{trouble.tindakan}</div>
-                      <div style={{ marginTop: 8, fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>Hasil</div>
-                      <div style={{ marginTop: 6, color: '#334155' }}>{trouble.hasil}</div>
-                    </div>
-                  </div>
-                )}
+          <div>
+            <b style={{ display: 'block', marginBottom: '8px', color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '6px' }}>Tindakan / Hasil</b>
+            {troublesLoading ? (
+              <p style={{ color: '#cbd5e1', margin: 0, fontSize: '12px' }}>Memuat tindakan...</p>
+            ) : !trouble ? (
+              <p style={{ color: '#cbd5e1', margin: 0, fontSize: '12px' }}>Belum ada tindakan yang tercatat.</p>
+            ) : (
+              <div style={{ display: 'grid', gap: 6, fontSize: '12px' }}>
+                <div style={{ padding: '10px', borderRadius: '8px', background: '#064e3b', border: '1px solid #166534' }}>
+                  <div style={{ color: '#e2f0ea', fontWeight: 700, marginBottom: '2px' }}>Tindakan:</div>
+                  <div style={{ color: '#f1f5f9', marginBottom: '6px' }}>{trouble.tindakan}</div>
+                  <div style={{ color: '#e2f0ea', fontWeight: 700, marginBottom: '2px' }}>Hasil:</div>
+                  <div style={{ color: '#f1f5f9' }}>{trouble.hasil}</div>
+                </div>
               </div>
             )}
+          </div>
         </div>
       </div>
 
+      {/* Kontrol Admin & Teknisi */}
       {isStaff && (
-        <div style={{ border: '1px solid #dce5df', borderRadius: '12px', padding: '20px', background: '#fff', display: 'grid', gap: '16px' }}>
-          <b style={{ color: '#18241c', fontSize: '12px' }}>Kontrol Teknisi & Admin</b>
+        <div style={{ border: '1px solid #0c4a30', borderRadius: '12px', padding: '20px', background: '#0c4a30', color: '#ffffff', display: 'grid', gap: '16px', boxShadow: '0 8px 20px rgba(12, 74, 48, 0.25)' }}>
+          <b style={{ color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '6px' }}>Kontrol Teknisi & Admin</b>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <form onSubmit={handleUpdateStatus} style={{ display: 'grid', gap: '8px' }}>
-              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#455249' }}>Status Tiket</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+            <form onSubmit={handleUpdateStatus} style={{ display: 'grid', gap: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#f1f5f9' }}>Status Tiket</label>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <select name="status" defaultValue={ticket.status} style={{ height: '36px', padding: '0 10px', borderRadius: '7px', border: '1px solid #cfdad2', width: '100%', fontSize: '11px' }}>
+                <select name="status" defaultValue={ticket.status} style={{ height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid #166534', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937' }}>
                   <option value="NEW">NEW</option>
                   <option value="ASSIGNED">ASSIGNED</option>
                   <option value="IN_PROGRESS">IN_PROGRESS</option>
@@ -200,39 +208,37 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
                   <option value="RESOLVED">RESOLVED</option>
                   <option value="CLOSED">CLOSED</option>
                 </select>
-                <button type="submit" className="create-ticket" style={{ height: '36px', whiteSpace: 'nowrap' }}>Perbarui</button>
+                <button type="submit" style={{ height: '38px', padding: '0 14px', whiteSpace: 'nowrap', backgroundColor: '#15803d', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>Perbarui</button>
               </div>
             </form>
 
-            <form onSubmit={handleUpdatePriority} style={{ display: 'grid', gap: '8px' }}>
-              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#455249' }}>Prioritas Tiket</label>
+            <form onSubmit={handleUpdatePriority} style={{ display: 'grid', gap: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#f1f5f9' }}>Prioritas Tiket</label>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <select name="prioritas" defaultValue={ticket.prioritas} style={{ height: '36px', padding: '0 10px', borderRadius: '7px', border: '1px solid #cfdad2', width: '100%', fontSize: '11px' }}>
+                <select name="prioritas" defaultValue={ticket.prioritas} style={{ height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid #166534', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937' }}>
                   <option value="level_1">Level 1 (Low)</option>
                   <option value="level_2">Level 2 (Medium)</option>
                   <option value="level_3">Level 3 (High)</option>
                 </select>
-                <button type="submit" className="create-ticket" style={{ height: '36px', whiteSpace: 'nowrap' }}>Perbarui</button>
+                <button type="submit" style={{ height: '38px', padding: '0 14px', whiteSpace: 'nowrap', backgroundColor: '#15803d', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>Perbarui</button>
               </div>
             </form>
           </div>
 
-            {isStaff && (
-              <form onSubmit={handleResolve} style={{ display: 'grid', gap: '10px', borderTop: '1px solid #e1e8e3', paddingTop: '16px' }}>
-            <b style={{ fontSize: '11px', color: '#18241c' }}>Penyelesaian Tiket</b>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <label style={{ fontSize: '11px', color: '#455249', display: 'grid', gap: '4px' }}>
+          <form onSubmit={handleResolve} style={{ display: 'grid', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '16px' }}>
+            <b style={{ fontSize: '12px', color: '#e2f0ea' }}>Form Penyelesaian Tiket</b>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+              <label style={{ fontSize: '12px', color: '#f1f5f9', display: 'grid', gap: '4px' }}>
                 Tindakan Perbaikan
-                <textarea name="tindakan" rows="3" value={tindakanVal} onChange={(e) => setTindakanVal(e.target.value)} required style={{ width: '100%', padding: '8px', border: '1px solid #cfdad2', borderRadius: '7px', fontSize: '11px' }} placeholder="Tuliskan tindakan..."></textarea>
+                <textarea name="tindakan" rows="3" value={tindakanVal} onChange={(e) => setTindakanVal(e.target.value)} required style={{ width: '100%', padding: '10px', border: '1px solid #166534', borderRadius: '8px', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', resize: 'vertical' }} placeholder="Tuliskan tindakan..."></textarea>
               </label>
-              <label style={{ fontSize: '11px', color: '#455249', display: 'grid', gap: '4px' }}>
+              <label style={{ fontSize: '12px', color: '#f1f5f9', display: 'grid', gap: '4px' }}>
                 Hasil Akhir
-                <textarea name="hasil_akhir" rows="3" value={hasilVal} onChange={(e) => setHasilVal(e.target.value)} required style={{ width: '100%', padding: '8px', border: '1px solid #cfdad2', borderRadius: '7px', fontSize: '11px' }} placeholder="Tuliskan hasil akhir..."></textarea>
+                <textarea name="hasil_akhir" rows="3" value={hasilVal} onChange={(e) => setHasilVal(e.target.value)} required style={{ width: '100%', padding: '10px', border: '1px solid #166534', borderRadius: '8px', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', resize: 'vertical' }} placeholder="Tuliskan hasil akhir..."></textarea>
               </label>
             </div>
-            <button type="submit" className="create-ticket" style={{ width: '100%', height: '36px', marginTop: '4px' }}>Simpan Penyelesaian</button>
-              </form>
-            )}
+            <button type="submit" style={{ width: '100%', height: '40px', marginTop: '6px', backgroundColor: '#15803d', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>Simpan Penyelesaian</button>
+          </form>
         </div>
       )}
     </div>
@@ -350,7 +356,9 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
                 padding: '16px',
                 marginBottom: '12px',
                 cursor: 'pointer',
-                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                // Efek mengambang (floating/elevation shadow) diaktifkan kembali
+                boxShadow: '0 8px 20px rgba(12, 74, 48, 0.25)',
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease'
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
