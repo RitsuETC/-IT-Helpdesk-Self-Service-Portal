@@ -148,9 +148,15 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           <b style={{ display: 'block', marginBottom: '12px', color: '#18241c', fontSize: '11px' }}>Detail Laporan</b>
           <div style={{ display: 'grid', gap: '8px', fontSize: '11px', color: '#455249' }}>
             <div><strong>ID Tiket:</strong> HD-{ticket.id}</div>
+<<<<<<< HEAD
             <div><strong>Pelapor:</strong> {ticket.pelapor_nama || ticket.pelapor}</div>
             <div><strong>Lokasi:</strong> {ticket.nama_ruangan || ticket.lokasi}</div>
             <div><strong>Kategori:</strong> {ticket.nama_kategori || ticket.kategori}</div>
+=======
+            <div><strong>Pelapor:</strong> {ticket.pelapor_nama || ticket.pelapor || '-'}</div>
+            <div><strong>Lokasi:</strong> {ticket.nama_ruangan || ticket.ruangan || ticket.lokasi || '-'}</div>
+            <div><strong>Kategori:</strong> {ticket.nama_kategori || ticket.kategori || ticket.categori || '-'}</div>
+>>>>>>> 8e59109596a59be6f142fdc4567b071bdfedf6aa
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <strong>Prioritas:</strong> {ticket.prioritas} 
               <span className={`priority-dot ${ticket.prioritas?.toLowerCase()}`}></span>
