@@ -147,7 +147,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
       {actionNotice && <p style={{ color: '#15803d', fontWeight: 'bold', fontSize: '12px', marginBottom: '16px', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '8px 12px', borderRadius: '8px' }}>{actionNotice}</p>}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        {/* Kotak Detail Laporan (Hijau Tua dengan Efek Mengambang/Shadow) */}
+        {/* Kotak Detail Laporan (Hijau Tua dengan Efek Mengambang) */}
         <div style={{ border: '1px solid #0c4a30', borderRadius: '12px', padding: '18px', background: '#0c4a30', color: '#ffffff', boxShadow: '0 8px 20px rgba(12, 74, 48, 0.25)' }}>
           <b style={{ display: 'block', marginBottom: '12px', color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '6px' }}>Detail Laporan</b>
           <div style={{ display: 'grid', gap: '8px', fontSize: '12px', color: '#f1f5f9' }}>
@@ -164,7 +164,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           </div>
         </div>
         
-        {/* Kotak Masalah & Deskripsi (Hijau Tua dengan Efek Mengambang/Shadow) */}
+        {/* Kotak Masalah & Deskripsi (Hijau Tua dengan Efek Mengambang) */}
         <div style={{ border: '1px solid #0c4a30', borderRadius: '12px', padding: '18px', background: '#0c4a30', color: '#ffffff', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 8px 20px rgba(12, 74, 48, 0.25)' }}>
           <div>
             <b style={{ display: 'block', marginBottom: '8px', color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '6px' }}>Masalah / Deskripsi</b>
@@ -315,9 +315,17 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
     )
   }
 
+  // Logika filter fleksibel yang mencocokkan teks pilihan filter dengan format database (level_1, level_2, dll)
   const filteredTickets = tickets.filter(t => {
     if (priorityFilter === 'ALL') return true
-    return t.prioritas?.toLowerCase() === priorityFilter.toLowerCase()
+    const ticketPriority = (t.prioritas || '').toLowerCase()
+    const filterVal = priorityFilter.toLowerCase()
+
+    if (filterVal === 'low') return ticketPriority.includes('low') || ticketPriority.includes('level_1')
+    if (filterVal === 'medium') return ticketPriority.includes('medium') || ticketPriority.includes('level_2')
+    if (filterVal === 'high' || filterVal === 'critical') return ticketPriority.includes('high') || ticketPriority.includes('critical') || ticketPriority.includes('level_3')
+
+    return ticketPriority === filterVal
   })
 
   return (
@@ -356,7 +364,7 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
                 padding: '16px',
                 marginBottom: '12px',
                 cursor: 'pointer',
-                // Efek mengambang (floating/elevation shadow) diaktifkan kembali
+                // Efek mengambang (floating/elevation shadow) dipertahankan
                 boxShadow: '0 8px 20px rgba(12, 74, 48, 0.25)',
                 transition: 'transform 0.2s ease, box-shadow 0.2s ease'
               }}
