@@ -828,6 +828,62 @@ td {
   font-weight: 500;
 }
 
+/* =========================================================
+   STYLE TAMBAHAN: RIWAYAT TIKET (SELARAS DASHBOARD)
+   ========================================================= */
+
+.history-ticket-card {
+  background: #0a5c36;
+  border-radius: 12px;
+  padding: 14px;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 10px;
+  box-shadow: 0 2px 6px rgb(10 92 54 / 0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.history-ticket-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgb(10 92 54 / 0.25);
+}
+
+.history-ticket-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.history-ticket-id {
+  font-weight: 700;
+  font-size: 13px;
+  color: #ffffff;
+}
+
+.history-ticket-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.history-ticket-title {
+  font-size: 12px;
+  color: #e2e8f0;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.history-ticket-date {
+  font-size: 10px;
+  color: #cbd5e1;
+}
+
 .priority-dot {
   width: 9px !important;
   height: 9px !important;
@@ -969,69 +1025,6 @@ td {
   color: #516057;
   font: bold 16px/26px Arial;
   cursor: pointer;
-}
-
-.ticket-priority-options {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.ticket-priority-options legend {
-  margin-bottom: 4px;
-  color: #455249;
-  font: bold 11px Arial, sans-serif;
-}
-
-.ticket-priority-options label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-left: 4px solid;
-  border-radius: 6px;
-  font: bold 11px Arial, sans-serif;
-  cursor: pointer;
-}
-
-.ticket-priority-options input {
-  width: 13px;
-  height: 13px;
-}
-
-.ticket-priority-options.critical {
-  border-color: #dc3030;
-  background: #fff5f5;
-}
-
-.ticket-priority-options.high {
-  border-color: #ff781d;
-  background: #fff8f3;
-}
-
-.ticket-priority-options.medium {
-  border-color: #d5b900;
-  background: #fffdf2;
-}
-
-.ticket-priority-options span {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-}
-
-.ticket-priority-options .critical span {
-  background: #dc3030;
-}
-
-.ticket-priority-options .high span {
-  background: #ff781d;
-}
-
-.ticket-priority-options .medium span {
-  background: #d5b900;
 }
 
 /* =========================================================

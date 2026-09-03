@@ -120,7 +120,6 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
       setTrouble(res.data || null)
       setTindakanVal(res.data?.tindakan || '')
       setHasilVal(res.data?.hasil || '')
-      // keep ticket data in sync if backend included solusi
       loadDetail()
     } catch (err) {
       setActionNotice(err.message)
@@ -148,15 +147,9 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           <b style={{ display: 'block', marginBottom: '12px', color: '#18241c', fontSize: '11px' }}>Detail Laporan</b>
           <div style={{ display: 'grid', gap: '8px', fontSize: '11px', color: '#455249' }}>
             <div><strong>ID Tiket:</strong> HD-{ticket.id}</div>
-<<<<<<< HEAD
             <div><strong>Pelapor:</strong> {ticket.pelapor_nama || ticket.pelapor}</div>
             <div><strong>Lokasi:</strong> {ticket.nama_ruangan || ticket.lokasi}</div>
             <div><strong>Kategori:</strong> {ticket.nama_kategori || ticket.kategori}</div>
-=======
-            <div><strong>Pelapor:</strong> {ticket.pelapor_nama || ticket.pelapor || '-'}</div>
-            <div><strong>Lokasi:</strong> {ticket.nama_ruangan || ticket.ruangan || ticket.lokasi || '-'}</div>
-            <div><strong>Kategori:</strong> {ticket.nama_kategori || ticket.kategori || ticket.categori || '-'}</div>
->>>>>>> 8e59109596a59be6f142fdc4567b071bdfedf6aa
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <strong>Prioritas:</strong> {ticket.prioritas} 
               <span className={`priority-dot ${ticket.prioritas?.toLowerCase()}`}></span>
@@ -165,7 +158,6 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
             <div><strong>Tanggal:</strong> {new Date(ticket.created_at).toLocaleString()}</div>
           </div>
         </div>
-
         <div style={{ border: '1px solid #dce5df', borderRadius: '12px', padding: '16px', background: '#f8faf9' }}>
           <b style={{ display: 'block', marginBottom: '12px', color: '#18241c', fontSize: '11px' }}>Masalah / Deskripsi</b>
             <p style={{ margin: 0, fontSize: '11px', color: '#455249', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>{ticket.deskripsi}</p>
@@ -348,29 +340,38 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
           <p className="empty-tickets">Tidak ada tiket ditemukan.</p>
         ) : (
           filteredTickets.map(t => (
-            <div key={t.id} className="ticket-card" onClick={() => setSelectedTicketId(t.id)}>
-              <div>
-                <b>ID Tiket</b>
-                <span>HD-{t.id}</span>
-              </div>
-              <div>
-                <b>Judul</b>
-                <span>{t.judul}</span>
-              </div>
-              <div>
-                <b>Kategori</b>
-                <span>{t.kategori}</span>
-              </div>
-              <div>
-                <b>Prioritas</b>
-                <span style={{ display: 'flex', alignItems: 'center' }}>
-                  {t.prioritas}
-                  <span className={`priority-dot ${t.prioritas?.toLowerCase()}`}></span>
+            <div 
+              key={t.id} 
+              onClick={() => setSelectedTicketId(t.id)}
+              style={{
+                backgroundColor: '#0c4a30',
+                color: '#ffffff',
+                borderRadius: '12px',
+                padding: '16px',
+                marginBottom: '12px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontWeight: 'bold', fontSize: '13px', color: '#e2f0ea' }}>HD-{t.id}</span>
+                <span style={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)', 
+                  padding: '2px 8px', 
+                  borderRadius: '20px', 
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: '#ffffff'
+                }}>
+                  {t.status}
                 </span>
               </div>
-              <div>
-                <b>Status</b>
-                <span>{t.status}</span>
+              <div style={{ fontSize: '14px', fontWeight: '500', marginBottom: '12px', color: '#ffffff' }}>{t.judul}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#cbd5e1' }}>
+                <span>
+                  {new Date(t.created_at).toLocaleDateString()} ({t.kategori})
+                </span>
+                <span className={`priority-dot ${t.prioritas?.toLowerCase()}`} title={t.prioritas}></span>
               </div>
             </div>
           ))

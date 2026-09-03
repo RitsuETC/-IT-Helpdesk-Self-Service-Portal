@@ -60,13 +60,25 @@ export default function HistoryCarousel({ token, user, onError }) {
 
       <div style={{ display: 'grid', gap: 12 }}>
         {visible.map((t) => (
-          <button key={t.id} onClick={() => setSelectedTicket(t)} style={{ textAlign: 'left', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: 12, cursor: 'pointer' }}>
+          <button 
+            key={t.id} 
+            onClick={() => setSelectedTicket(t)} 
+            style={{ 
+              textAlign: 'left', 
+              backgroundColor: '#0c4a30', 
+              color: '#ffffff', 
+              border: '1px solid #166534', 
+              borderRadius: 10, 
+              padding: 12, 
+              cursor: 'pointer' 
+            }}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <strong style={{ color: '#0f172a' }}>{t.code || `HD-${t.id}`}</strong>
-              <span style={{ padding: '4px 8px', borderRadius: 999, fontSize: '0.68rem', fontWeight: 700, backgroundColor: t.status === 'CLOSED' ? '#e2e8f0' : '#dcfce7', color: t.status === 'CLOSED' ? '#334155' : '#166534' }}>{t.status}</span>
+              <strong style={{ color: '#e2f0ea' }}>{t.code || `HD-${t.id}`}</strong>
+              <span style={{ padding: '4px 8px', borderRadius: 999, fontSize: '0.68rem', fontWeight: 700, backgroundColor: 'rgba(255, 255, 255, 0.2)', color: '#ffffff' }}>{t.status}</span>
             </div>
-            <div style={{ color: '#334155', fontWeight: 600 }}>{t.title || t.category || t.device || 'Tiket'}</div>
-            <div style={{ color: '#64748b', fontSize: '0.8rem' }}>{t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}</div>
+            <div style={{ color: '#ffffff', fontWeight: 600 }}>{t.title || t.category || t.device || 'Tiket'}</div>
+            <div style={{ color: '#cbd5e1', fontSize: '0.8rem' }}>{t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}</div>
           </button>
         ))}
       </div>
