@@ -88,26 +88,10 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
 
   const handleResolve = async (e) => {
     e.preventDefault()
-    const form = new FormData(e.currentTarget)
-    try {
-      await api(`/tickets/${ticketId}/resolve`, {
-        token,
-        method: 'PATCH',
-        body: { 
-          tindakan: form.get('tindakan'), 
-          hasil_akhir: form.get('hasil_akhir') 
-        }
-      })
-      setActionNotice('Tiket berhasil diselesaikan!')
-      loadDetail()
-      loadTroubleshooting()
-    } catch (err) {
-      setActionNotice(err.message)
+    if (!tindakanVal.trim() || !hasilVal.trim()) {
+      setActionNotice('Tindakan dan hasil akhir wajib diisi')
+      return
     }
-  }
-
-  const handleCreateTroubleshooting = async (e) => {
-    e.preventDefault()
     try {
       const res = await api('/troubleshooting', {
         token,
@@ -118,11 +102,12 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           hasil_akhir: hasilVal,
         }
       })
-      setActionNotice(res.message || 'Tindakan berhasil disimpan')
-      // update local state immediately from response and keep form in sync
+
+      setActionNotice(res.message || 'Penyelesaian disimpan')
       setTrouble(res.data || null)
       setTindakanVal(res.data?.tindakan || '')
       setHasilVal(res.data?.hasil || '')
+      // keep ticket data in sync if backend included solusi
       loadDetail()
     } catch (err) {
       setActionNotice(err.message)
@@ -166,41 +151,24 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           <b style={{ display: 'block', marginBottom: '12px', color: '#18241c', fontSize: '11px' }}>Masalah / Deskripsi</b>
             <p style={{ margin: 0, fontSize: '11px', color: '#455249', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>{ticket.deskripsi}</p>
 
-            <div style={{ marginTop: 12 }}>
-              <b style={{ display: 'block', marginBottom: 8 }}>Tindakan / Hasil</b>
-              {troublesLoading ? (
-                <p style={{ color: '#64748b', margin: 0 }}>Memuat tindakan...</p>
-              ) : !trouble ? (
-                <p style={{ color: '#64748b', margin: 0 }}>Belum ada tindakan yang tercatat.</p>
-              ) : (
-                <div style={{ display: 'grid', gap: 8 }}>
-                  <div key={trouble.id} style={{ padding: 10, borderRadius: 8, background: '#fff', border: '1px solid #e6efea' }}>
-                    <div style={{ fontSize: '0.95rem', color: '#0f172a', fontWeight: 700 }}>Tindakan</div>
-                    <div style={{ marginTop: 6, color: '#334155' }}>{trouble.tindakan}</div>
-                    <div style={{ marginTop: 8, fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>Hasil</div>
-                    <div style={{ marginTop: 6, color: '#334155' }}>{trouble.hasil}</div>
+            {!isStaff && (
+              <div style={{ marginTop: 12 }}>
+                <b style={{ display: 'block', marginBottom: 8 }}>Tindakan / Hasil</b>
+                {troublesLoading ? (
+                  <p style={{ color: '#64748b', margin: 0 }}>Memuat tindakan...</p>
+                ) : !trouble ? (
+                  <p style={{ color: '#64748b', margin: 0 }}>Belum ada tindakan yang tercatat.</p>
+                ) : (
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    <div key={trouble.id} style={{ padding: 10, borderRadius: 8, background: '#fff', border: '1px solid #e6efea' }}>
+                      <div style={{ fontSize: '0.95rem', color: '#0f172a', fontWeight: 700 }}>Tindakan</div>
+                      <div style={{ marginTop: 6, color: '#334155' }}>{trouble.tindakan}</div>
+                      <div style={{ marginTop: 8, fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>Hasil</div>
+                      <div style={{ marginTop: 6, color: '#334155' }}>{trouble.hasil}</div>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Form tambah tindakan untuk Admin/Teknisi */}
-            {isStaff && (
-              <form onSubmit={handleCreateTroubleshooting} style={{ marginTop: 12, display: 'grid', gap: 8 }}>
-                <b style={{ display: 'block', marginBottom: 6 }}>{trouble ? 'Perbarui Tindakan' : 'Tambah Tindakan'}</b>
-                  <label style={{ fontSize: '11px', color: '#455249', display: 'grid', gap: '4px' }}>
-                    Tindakan
-                    <textarea name="tindakan" rows="2" value={tindakanVal} onChange={(e) => setTindakanVal(e.target.value)} required style={{ width: '100%', padding: '8px', border: '1px solid #cfdad2', borderRadius: '7px', fontSize: '11px' }} placeholder="Tuliskan tindakan..." />
-                  </label>
-                  <label style={{ fontSize: '11px', color: '#455249', display: 'grid', gap: '4px' }}>
-                    Hasil
-                    <textarea name="hasil_akhir" rows="2" value={hasilVal} onChange={(e) => setHasilVal(e.target.value)} required style={{ width: '100%', padding: '8px', border: '1px solid #cfdad2', borderRadius: '7px', fontSize: '11px' }} placeholder="Tuliskan hasil..." />
-                  </label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="submit" className="create-ticket" style={{ height: '36px' }}>{trouble ? 'Perbarui' : 'Simpan'}</button>
-                  <button type="button" className="create-ticket" style={{ height: '36px', background: '#eef6f0', color: '#0f172a' }} onClick={() => { setTrouble(null); setTindakanVal(''); setHasilVal(''); loadTroubleshooting(); }}>Refresh</button>
-                </div>
-              </form>
+                )}
+              </div>
             )}
         </div>
       </div>
@@ -238,18 +206,17 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
             </form>
           </div>
 
-            {/* Only teknisi should see resolve form */}
-            {user?.role === 'teknisi' && (
+            {isStaff && (
               <form onSubmit={handleResolve} style={{ display: 'grid', gap: '10px', borderTop: '1px solid #e1e8e3', paddingTop: '16px' }}>
             <b style={{ fontSize: '11px', color: '#18241c' }}>Penyelesaian Tiket</b>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <label style={{ fontSize: '11px', color: '#455249', display: 'grid', gap: '4px' }}>
                 Tindakan Perbaikan
-                <textarea name="tindakan" rows="3" defaultValue={ticket.tindakan || ''} required style={{ width: '100%', padding: '8px', border: '1px solid #cfdad2', borderRadius: '7px', fontSize: '11px' }} placeholder="Tuliskan tindakan..."></textarea>
+                <textarea name="tindakan" rows="3" value={tindakanVal} onChange={(e) => setTindakanVal(e.target.value)} required style={{ width: '100%', padding: '8px', border: '1px solid #cfdad2', borderRadius: '7px', fontSize: '11px' }} placeholder="Tuliskan tindakan..."></textarea>
               </label>
               <label style={{ fontSize: '11px', color: '#455249', display: 'grid', gap: '4px' }}>
                 Hasil Akhir
-                <textarea name="hasil_akhir" rows="3" defaultValue={ticket.hasil_akhir || ''} required style={{ width: '100%', padding: '8px', border: '1px solid #cfdad2', borderRadius: '7px', fontSize: '11px' }} placeholder="Tuliskan hasil akhir..."></textarea>
+                <textarea name="hasil_akhir" rows="3" value={hasilVal} onChange={(e) => setHasilVal(e.target.value)} required style={{ width: '100%', padding: '8px', border: '1px solid #cfdad2', borderRadius: '7px', fontSize: '11px' }} placeholder="Tuliskan hasil akhir..."></textarea>
               </label>
             </div>
             <button type="submit" className="create-ticket" style={{ width: '100%', height: '36px', marginTop: '4px' }}>Simpan Penyelesaian</button>
