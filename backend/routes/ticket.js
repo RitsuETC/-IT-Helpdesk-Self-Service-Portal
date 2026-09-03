@@ -8,7 +8,6 @@ const router = express.Router();
 // GET tiket berdasarkan role
 router.get("/", verifyToken, async (req, res) => {
   try {
-    console.log('[POST /tickets] body:', req.body);
     let query = `
       SELECT
         t.*,
@@ -471,7 +470,6 @@ router.post("/", verifyToken, async (req, res) => {
       level_3: "level_3",
     };
     const ticketPriority = prMap[rawPriority.toLowerCase()] || prMap['medium'];
-    console.log('[POST /tickets] mapped priority:', ticketPriority);
 
     // Normalize kategori -> id: accept either id or name
     let kategoriId = kategori;
