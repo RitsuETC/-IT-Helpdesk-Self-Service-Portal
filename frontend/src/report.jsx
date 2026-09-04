@@ -11,6 +11,8 @@ export default function Report({ token, user, onBack }) {
   const [dateTo, setDateTo] = useState('')
   const [categories, setCategories] = useState([])
   const [selectedTicket, setSelectedTicket] = useState(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [detailError, setDetailError] = useState('')
 
   const isStaff = user?.role === 'admin' || user?.role === 'teknisi'
 
