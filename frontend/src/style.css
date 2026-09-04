@@ -1062,13 +1062,13 @@ td {
   width: max-content;
   min-width: 180px;
   margin: 0 auto 20px;
-  padding: 9px 18px;
-  border-radius: 9px;
-  background: var(--green);
-  color: #fff;
-  font: bold 18px Arial, sans-serif;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #1f2937;
+  font: bold 22px Arial, sans-serif;
   text-align: center;
-  box-shadow: 0 6px 15px rgb(22 142 8 / .14);
+  box-shadow: none;
 }
 
 .knowledge-filter {
@@ -1076,6 +1076,11 @@ td {
   justify-content: center;
   gap: 9px;
   margin-bottom: 28px;
+  background: linear-gradient(135deg, #0c4a30 0%, #064e3b 100%);
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgb(12 74 48 / .25);
+  border: 1px solid #064e3b;
 }
 
 .knowledge-filter label {
@@ -1105,6 +1110,7 @@ td {
   background: transparent;
   font-size: 13px;
   font-weight: 600;
+  color: #1f2937;
 }
 
 .knowledge-filter select {
@@ -1115,6 +1121,7 @@ td {
   color: #1f2937;
   font: bold 12px Arial, sans-serif;
   outline: none;
+  padding: 0 8px;
 }
 
 .article-grid {
@@ -1318,7 +1325,6 @@ td {
   background: var(--green);
 }
 
-/* Pembungkus box teks agar tombol "Lihat Selengkapnya" bisa ditaruh di bawahnya */
 .knowledge-text-box-wrapper {
   position: relative;
   display: flex;
@@ -1340,7 +1346,6 @@ td {
   text-align: left;
 }
 
-/* Tombol Lihat Selengkapnya */
 .read-more-btn {
   margin-top: 8px;
   background: transparent;
@@ -1359,7 +1364,6 @@ td {
   text-decoration: underline;
 }
 
-/* Modal Pop-up khusus Teks Lengkap */
 .knowledge-fulltext-modal {
   position: relative;
   width: min(90%, 600px);
