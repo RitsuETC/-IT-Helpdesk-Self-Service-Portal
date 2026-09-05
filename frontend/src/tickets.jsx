@@ -169,14 +169,6 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           e.currentTarget.style.transform = 'translateY(0)';
           e.currentTarget.style.boxShadow = '0 6px 16px rgba(12, 74, 48, 0.2)';
         }}
-        onMouseDown={(e) => {
-          e.currentTarget.style.transform = 'translateY(1px) scale(0.98)';
-          e.currentTarget.style.boxShadow = '0 2px 8px rgba(12, 74, 48, 0.2)';
-        }}
-        onMouseUp={(e) => {
-          e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 8px 20px rgba(12, 74, 48, 0.3)';
-        }}
       >
         ← Kembali ke Daftar
       </button>
@@ -232,16 +224,13 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
         </div>
       </div>
 
-      {/* Kontrol Admin & Teknisi */}
       {isStaff && (
         <div style={{ border: '1px solid #064e3b', borderRadius: '14px', padding: '20px', background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', color: '#ffffff', display: 'grid', gap: '18px', boxShadow: '0 10px 24px rgba(12, 74, 48, 0.2)', width: '100%', boxSizing: 'border-box' }}>
           <b style={{ color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '8px' }}>Kontrol Teknisi & Admin</b>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', width: '100%' }}>
-            {/* Form Ubah Status */}
             <form onSubmit={handleUpdateStatus} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <label style={{ fontSize: '12px', fontWeight: '700', color: '#f1f5f9' }}>Status Tiket</label>
-              
               <select
                 name="status"
                 value={selectedStatus}
@@ -275,20 +264,14 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
 
               <button 
                 type="submit" 
-                style={{ height: '38px', padding: '0 16px', backgroundColor: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', width: '100%', marginTop: 'auto', transition: 'background 0.1s ease, transform 0.1s ease' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#065f46'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#047857'}
-                onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
-                onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                style={{ height: '38px', padding: '0 16px', backgroundColor: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', width: '100%', marginTop: 'auto' }}
               >
                 Perbarui Status
               </button>
             </form>
 
-            {/* Form Ubah Prioritas */}
             <form onSubmit={handleUpdatePriority} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <label style={{ fontSize: '12px', fontWeight: '700', color: '#f1f5f9' }}>Prioritas Tiket</label>
-              
               <select name="prioritas" defaultValue={ticket.prioritas} style={{ height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid #cbd5e1', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', boxSizing: 'border-box' }}>
                 <option value="level_1">Level 1 (Low)</option>
                 <option value="level_2">Level 2 (Medium)</option>
@@ -297,18 +280,13 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
 
               <button 
                 type="submit" 
-                style={{ height: '38px', padding: '0 16px', backgroundColor: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', width: '100%', marginTop: 'auto', transition: 'background 0.1s ease, transform 0.1s ease' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#065f46'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#047857'}
-                onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
-                onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                style={{ height: '38px', padding: '0 16px', backgroundColor: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', width: '100%', marginTop: 'auto' }}
               >
                 Perbarui Prioritas
               </button>
             </form>
           </div>
 
-          {/* Form Penyelesaian Tiket */}
           <form onSubmit={handleResolve} style={{ display: 'grid', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '16px', width: '100%' }}>
             <b style={{ fontSize: '12px', color: '#e2f0ea' }}>Form Penyelesaian Tiket</b>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', width: '100%' }}>
@@ -323,11 +301,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
             </div>
             <button 
               type="submit" 
-              style={{ width: '100%', height: '40px', marginTop: '6px', backgroundColor: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 6px 16px rgba(0,0,0,0.15)', transition: 'background 0.1s ease, transform 0.1s ease' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#065f46'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#047857'}
-              onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
-              onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              style={{ width: '100%', height: '40px', marginTop: '6px', backgroundColor: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 6px 16px rgba(0,0,0,0.15)' }}
             >
               Simpan Penyelesaian
             </button>
@@ -436,7 +410,32 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
             <option value="Low">Low</option>
           </select>
         </label>
-        <button className="create-ticket" onClick={() => setShowCreateForm(true)}>
+        
+        {/* Tombol Buat Tiket Baru dengan Warna & Efek Baru */}
+        <button 
+          className="create-ticket" 
+          onClick={() => setShowCreateForm(true)}
+          style={{
+            background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+            color: '#ffffff',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '10px',
+            fontWeight: '700',
+            fontSize: '13px',
+            cursor: 'pointer',
+            boxShadow: '0 4px 14px rgba(5, 150, 105, 0.25)',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 6px 18px rgba(5, 150, 105, 0.35)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 4px 14px rgba(5, 150, 105, 0.25)';
+          }}
+        >
           + Buat Tiket Baru
         </button>
       </div>
@@ -467,14 +466,6 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
                 e.currentTarget.style.transform = 'translateY(0)';
                 e.currentTarget.style.boxShadow = '0 8px 20px rgba(12, 74, 48, 0.25)';
               }}
-              onMouseDown={(e) => {
-                e.currentTarget.style.transform = 'translateY(1px) scale(0.99)';
-                e.currentTarget.style.boxShadow = '0 4px 10px rgba(12, 74, 48, 0.2)';
-              }}
-              onMouseUp={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 12px 25px rgba(12, 74, 48, 0.35)';
-              }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <span style={{ fontWeight: 'bold', fontSize: '13px', color: '#e2f0ea' }}>HD-{t.id}</span>
@@ -501,20 +492,72 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
         )}
       </div>
 
+      {/* Pop-up (Modal) Buat Tiket Baru yang Dipercantik */}
       {showCreateForm && (
-        <div className="modal-backdrop" onClick={() => setShowCreateForm(false)}>
-          <form className="ticket-form" onClick={e => e.stopPropagation()} onSubmit={handleCreateTicket}>
-            <button type="button" className="close-ticket-form" onClick={() => setShowCreateForm(false)}>×</button>
-            <h2>Buat Tiket Baru</h2>
+        <div 
+          className="modal-backdrop" 
+          onClick={() => setShowCreateForm(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.45)',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000,
+            animation: 'fadeIn 0.2s ease'
+          }}
+        >
+          <form 
+            className="ticket-form" 
+            onClick={e => e.stopPropagation()} 
+            onSubmit={handleCreateTicket}
+            style={{
+              background: '#ffffff',
+              padding: '28px',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '460px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px',
+              boxSizing: 'border-box'
+            }}
+          >
+            <button 
+              type="button" 
+              className="close-ticket-form" 
+              onClick={() => setShowCreateForm(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '18px',
+                background: 'none',
+                border: 'none',
+                fontSize: '20px',
+                color: '#6b7280',
+                cursor: 'pointer'
+              }}
+            >
+              ×
+            </button>
             
-            <label>
+            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#0c4a30', margin: '0 0 4px 0' }}>Buat Tiket Baru</h2>
+            
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', fontWeight: '600', color: '#374151' }}>
               Judul Kendala
-              <input name="judul" required placeholder="Contoh: Printer Rusak" />
+              <input name="judul" required placeholder="Contoh: Printer Rusak" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '12px', outline: 'none' }} />
             </label>
 
-            <label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', fontWeight: '600', color: '#374151' }}>
               Kategori
-              <select name="kategori">
+              <select name="kategori" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '12px', background: '#fff', outline: 'none' }}>
                 <option value="Hardware">Hardware</option>
                 <option value="Software">Software</option>
                 <option value="Jaringan">Jaringan</option>
@@ -522,9 +565,9 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
               </select>
             </label>
 
-            <label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', fontWeight: '600', color: '#374151' }}>
               Lokasi / Ruangan
-              <select name="ruangan" required defaultValue="" style={{ display: 'block' }}>
+              <select name="ruangan" required defaultValue="" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '12px', background: '#fff', outline: 'none' }}>
                 <option value="" disabled>-- Pilih Ruangan --</option>
                 {rooms.map(r => (
                   <option key={r.id} value={r.id}>{r.ruangan}</option>
@@ -532,12 +575,31 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
               </select>
             </label>
 
-            <label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', fontWeight: '600', color: '#374151' }}>
               Deskripsi Masalah
-              <textarea name="deskripsi" required placeholder="Jelaskan kendala secara rinci..."></textarea>
+              <textarea name="deskripsi" required placeholder="Jelaskan kendala secara rinci..." rows="3" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '12px', resize: 'vertical', outline: 'none' }}></textarea>
             </label>
 
-            <button type="submit">Kirim Laporan Tiket</button>
+            <button 
+              type="submit"
+              style={{
+                marginTop: '6px',
+                background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '11px',
+                borderRadius: '8px',
+                fontWeight: '700',
+                fontSize: '13px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
+                transition: 'background 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'linear-gradient(135deg, #047857 0%, #065f46 100%)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)'}
+            >
+              Kirim Laporan Tiket
+            </button>
           </form>
         </div>
       )}
