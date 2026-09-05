@@ -116,7 +116,7 @@ function Troubleshooting({ articles, onOpenArticle }) {
         ))}
         {!results.length && <p style={{ color: '#6b7280', fontSize: '13px', textAlign: 'center', margin: '16px 0' }}>Tidak ada solusi ditemukan.</p>}
       </div>
-    </section>
+    </section> 
   )
 }
 
