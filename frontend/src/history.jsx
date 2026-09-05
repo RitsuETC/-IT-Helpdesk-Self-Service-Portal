@@ -32,7 +32,7 @@ export default function HistoryCarousel({ token, user, onError }) {
     return () => clearInterval(timer)
   }, [token])
 
-  const VISIBLE_COUNT = 5
+  const VISIBLE_COUNT = 3
   const visible = tickets.slice(historyIndex, historyIndex + VISIBLE_COUNT)
 
   const change = (dir) => {
@@ -100,7 +100,7 @@ export default function HistoryCarousel({ token, user, onError }) {
       </div>
 
       {/* Daftar Kartu Riwayat Tiket dengan Hijau Tua Gradasi Semula */}
-      <div style={{ display: 'grid', gap: '10px' }}>
+      <div style={{ display: 'grid', gap: '8px' }}>
         {visible.map((t) => (
           <button 
             key={t.id} 
@@ -110,34 +110,34 @@ export default function HistoryCarousel({ token, user, onError }) {
               background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', 
               color: '#ffffff', 
               border: '1px solid #064e3b', 
-              borderRadius: '12px', 
-              padding: '14px', 
+              borderRadius: '10px', 
+              padding: '10px 14px', 
               cursor: 'pointer',
-              boxShadow: '0 8px 20px rgba(12, 74, 48, 0.25)',
+              boxShadow: '0 4px 12px rgba(12, 74, 48, 0.2)',
               transition: 'transform 0.2s ease, box-shadow 0.2s ease',
               display: 'flex',
               flexDirection: 'column',
-              gap: '6px'
+              gap: '4px'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 12px 25px rgba(12, 74, 48, 0.35)';
+              e.currentTarget.style.boxShadow = '0 8px 18px rgba(12, 74, 48, 0.3)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 8px 20px rgba(12, 74, 48, 0.25)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(12, 74, 48, 0.2)';
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <strong style={{ color: '#e2f0ea', fontSize: '13px', letterSpacing: '0.3px' }}>{t.code || `HD-${t.id}`}</strong>
-              <span style={{ padding: '3px 9px', borderRadius: '20px', fontSize: '10px', fontWeight: 'bold', backgroundColor: 'rgba(255, 255, 255, 0.15)', color: '#ffffff', textTransform: 'uppercase' }}>
+              <strong style={{ color: '#e2f0ea', fontSize: '12px', letterSpacing: '0.3px' }}>{t.code || `HD-${t.id}`}</strong>
+              <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '9px', fontWeight: 'bold', backgroundColor: 'rgba(255, 255, 255, 0.15)', color: '#ffffff', textTransform: 'uppercase' }}>
                 {t.status}
               </span>
             </div>
-            <div style={{ color: '#ffffff', fontWeight: '600', fontSize: '13px', lineHeight: '1.4' }}>
+            <div style={{ color: '#ffffff', fontWeight: '600', fontSize: '12px', lineHeight: '1.3' }}>
               {t.title || t.category || t.device || 'Tiket'}
             </div>
-            <div style={{ color: '#cbd5e1', fontSize: '11px' }}>
+            <div style={{ color: '#cbd5e1', fontSize: '10px' }}>
               {t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}
             </div>
           </button>

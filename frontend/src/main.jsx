@@ -153,72 +153,107 @@ function App() {
         <section className="bento-container" style={{
           display: 'grid',
           gridTemplateColumns: '1fr 2fr',
-          gridTemplateRows: 'auto auto',
           gap: '20px',
           padding: '24px',
           maxWidth: '1280px',
-          margin: '0 auto'
+          margin: '0 auto',
+          alignItems: 'start'
         }}>
-          {/* Bento Box 1: Quick Action Pesan Tiket */}
-          <div id="sec-pesan" className="bento-box" style={{ gridColumn: '1 / 2', gridRow: '1 / 2', background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div>
-              <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 'bold' }}>Layanan Mandiri</span>
-              <h2 style={{ fontSize: '1.5rem', margin: '10px 0', color: '#0f172a' }}>Ada Masalah IT?</h2>
-              <p style={{ color: '#475569', fontSize: '0.95rem' }}>Laporkan gangguan atau permintaan layanan baru secara langsung ke tim teknisi.</p>
+          {/* Kolom Kiri: Layanan Mandiri & Riwayat Tiket */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Bento Box 1: Quick Action Pesan Tiket */}
+            <div id="sec-pesan" className="bento-box" style={{ 
+              background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)', 
+              padding: '24px', 
+              borderRadius: '16px', 
+              border: '1px solid #a7f3d0', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              justifyContent: 'flex-start',
+              color: '#064e3b',
+              boxShadow: '0 4px 16px rgba(16, 185, 129, 0.08)'
+            }}>
+              <div>
+                <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: '#047857', fontWeight: 'bold', letterSpacing: '0.05em' }}>Layanan Mandiri</span>
+                <h2 style={{ fontSize: '1.5rem', margin: '10px 0', color: '#064e3b' }}>Ada Masalah IT?</h2>
+                <p style={{ color: '#047857', fontSize: '0.95rem', lineHeight: '1.5', marginBottom: '24px' }}>Laporkan gangguan atau permintaan layanan baru secara langsung ke tim teknisi.</p>
+              </div>
+              <button 
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  backgroundColor: '#059669',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#047857';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(5, 150, 105, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#059669';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(5, 150, 105, 0.3)';
+                }}
+                onMouseDown={(e) => {
+                  e.currentTarget.style.transform = 'translateY(1px) scale(0.98)';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(5, 150, 105, 0.2)';
+                }}
+                onMouseUp={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(5, 150, 105, 0.4)';
+                }}
+                onClick={() => {
+                  if (!session) {
+                    setShowLoginModal(true)
+                  } else {
+                    setPage('tickets')
+                  }
+                }}
+              >
+                + Buat Tiket Sekarang
+              </button>
             </div>
-            <button 
-              style={{
-                width: '100%',
-                padding: '14px',
-                backgroundColor: '#16a34a',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '8px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                marginTop: '20px',
-                fontSize: '1rem'
-              }}
-              onClick={() => {
-                if (!session) {
-                  setShowLoginModal(true)
-                } else {
-                  setPage('tickets')
-                }
-              }}
-            >
-              + Buat Tiket Sekarang
-            </button>
+
+            {/* Bento Box 4: Riwayat Tiket */}
+            <div id="sec-riwayat" className="bento-box" style={{ background: '#ffffff', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '1.2rem' }}>Riwayat Tiket</h3>
+              <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '16px' }}>Daftar penanganan tiket yang telah selesai.</p>
+              <HistoryCarousel token={session?.token} user={session?.user} onError={setNotice} />
+            </div>
           </div>
 
-          {/* Bento Box 2: Status Tiket Aktif & Ringkasan */}
-          <div id="sec-status" className="bento-box" style={{ gridColumn: '2 / 3', gridRow: '1 / 2', background: '#ffffff', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem' }}>Status Tiket Aktif</h3>
-            <Dashboard 
-              token={session?.token} 
-              user={session?.user} 
-              onTroubleshooting={() => scrollToSection('sec-knowledge')} 
-              onTickets={() => setPage('tickets')} 
-              onKnowledge={() => scrollToSection('sec-knowledge')} 
-              onRequireLogin={() => setShowLoginModal(true)}
-              showHistory={false}
-            />
-          </div>
+          {/* Kolom Kanan: Status Tiket Aktif & Knowledge Base */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Bento Box 2: Status Tiket Aktif & Ringkasan */}
+            <div id="sec-status" className="bento-box" style={{ background: '#ffffff', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem' }}>Status Tiket Aktif</h3>
+              <Dashboard 
+                token={session?.token} 
+                user={session?.user} 
+                onTroubleshooting={() => scrollToSection('sec-knowledge')} 
+                onTickets={() => setPage('tickets')} 
+                onKnowledge={() => scrollToSection('sec-knowledge')} 
+                onRequireLogin={() => setShowLoginModal(true)}
+                showHistory={false}
+              />
+            </div>
 
-          {/* Bento Box 4: Riwayat Tiket (kembali di kolom kiri) */}
-          <div id="sec-riwayat" className="bento-box" style={{ gridColumn: '1 / 2', gridRow: '2 / 3', background: '#ffffff', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '1.2rem' }}>Riwayat Tiket</h3>
-            <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '16px' }}>Daftar penanganan tiket yang telah selesai.</p>
-            <HistoryCarousel token={session?.token} user={session?.user} onError={setNotice} />
-          </div>
-
-          {/* Bento Box 3: Knowledge Base & Troubleshooting */}
-          <div id="sec-knowledge" className="bento-box" style={{ gridColumn: '2 / 3', gridRow: '2 / 3', background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '1.2rem' }}>Knowledge Base & Solusi Mandiri</h3>
-            <Troubleshooting 
-              articles={articles} 
-              onOpenArticle={(article) => { setSelectedArticle(article); setPage('knowledge') }} 
-            />
+            {/* Bento Box 3: Knowledge Base & Troubleshooting */}
+            <div id="sec-knowledge" className="bento-box" style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '1.2rem' }}>Knowledge Base & Solusi Mandiri</h3>
+              <Troubleshooting 
+                articles={articles} 
+                onOpenArticle={(article) => { setSelectedArticle(article); setPage('knowledge') }} 
+              />
+            </div>
           </div>
         </section>
       )}
