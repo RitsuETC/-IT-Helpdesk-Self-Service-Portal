@@ -71,132 +71,205 @@ export default function Report({ token, user, onBack }) {
 
   const formatDate = (date) => {
     if (!date) return '-'
-    return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
+    return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
   }
 
   const statusLabel = { RESOLVED: 'Selesai', CLOSED: 'Ditutup' }
-  const statusColor = { RESOLVED: '#dcfce7', CLOSED: '#e2e8f0' }
-  const statusTextColor = { RESOLVED: '#166534', CLOSED: '#334155' }
+  const statusColor = { RESOLVED: '#dcfce7', CLOSED: '#f1f5f9' }
+  const statusTextColor = { RESOLVED: '#15803d', CLOSED: '#475569' }
 
   const resolvedCount = tickets.filter(t => t.status === 'RESOLVED').length
   const closedCount = tickets.filter(t => t.status === 'CLOSED').length
 
   return (
-    <div className="report-page">
+    <div className="report-page" style={{ maxWidth: '1100px', margin: '0 auto', padding: '16px' }}>
       <style>{`
+        /* STYLE KHUSUS HASIL PRINT/CETAK */
         @media print {
-          .no-print { display: none !important; }
-          .report-page { padding: 0 !important; margin: 0 !important; }
-          .report-header { background: #065f46 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .report-filters { display: none !important; }
-          .report-table-container { overflow: visible !important; }
-          .report-table { font-size: 10pt !important; }
-          .modal-backdrop { display: none !important; }
+          @page {
+            size: A4 landscape;
+            margin: 12mm;
+          }
+          body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            font-family: Arial, sans-serif !important;
+          }
+          .no-print, nav, header, .header, button, .report-filters, .report-summary-cards {
+            display: none !important;
+          }
+          .print-only {
+            display: block !important;
+          }
+          .report-page {
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+            box-shadow: none !important;
+          }
+          .report-table-container {
+            overflow: visible !important;
+            border: 1px solid #000 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+          }
+          .report-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 8.5pt !important;
+          }
+          .report-table th {
+            background-color: #0c4a30 !important;
+            color: #ffffff !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            border: 1px solid #000 !important;
+            padding: 6px 8px !important;
+          }
+          .report-table td {
+            border: 1px solid #ccc !important;
+            padding: 6px 8px !important;
+            color: #000000 !important;
+          }
+          .action-column {
+            display: none !important;
+          }
+        }
+
+        /* STYLE NORMAL DI LAYAR WEBPAGE */
+        .print-only {
+          display: none;
+        }
+        .report-table tbody tr:hover {
+          background-color: #f8fafc;
         }
       `}</style>
 
-      <div className="report-header no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-        <button onClick={onBack} style={{ background: '#f1f5f9', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>‹ Kembali</button>
+      {/* KOP SURAT PRINT (HANYA MUNCUL PAS DIPRINT) */}
+      <div className="print-only" style={{ marginBottom: '20px', textTransform: 'uppercase' }}>
+        <div style={{ textAlign: 'center', borderBottom: '3px double #000', paddingBottom: '10px' }}>
+          <h2 style={{ margin: 0, fontSize: '18pt', color: '#000', fontWeight: 'bold' }}>LAPORAN PENYELESAIAN TIKET BANTUAN IT</h2>
+          <p style={{ margin: '4px 0 0', fontSize: '10pt', color: '#333' }}>Sistem Informasi IT Helpdesk - Dokumen Laporan Resmi</p>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8.5pt', marginTop: '10px', color: '#333' }}>
+          <span>Tanggal Cetak: {new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+          <span>Total Laporan: {tickets.length} Tiket</span>
+        </div>
+      </div>
+
+      {/* Header Halaman Web */}
+      <div className="report-header no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px', background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', padding: '16px 20px', borderRadius: '14px', color: '#ffffff', boxShadow: '0 8px 20px rgba(12, 74, 48, 0.15)' }}>
+        <button onClick={onBack} style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '12px' }}>
+          ← Kembali
+        </button>
         <div style={{ textAlign: 'center' }}>
-          <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#0f172a' }}>Laporan Tiket Selesai</h2>
-          <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.9rem' }}>Daftar tiket yang telah diselesaikan atau ditutup</p>
+          <h2 style={{ margin: 0, fontSize: '1.3rem', color: '#ffffff', fontWeight: '700' }}>Laporan Tiket Selesai</h2>
+          <p style={{ margin: '2px 0 0', color: '#a7f3d0', fontSize: '0.825rem' }}>Daftar tiket yang telah diselesaikan atau ditutup</p>
         </div>
         {isStaff && (
-          <button onClick={handlePrint} style={{ background: '#065f46', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>Print Laporan</button>
+          <button onClick={handlePrint} style={{ background: '#15803d', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+            🖨️ Print Laporan
+          </button>
         )}
       </div>
 
-      <div className="report-filters no-print" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+      {/* Filter Toolbar */}
+      <div className="report-filters no-print" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '20px', padding: '14px', background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
         <input
           type="text"
           placeholder="Cari ID, judul, pelapor, ruangan..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ flex: '1 1 240px', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+          style={{ flex: '1 1 200px', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none' }}
         />
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: '#fff' }}>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: '#fff', outline: 'none' }}>
           <option value="all">Semua Status</option>
           <option value="RESOLVED">Selesai</option>
           <option value="CLOSED">Ditutup</option>
         </select>
-        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: '#fff' }}>
+        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: '#fff', outline: 'none' }}>
           <option value="all">Semua Kategori</option>
           {categories.map(cat => (
             <option key={cat.id} value={cat.nama_kategori}>{cat.nama_kategori}</option>
           ))}
         </select>
-        <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
-        <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
+        <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none' }} />
+        <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none' }} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '20px' }}>
-        <div style={{ background: '#dcfce7', padding: '16px', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
-          <small style={{ color: '#166534', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>RESOLVED</small>
-          <strong style={{ display: 'block', fontSize: '1.75rem', color: '#14532d' }}>{resolvedCount}</strong>
+      {/* Ringkasan Kartu Statistik */}
+      <div className="report-summary-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+        <div style={{ background: '#ecfdf5', padding: '14px 18px', borderRadius: '12px', border: '1px solid #a7f3d0' }}>
+          <small style={{ color: '#15803d', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.75rem' }}>RESOLVED</small>
+          <strong style={{ display: 'block', fontSize: '1.6rem', color: '#166534', marginTop: '2px' }}>{resolvedCount}</strong>
         </div>
-        <div style={{ background: '#f1f5f9', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-          <small style={{ color: '#334155', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CLOSED</small>
-          <strong style={{ display: 'block', fontSize: '1.75rem', color: '#0f172a' }}>{closedCount}</strong>
+        <div style={{ background: '#f8fafc', padding: '14px 18px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+          <small style={{ color: '#475569', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.75rem' }}>CLOSED</small>
+          <strong style={{ display: 'block', fontSize: '1.6rem', color: '#1e293b', marginTop: '2px' }}>{closedCount}</strong>
         </div>
-        <div style={{ background: '#065f46', padding: '16px', borderRadius: '12px', border: '1px solid #047857' }}>
-          <small style={{ color: '#a7f3d0', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>TOTAL</small>
-          <strong style={{ display: 'block', fontSize: '1.75rem', color: '#fff' }}>{tickets.length}</strong>
+        <div style={{ background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', padding: '14px 18px', borderRadius: '12px', border: '1px solid #064e3b', color: '#fff', boxShadow: '0 4px 12px rgba(12, 74, 48, 0.15)' }}>
+          <small style={{ color: '#a7f3d0', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.75rem' }}>TOTAL LAPORAN</small>
+          <strong style={{ display: 'block', fontSize: '1.6rem', color: '#ffffff', marginTop: '2px' }}>{tickets.length}</strong>
         </div>
       </div>
 
+      {/* Table Section */}
       {loading ? (
-        <p style={{ textAlign: 'center', color: '#64748b', padding: '40px' }}>Memuat laporan...</p>
+        <p style={{ textAlign: 'center', color: '#64748b', padding: '40px', background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0' }}>Memuat laporan...</p>
       ) : (
-        <div className="report-table-container" style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff' }}>
-          <table className="report-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+        <div className="report-table-container" style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+          <table className="report-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem', color: '#1f2937' }}>
             <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>ID Tiket</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Judul</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Kategori</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pelapor</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ruangan</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Teknisi</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prioritas</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tgl Dibuat</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tgl Selesai</th>
-                <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Aksi</th>
+              <tr style={{ background: '#0c4a30', color: '#ffffff', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+                <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: '700' }}>ID Tiket</th>
+                <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: '700' }}>Judul</th>
+                <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: '700' }}>Kategori</th>
+                <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: '700' }}>Pelapor</th>
+                <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: '700' }}>Ruangan</th>
+                <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: '700' }}>Teknisi</th>
+                <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: '700' }}>Prioritas</th>
+                <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: '700' }}>Status</th>
+                <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: '700' }}>Dibuat</th>
+                <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: '700' }}>Selesai</th>
+                <th className="action-column" style={{ padding: '12px 14px', textAlign: 'center', fontWeight: '700' }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
               {tickets.length === 0 ? (
                 <tr>
-                  <td colSpan="11" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>
+                  <td colSpan="11" style={{ padding: '28px', textAlign: 'center', color: '#64748b' }}>
                     Tidak ada tiket yang sesuai filter.
                   </td>
                 </tr>
               ) : (
                 tickets.map((ticket) => (
-                  <tr key={ticket.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '12px 16px', fontWeight: '700', color: '#0f172a' }}>HD-{ticket.id}</td>
-                    <td style={{ padding: '12px 16px', color: '#334155' }}>{ticket.judul}</td>
-                    <td style={{ padding: '12px 16px', color: '#334155' }}>{ticket.nama_kategori || '-'}</td>
-                    <td style={{ padding: '12px 16px', color: '#334155' }}>{ticket.pelapor_nama || '-'}</td>
-                    <td style={{ padding: '12px 16px', color: '#334155' }}>{ticket.nama_ruangan || '-'}</td>
-                    <td style={{ padding: '12px 16px', color: '#334155' }}>{ticket.teknisi_nama || '-'}</td>
-                    <td style={{ padding: '12px 16px', color: '#334155' }}>{ticket.prioritas}</td>
-                    <td style={{ padding: '12px 16px' }}>
+                  <tr key={ticket.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.15s ease' }}>
+                    <td style={{ padding: '10px 14px', fontWeight: '700', color: '#0c4a30', whiteSpace: 'nowrap' }}>HD-{ticket.id}</td>
+                    <td style={{ padding: '10px 14px', color: '#1f2937', fontWeight: '600', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ticket.judul}</td>
+                    <td style={{ padding: '10px 14px', color: '#4b5563' }}>{ticket.nama_kategori || '-'}</td>
+                    <td style={{ padding: '10px 14px', color: '#4b5563' }}>{ticket.pelapor_nama || '-'}</td>
+                    <td style={{ padding: '10px 14px', color: '#4b5563' }}>{ticket.nama_ruangan || '-'}</td>
+                    <td style={{ padding: '10px 14px', color: '#4b5563' }}>{ticket.teknisi_nama || '-'}</td>
+                    <td style={{ padding: '10px 14px', color: '#4b5563', whiteSpace: 'nowrap' }}>{ticket.prioritas}</td>
+                    <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                       <span style={{
                         backgroundColor: statusColor[ticket.status] || '#f1f5f9',
                         color: statusTextColor[ticket.status] || '#334155',
-                        padding: '4px 10px',
-                        borderRadius: '12px',
-                        fontSize: '0.75rem',
-                        fontWeight: '700'
+                        padding: '3px 8px',
+                        borderRadius: '20px',
+                        fontSize: '0.7rem',
+                        fontWeight: '700',
+                        display: 'inline-block'
                       }}>
                         {statusLabel[ticket.status] || ticket.status}
                       </span>
                     </td>
-                    <td style={{ padding: '12px 16px', color: '#334155' }}>{formatDate(ticket.created_at)}</td>
-                    <td style={{ padding: '12px 16px', color: '#334155' }}>{formatDate(ticket.status === 'RESOLVED' ? ticket.resolved_at : ticket.closed_at)}</td>
-                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                      <button onClick={() => setSelectedTicket(ticket)} style={{ background: '#065f46', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}>Lihat Detail</button>
+                    <td style={{ padding: '10px 14px', color: '#6b7280', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>{formatDate(ticket.created_at)}</td>
+                    <td style={{ padding: '10px 14px', color: '#6b7280', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>{formatDate(ticket.status === 'RESOLVED' ? ticket.resolved_at : ticket.closed_at)}</td>
+                    <td className="action-column" style={{ padding: '10px 14px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      <button onClick={() => setSelectedTicket(ticket)} style={{ background: '#0c4a30', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '700' }}>
+                        Detail
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -206,17 +279,18 @@ export default function Report({ token, user, onBack }) {
         </div>
       )}
 
+      {/* Modal Detail (Tidak akan muncul saat print) */}
       {selectedTicket && (
-        <div className="modal-backdrop" onClick={() => setSelectedTicket(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: 800, background: '#fff', borderRadius: 12, padding: 20, maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, color: '#0f172a' }}>Detail Tiket HD-{selectedTicket.id}</h3>
-              <button onClick={() => setSelectedTicket(null)} style={{ background: '#f1f5f9', border: 'none', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
+        <div className="modal-backdrop no-print" onClick={() => setSelectedTicket(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, padding: '16px' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 700, background: '#fff', borderRadius: 16, padding: 24, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+              <h3 style={{ margin: 0, color: '#0c4a30', fontSize: '1.1rem', fontWeight: '700' }}>Detail Tiket HD-{selectedTicket.id}</h3>
+              <button onClick={() => setSelectedTicket(null)} style={{ background: '#f1f5f9', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 'bold' }}>×</button>
             </div>
             {detailLoading && <p style={{ color: '#64748b' }}>Memuat detail tiket...</p>}
             {detailError && <p style={{ color: '#dc2626', marginBottom: '12px' }}>{detailError}</p>}
             {!detailLoading && !detailError && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.85rem', color: '#1f2937' }}>
                 <div><b>Judul:</b> {selectedTicket.judul}</div>
                 <div><b>Kategori:</b> {selectedTicket.nama_kategori || '-'}</div>
                 <div><b>Pelapor:</b> {selectedTicket.pelapor_nama || '-'}</div>
@@ -226,11 +300,11 @@ export default function Report({ token, user, onBack }) {
                 <div><b>Status:</b> {selectedTicket.status}</div>
                 <div><b>Dibuat:</b> {formatDate(selectedTicket.created_at)}</div>
                 <div><b>Selesai:</b> {formatDate(selectedTicket.status === 'RESOLVED' ? selectedTicket.resolved_at : selectedTicket.closed_at)}</div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <b>Tindakan:</b> {selectedTicket.tindakan || '-'}
+                <div style={{ gridColumn: '1 / -1', background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '6px' }}>
+                  <b>Tindakan:</b> <span style={{ display: 'block', marginTop: '2px', color: '#334155' }}>{selectedTicket.tindakan || '-'}</span>
                 </div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <b>Hasil/Solusi:</b> {selectedTicket.hasil || '-'}
+                <div style={{ gridColumn: '1 / -1', background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <b>Hasil / Solusi:</b> <span style={{ display: 'block', marginTop: '2px', color: '#334155' }}>{selectedTicket.hasil || '-'}</span>
                 </div>
               </div>
             )}
