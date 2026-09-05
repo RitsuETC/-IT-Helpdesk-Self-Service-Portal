@@ -163,7 +163,6 @@ router.get("/stats", verifyToken, async (req, res) => {
   }
 });
 
-
 router.get("/reports/finished-tickets", verifyToken, authorizeRole("admin", "teknisi"), async (req, res) => {
   try {
     const { status, category, date_from, date_to, search } = req.query;
@@ -322,9 +321,7 @@ router.get("/reports/print", verifyToken, authorizeRole("admin", "teknisi"), asy
   }
 });
 
-
-
-// GET detail satu tiket berdasarkan ID (BARU DITAMBAHKAN UNTUK MENGATASI 404)
+// GET detail satu tiket berdasarkan ID
 router.get("/:id", verifyToken, async (req, res) => {
   try {
     let query = `
@@ -379,7 +376,6 @@ router.patch(
   authorizeRole("admin", "teknisi"),
   async (req, res) => {
     try {
-      // Accept either `prioritas` (local) or `priority` (frontend) and map common labels
       const raw = (req.body?.prioritas ?? req.body?.priority ?? "").toString();
 
       const mapping = {
@@ -449,7 +445,6 @@ router.post("/", verifyToken, async (req, res) => {
       deskripsi,
     } = req.body;
 
-    // Accept `lokasi` from older frontend as alias for `ruangan`
     const room = ruangan ?? lokasi;
 
     if (
@@ -463,7 +458,6 @@ router.post("/", verifyToken, async (req, res) => {
       });
     }
 
-    // Map incoming priority labels to DB enum keys. Default to Medium.
     const rawPriority = (prioritas ?? req.body?.priority ?? "").toString();
     const prMap = {
       low: "level_3",
@@ -476,7 +470,6 @@ router.post("/", verifyToken, async (req, res) => {
     };
     const ticketPriority = prMap[rawPriority.toLowerCase()] || prMap['medium'];
 
-    // Normalize kategori -> id: accept either id or name
     let kategoriId = kategori;
     if (typeof kategoriId === 'string' && isNaN(Number(kategoriId))) {
       const catRes = await db.query(
@@ -489,7 +482,6 @@ router.post("/", verifyToken, async (req, res) => {
       kategoriId = catRes.rows[0].id;
     }
 
-    // Normalize room -> id: accept either id or name
     let roomId = room;
     if (typeof roomId === 'string' && isNaN(Number(roomId))) {
       const roomRes = await db.query(
@@ -561,8 +553,7 @@ router.post("/", verifyToken, async (req, res) => {
   }
 });
 
-// ADMIN dapat mengubah status semua tiket,
-// TEKNISI hanya tiket yang ditugaskan kepadanya.
+// ADMIN/TEKNISI dapat mengubah status tiket
 router.patch(
   "/:id/status",
   verifyToken,
@@ -580,8 +571,6 @@ router.patch(
 
       const status = String(req.body.status || "").toUpperCase();
 
-      console.log(`[PATCH /:id/status] user.id=${req.user?.id} role=${req.user?.role} requestedStatus=${status} ticketId=${req.params.id}`);
-
       if (!allowedStatuses.includes(status)) {
         return res.status(400).json({
           message: "Status tiket tidak valid",
@@ -592,8 +581,6 @@ router.patch(
         "SELECT id, teknisi FROM tiket WHERE id = $1 LIMIT 1",
         [req.params.id]
       );
-
-      console.log("[PATCH /:id/status] ticket query result:", ticket.rows[0]);
 
       const providedTeknisi = req.body?.teknisi;
 
@@ -656,8 +643,6 @@ router.patch(
            closed_at`,
         [status, req.params.id, teknisiToSet]
       );
-
-        console.log(`[PATCH /:id/status] updated ticket ${req.params.id} -> ${status}`);
 
       res.json({
         message: "Status tiket berhasil diperbarui",
@@ -724,12 +709,6 @@ router.patch(
         return res.status(400).json({ message: "Status tidak valid" });
       }
 
-      if (status === "ASSIGNED" && ticket.rows[0].status !== "NEW") {
-        return res.status(400).json({
-          message: `Tiket tidak dapat di-assign karena status saat ini ${ticket.rows[0].status}`,
-        });
-      }
-
       const { rows } = await db.query(
         `UPDATE tiket
          SET
@@ -774,13 +753,10 @@ router.patch(
   authorizeRole("teknisi"),
   async (req, res) => {
     try {
-      console.log(`[PATCH /:id/start] user.id=${req.user?.id} role=${req.user?.role} ticketId=${req.params.id}`);
       const ticket = await db.query(
         "SELECT id, teknisi, status FROM tiket WHERE id = $1 LIMIT 1",
         [req.params.id]
       );
-
-      console.log("[PATCH /:id/start] ticket query result:", ticket.rows[0]);
 
       if (!ticket.rowCount) {
         return res.status(404).json({
@@ -791,12 +767,6 @@ router.patch(
       if (Number(ticket.rows[0].teknisi) !== Number(req.user.id)) {
         return res.status(403).json({
           message: "Tiket ini bukan ditugaskan kepada Anda",
-        });
-      }
-
-      if (ticket.rows[0].status !== "ASSIGNED") {
-        return res.status(400).json({
-          message: `Tiket tidak dapat dimulai karena status saat ini ${ticket.rows[0].status}`,
         });
       }
 
@@ -822,18 +792,15 @@ router.patch(
   }
 );
 
-// TEKNISI menyelesaikan tiket
+// ADMIN & TEKNISI dapat menyelesaikan tiket
 router.patch(
   "/:id/resolve",
   verifyToken,
-  authorizeRole("teknisi"),
+  authorizeRole("admin", "teknisi"),
   async (req, res) => {
     try {
-      console.log(`[PATCH /:id/resolve] user.id=${req.user?.id} role=${req.user?.role} ticketId=${req.params.id}`);
-      // Accept either `solusi` (single field) or `tindakan` + `hasil_akhir` (from UI)
       const { solusi, tindakan, hasil_akhir } = req.body;
 
-      // If frontend sent tindakan+hasil_akhir, require both
       if ((!solusi || !String(solusi).trim()) && (!tindakan || !String(tindakan).trim() || !hasil_akhir || !String(hasil_akhir).trim())) {
         return res.status(400).json({
           message: "Solusi atau (tindakan dan hasil_akhir) wajib diisi",
@@ -845,30 +812,29 @@ router.patch(
         [req.params.id]
       );
 
-      console.log("[PATCH /:id/resolve] ticket query result:", ticket.rows[0]);
-
       if (!ticket.rowCount) {
         return res.status(404).json({
           message: "Tiket tidak ditemukan",
         });
       }
 
-      if (Number(ticket.rows[0].teknisi) !== Number(req.user.id)) {
+      const isAdmin = req.user.role === 'admin';
+      const isAssignedTech = Number(ticket.rows[0].teknisi) === Number(req.user.id);
+
+      if (!isAdmin && !isAssignedTech) {
         return res.status(403).json({
           message: "Tiket ini bukan ditugaskan kepada Anda",
         });
       }
 
-      if (ticket.rows[0].status !== "IN_PROGRESS") {
+      if (ticket.rows[0].status === "CLOSED") {
         return res.status(400).json({
-          message: `Tiket tidak dapat diselesaikan karena status saat ini ${ticket.rows[0].status}`,
+          message: "Tiket yang sudah CLOSED tidak dapat diselesaikan kembali",
         });
       }
 
-      // If tindakan+hasil_akhir provided, insert into troubleshooting table
       let finalSolusi = solusi && String(solusi).trim() ? String(solusi).trim() : null;
       if (!finalSolusi && tindakan && hasil_akhir) {
-        // upsert troubleshooting record: update existing or insert new
         try {
           const existing = await db.query(
             `SELECT id FROM troubleshooting WHERE id_tiket = $1 ORDER BY id ASC`,
