@@ -90,7 +90,7 @@ router.get("/", verifyToken, async (req, res) => {
 // GET pilihan kategori, ruangan, dan prioritas
 router.get("/meta/options", verifyToken, async (_req, res) => {
   try {
-    const [categories, rooms, priorities] = await Promise.all([
+    const [categories, rooms, priorities, technicians] = await Promise.all([
       db.query(
         "SELECT id, nama_kategori FROM knowledge_kategori ORDER BY nama_kategori"
       ),
@@ -100,6 +100,10 @@ router.get("/meta/options", verifyToken, async (_req, res) => {
       db.query(
         "SELECT level FROM level ORDER BY level"
       ),
+      db.query(
+        'SELECT id, "Nama" AS nama, email FROM login WHERE role = $1 ORDER BY "Nama"',
+        ['teknisi']
+      ),
     ]);
 
     res.json({
@@ -107,6 +111,7 @@ router.get("/meta/options", verifyToken, async (_req, res) => {
         categories: categories.rows,
         rooms: rooms.rows,
         priorities: priorities.rows,
+        technicians: technicians.rows,
       },
     });
   } catch (error) {

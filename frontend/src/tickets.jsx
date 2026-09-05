@@ -9,6 +9,8 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   const [troublesLoading, setTroublesLoading] = useState(true)
   const [tindakanVal, setTindakanVal] = useState('')
   const [hasilVal, setHasilVal] = useState('')
+  const [technicians, setTechnicians] = useState([])
+  const [selectedStatus, setSelectedStatus] = useState('NEW')
 
   const loadDetail = async () => {
     if (!ticketId) return
@@ -46,6 +48,16 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
     }
   }
 
+  const loadTechnicians = async () => {
+    try {
+      const res = await api('/tickets/meta/options', { token })
+      setTechnicians(res.data?.technicians || [])
+    } catch (err) {
+      console.error('Failed to load technicians', err)
+      setTechnicians([])
+    }
+  }
+
   useEffect(() => {
     loadDetail()
   }, [ticketId])
@@ -54,14 +66,28 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
     loadTroubleshooting()
   }, [ticketId])
 
+  useEffect(() => {
+    loadTechnicians()
+  }, [token])
+
+  useEffect(() => {
+    if (ticket?.status) setSelectedStatus(ticket.status)
+  }, [ticket?.status])
+
   const handleUpdateStatus = async (e) => {
     e.preventDefault()
     const form = new FormData(e.currentTarget)
+    const nextStatus = form.get('status')
+    const nextTeknisi = form.get('teknisi')
+
     try {
       await api(`/tickets/${ticketId}/status`, {
         token,
         method: 'PATCH',
-        body: { status: form.get('status') }
+        body: {
+          status: nextStatus,
+          ...(nextStatus === 'ASSIGNED' ? { teknisi: nextTeknisi } : {})
+        }
       })
       setActionNotice('Status berhasil diperbarui!')
       loadDetail()
@@ -131,58 +157,57 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   const isStaff = user?.role === 'admin' || user?.role === 'teknisi'
 
   return (
-    <div className="tickets-page" style={{ backgroundColor: '#ffffff', color: '#1f2937', padding: '24px', borderRadius: '16px', margin: '0 auto', maxWidth: '100%', boxShadow: '0 10px 25px rgba(0, 0, 0, 0.08)' }}>
+    <div className="tickets-page" style={{ backgroundColor: '#f8faf9', color: '#1f2937', padding: '24px', borderRadius: '18px', margin: '0 auto', maxWidth: '100%', boxShadow: '0 12px 32px rgba(15, 23, 42, 0.08)' }}>
       <button 
         onClick={onBack} 
-        style={{ marginBottom: '16px', backgroundColor: '#0c4a30', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '12px', boxShadow: '0 4px 6px rgba(12, 74, 48, 0.2)', transition: 'transform 0.2s' }}
+        style={{ marginBottom: '18px', background: 'linear-gradient(135deg, #0c4a30 0%, #14532d 100%)', color: '#ffffff', border: 'none', padding: '9px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', boxShadow: '0 8px 20px rgba(12, 74, 48, 0.2)', transition: 'transform 0.2s ease, opacity 0.2s ease' }}
       >
         ← Kembali ke Daftar
       </button>
       
-      <div className="tickets-toolbar" style={{ display: 'block', borderBottom: '1px solid #e5e7eb', paddingBottom: '14px', marginBottom: '20px' }}>
-        <h2 className="tickets-heading" style={{ color: '#111827', fontSize: '20px', marginBottom: '4px' }}>{ticket.judul}</h2>
+      <div className="tickets-toolbar" style={{ display: 'block', borderBottom: '1px solid #dfe8e3', paddingBottom: '16px', marginBottom: '20px' }}>
+        <h2 className="tickets-heading" style={{ color: '#111827', fontSize: '22px', marginBottom: '4px', letterSpacing: '0.01em' }}>{ticket.judul}</h2>
         <p className="history-description" style={{ color: '#4b5563', fontSize: '13px', margin: 0 }}>Informasi lengkap dan pembaruan status laporan tiket.</p>
       </div>
 
-      {actionNotice && <p style={{ color: '#15803d', fontWeight: 'bold', fontSize: '12px', marginBottom: '16px', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '8px 12px', borderRadius: '8px' }}>{actionNotice}</p>}
+      {actionNotice && <p style={{ color: '#166534', fontWeight: '700', fontSize: '12px', marginBottom: '16px', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '10px 12px', borderRadius: '10px' }}>{actionNotice}</p>}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        {/* Kotak Detail Laporan (Hijau Tua dengan Efek Mengambang) */}
-        <div style={{ border: '1px solid #0c4a30', borderRadius: '12px', padding: '18px', background: '#0c4a30', color: '#ffffff', boxShadow: '0 8px 20px rgba(12, 74, 48, 0.25)' }}>
-          <b style={{ display: 'block', marginBottom: '12px', color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '6px' }}>Detail Laporan</b>
+        <div style={{ border: '1px solid #dbe8e2', borderRadius: '14px', padding: '18px', background: 'linear-gradient(180deg, #0c4a30 0%, #134b36 100%)', color: '#ffffff', boxShadow: '0 10px 24px rgba(12, 74, 48, 0.18)' }}>
+          <b style={{ display: 'block', marginBottom: '12px', color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '8px' }}>Detail Laporan</b>
           <div style={{ display: 'grid', gap: '8px', fontSize: '12px', color: '#f1f5f9' }}>
             <div><strong>ID Tiket:</strong> HD-{ticket.id}</div>
-            <div><strong>Pelapor:</strong> {ticket.pelapor_nama || ticket.pelapor}</div>
-            <div><strong>Lokasi:</strong> {ticket.nama_ruangan || ticket.lokasi}</div>
-            <div><strong>Kategori:</strong> {ticket.nama_kategori || ticket.kategori}</div>
+            <div><strong>Pelapor:</strong> {ticket.pelapor_nama || ticket.pelapor || '-'}</div>
+            <div><strong>Lokasi:</strong> {ticket.nama_ruangan || ticket.ruangan || ticket.lokasi || '-'}</div>
+            <div><strong>Kategori:</strong> {ticket.nama_kategori || ticket.kategori || ticket.categori || '-'}</div>
+            <div><strong>Teknisi:</strong> {ticket.teknisi_nama || ticket.teknisi || '-'}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <strong>Prioritas:</strong> {ticket.prioritas} 
+              <strong>Prioritas:</strong> {ticket.prioritas || '-'} 
               <span className={`priority-dot ${ticket.prioritas?.toLowerCase()}`}></span>
             </div>
-            <div><strong>Status:</strong> {ticket.status}</div>
-            <div><strong>Tanggal:</strong> {new Date(ticket.created_at).toLocaleString()}</div>
+            <div><strong>Status:</strong> {ticket.status || '-'}</div>
+            <div><strong>Tanggal:</strong> {ticket.created_at ? new Date(ticket.created_at).toLocaleString() : '-'}</div>
           </div>
         </div>
         
-        {/* Kotak Masalah & Deskripsi (Hijau Tua dengan Efek Mengambang) */}
-        <div style={{ border: '1px solid #0c4a30', borderRadius: '12px', padding: '18px', background: '#0c4a30', color: '#ffffff', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 8px 20px rgba(12, 74, 48, 0.25)' }}>
+        <div style={{ border: '1px solid #dbe8e2', borderRadius: '14px', padding: '18px', background: 'linear-gradient(180deg, #0c4a30 0%, #134b36 100%)', color: '#ffffff', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 10px 24px rgba(12, 74, 48, 0.18)' }}>
           <div>
-            <b style={{ display: 'block', marginBottom: '8px', color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '6px' }}>Masalah / Deskripsi</b>
-            <p style={{ margin: 0, fontSize: '12px', color: '#f1f5f9', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>{ticket.deskripsi}</p>
+            <b style={{ display: 'block', marginBottom: '8px', color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '8px' }}>Masalah / Deskripsi</b>
+            <p style={{ margin: 0, fontSize: '12px', color: '#f1f5f9', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{ticket.deskripsi}</p>
           </div>
 
           <div>
-            <b style={{ display: 'block', marginBottom: '8px', color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '6px' }}>Tindakan / Hasil</b>
+            <b style={{ display: 'block', marginBottom: '8px', color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '8px' }}>Tindakan / Hasil</b>
             {troublesLoading ? (
-              <p style={{ color: '#cbd5e1', margin: 0, fontSize: '12px' }}>Memuat tindakan...</p>
+              <p style={{ color: '#dbeafe', margin: 0, fontSize: '12px' }}>Memuat tindakan...</p>
             ) : !trouble ? (
-              <p style={{ color: '#cbd5e1', margin: 0, fontSize: '12px' }}>Belum ada tindakan yang tercatat.</p>
+              <p style={{ color: '#dbeafe', margin: 0, fontSize: '12px' }}>Belum ada tindakan yang tercatat.</p>
             ) : (
-              <div style={{ display: 'grid', gap: 6, fontSize: '12px' }}>
-                <div style={{ padding: '10px', borderRadius: '8px', background: '#064e3b', border: '1px solid #166534' }}>
-                  <div style={{ color: '#e2f0ea', fontWeight: 700, marginBottom: '2px' }}>Tindakan:</div>
-                  <div style={{ color: '#f1f5f9', marginBottom: '6px' }}>{trouble.tindakan}</div>
-                  <div style={{ color: '#e2f0ea', fontWeight: 700, marginBottom: '2px' }}>Hasil:</div>
+              <div style={{ display: 'grid', gap: 8, fontSize: '12px' }}>
+                <div style={{ padding: '10px 12px', borderRadius: '10px', background: '#064e3b', border: '1px solid rgba(134, 239, 172, 0.4)' }}>
+                  <div style={{ color: '#e2f0ea', fontWeight: 700, marginBottom: '4px' }}>Tindakan:</div>
+                  <div style={{ color: '#f1f5f9', marginBottom: '8px' }}>{trouble.tindakan}</div>
+                  <div style={{ color: '#e2f0ea', fontWeight: 700, marginBottom: '4px' }}>Hasil:</div>
                   <div style={{ color: '#f1f5f9' }}>{trouble.hasil}</div>
                 </div>
               </div>
@@ -193,51 +218,87 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
 
       {/* Kontrol Admin & Teknisi */}
       {isStaff && (
-        <div style={{ border: '1px solid #0c4a30', borderRadius: '12px', padding: '20px', background: '#0c4a30', color: '#ffffff', display: 'grid', gap: '16px', boxShadow: '0 8px 20px rgba(12, 74, 48, 0.25)' }}>
-          <b style={{ color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '6px' }}>Kontrol Teknisi & Admin</b>
+        <div style={{ border: '1px solid #dbe8e2', borderRadius: '14px', padding: '20px', background: 'linear-gradient(180deg, #0c4a30 0%, #134b36 100%)', color: '#ffffff', display: 'grid', gap: '18px', boxShadow: '0 10px 24px rgba(12, 74, 48, 0.18)', width: '100%', boxSizing: 'border-box' }}>
+          <b style={{ color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '8px' }}>Kontrol Teknisi & Admin</b>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-            <form onSubmit={handleUpdateStatus} style={{ display: 'grid', gap: '6px' }}>
-              <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#f1f5f9' }}>Status Tiket</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <select name="status" defaultValue={ticket.status} style={{ height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid #166534', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937' }}>
-                  <option value="NEW">NEW</option>
-                  <option value="ASSIGNED">ASSIGNED</option>
-                  <option value="IN_PROGRESS">IN_PROGRESS</option>
-                  <option value="WAITING">WAITING</option>
-                  <option value="RESOLVED">RESOLVED</option>
-                  <option value="CLOSED">CLOSED</option>
-                </select>
-                <button type="submit" style={{ height: '38px', padding: '0 14px', whiteSpace: 'nowrap', backgroundColor: '#15803d', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>Perbarui</button>
-              </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', width: '100%' }}>
+            {/* Form Ubah Status */}
+            <form onSubmit={handleUpdateStatus} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '700', color: '#f1f5f9' }}>Status Tiket</label>
+              
+              <select
+                name="status"
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                style={{ height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid rgba(134, 239, 172, 0.65)', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', boxSizing: 'border-box' }}
+              >
+                <option value="NEW">NEW</option>
+                <option value="ASSIGNED">ASSIGNED</option>
+                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                <option value="WAITING">WAITING</option>
+                <option value="RESOLVED">RESOLVED</option>
+                <option value="CLOSED">CLOSED</option>
+              </select>
+
+              {/* Dropdown Teknisi saat status ASSIGNED */}
+              {selectedStatus === 'ASSIGNED' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '11px', color: '#e2f0ea' }}>Pilih Teknisi Penanggung Jawab:</label>
+                  <select
+                    name="teknisi"
+                    defaultValue={ticket.teknisi ?? ''}
+                    style={{ height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid rgba(134, 239, 172, 0.65)', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', boxSizing: 'border-box' }}
+                    required
+                  >
+                    <option value="">-- Pilih Teknisi --</option>
+                    {technicians.map((tech) => (
+                      <option key={tech.id} value={tech.id}>{tech.nama}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <button 
+                type="submit" 
+                style={{ height: '38px', padding: '0 16px', backgroundColor: '#15803d', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 6px 16px rgba(0,0,0,0.12)', width: '100%', marginTop: 'auto' }}
+              >
+                Perbarui Status
+              </button>
             </form>
 
-            <form onSubmit={handleUpdatePriority} style={{ display: 'grid', gap: '6px' }}>
-              <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#f1f5f9' }}>Prioritas Tiket</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <select name="prioritas" defaultValue={ticket.prioritas} style={{ height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid #166534', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937' }}>
-                  <option value="level_1">Level 1 (Low)</option>
-                  <option value="level_2">Level 2 (Medium)</option>
-                  <option value="level_3">Level 3 (High)</option>
-                </select>
-                <button type="submit" style={{ height: '38px', padding: '0 14px', whiteSpace: 'nowrap', backgroundColor: '#15803d', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>Perbarui</button>
-              </div>
+            {/* Form Ubah Prioritas */}
+            <form onSubmit={handleUpdatePriority} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '700', color: '#f1f5f9' }}>Prioritas Tiket</label>
+              
+              <select name="prioritas" defaultValue={ticket.prioritas} style={{ height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid rgba(134, 239, 172, 0.65)', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', boxSizing: 'border-box' }}>
+                <option value="level_1">Level 1 (Low)</option>
+                <option value="level_2">Level 2 (Medium)</option>
+                <option value="level_3">Level 3 (High)</option>
+              </select>
+
+              <button 
+                type="submit" 
+                style={{ height: '38px', padding: '0 16px', backgroundColor: '#15803d', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 6px 16px rgba(0,0,0,0.12)', width: '100%', marginTop: 'auto' }}
+              >
+                Perbarui Prioritas
+              </button>
             </form>
           </div>
 
-          <form onSubmit={handleResolve} style={{ display: 'grid', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '16px' }}>
+          {/* Form Penyelesaian Tiket */}
+          <form onSubmit={handleResolve} style={{ display: 'grid', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '16px', width: '100%' }}>
             <b style={{ fontSize: '12px', color: '#e2f0ea' }}>Form Penyelesaian Tiket</b>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
-              <label style={{ fontSize: '12px', color: '#f1f5f9', display: 'grid', gap: '4px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', width: '100%' }}>
+              <label style={{ fontSize: '12px', color: '#f1f5f9', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 Tindakan Perbaikan
-                <textarea name="tindakan" rows="3" value={tindakanVal} onChange={(e) => setTindakanVal(e.target.value)} required style={{ width: '100%', padding: '10px', border: '1px solid #166534', borderRadius: '8px', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', resize: 'vertical' }} placeholder="Tuliskan tindakan..."></textarea>
+                <textarea name="tindakan" rows="3" value={tindakanVal} onChange={(e) => setTindakanVal(e.target.value)} required style={{ width: '100%', padding: '10px', border: '1px solid rgba(134, 239, 172, 0.65)', borderRadius: '8px', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', resize: 'vertical', boxSizing: 'border-box' }} placeholder="Tuliskan tindakan..."></textarea>
               </label>
-              <label style={{ fontSize: '12px', color: '#f1f5f9', display: 'grid', gap: '4px' }}>
+              <label style={{ fontSize: '12px', color: '#f1f5f9', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 Hasil Akhir
-                <textarea name="hasil_akhir" rows="3" value={hasilVal} onChange={(e) => setHasilVal(e.target.value)} required style={{ width: '100%', padding: '10px', border: '1px solid #166534', borderRadius: '8px', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', resize: 'vertical' }} placeholder="Tuliskan hasil akhir..."></textarea>
+                <textarea name="hasil_akhir" rows="3" value={hasilVal} onChange={(e) => setHasilVal(e.target.value)} required style={{ width: '100%', padding: '10px', border: '1px solid rgba(134, 239, 172, 0.65)', borderRadius: '8px', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', resize: 'vertical', boxSizing: 'border-box' }} placeholder="Tuliskan hasil akhir..."></textarea>
               </label>
             </div>
-            <button type="submit" style={{ width: '100%', height: '40px', marginTop: '6px', backgroundColor: '#15803d', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>Simpan Penyelesaian</button>
+            <button type="submit" style={{ width: '100%', height: '40px', marginTop: '6px', backgroundColor: '#15803d', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 8px 18px rgba(0,0,0,0.14)' }}>Simpan Penyelesaian</button>
           </form>
         </div>
       )}
@@ -315,7 +376,6 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
     )
   }
 
-  // Logika filter fleksibel yang mencocokkan teks pilihan filter dengan format database (level_1, level_2, dll)
   const filteredTickets = tickets.filter(t => {
     if (priorityFilter === 'ALL') return true
     const ticketPriority = (t.prioritas || '').toLowerCase()
@@ -364,7 +424,6 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
                 padding: '16px',
                 marginBottom: '12px',
                 cursor: 'pointer',
-                // Efek mengambang (floating/elevation shadow) dipertahankan
                 boxShadow: '0 8px 20px rgba(12, 74, 48, 0.25)',
                 transition: 'transform 0.2s ease, box-shadow 0.2s ease'
               }}
