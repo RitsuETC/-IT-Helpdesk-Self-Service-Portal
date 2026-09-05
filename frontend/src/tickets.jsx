@@ -160,20 +160,36 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
     <div className="tickets-page" style={{ backgroundColor: '#f8faf9', color: '#1f2937', padding: '24px', borderRadius: '18px', margin: '0 auto', maxWidth: '100%', boxShadow: '0 12px 32px rgba(15, 23, 42, 0.08)' }}>
       <button 
         onClick={onBack} 
-        style={{ marginBottom: '18px', background: 'linear-gradient(135deg, #0c4a30 0%, #14532d 100%)', color: '#ffffff', border: 'none', padding: '9px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', boxShadow: '0 8px 20px rgba(12, 74, 48, 0.2)', transition: 'transform 0.2s ease, opacity 0.2s ease' }}
+        style={{ marginBottom: '18px', background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', color: '#ffffff', border: 'none', padding: '9px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', boxShadow: '0 6px 16px rgba(12, 74, 48, 0.2)', transition: 'transform 0.1s ease, box-shadow 0.1s ease' }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 8px 20px rgba(12, 74, 48, 0.3)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 6px 16px rgba(12, 74, 48, 0.2)';
+        }}
+        onMouseDown={(e) => {
+          e.currentTarget.style.transform = 'translateY(1px) scale(0.98)';
+          e.currentTarget.style.boxShadow = '0 2px 8px rgba(12, 74, 48, 0.2)';
+        }}
+        onMouseUp={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 8px 20px rgba(12, 74, 48, 0.3)';
+        }}
       >
         ← Kembali ke Daftar
       </button>
       
-      <div className="tickets-toolbar" style={{ display: 'block', borderBottom: '1px solid #dfe8e3', paddingBottom: '16px', marginBottom: '20px' }}>
-        <h2 className="tickets-heading" style={{ color: '#111827', fontSize: '22px', marginBottom: '4px', letterSpacing: '0.01em' }}>{ticket.judul}</h2>
+      <div className="tickets-toolbar" style={{ display: 'block', borderBottom: '1px solid #d1ded8', paddingBottom: '16px', marginBottom: '20px' }}>
+        <h2 className="tickets-heading" style={{ color: '#0c4a30', fontSize: '22px', marginBottom: '4px', letterSpacing: '0.01em', fontWeight: '700' }}>{ticket.judul}</h2>
         <p className="history-description" style={{ color: '#4b5563', fontSize: '13px', margin: 0 }}>Informasi lengkap dan pembaruan status laporan tiket.</p>
       </div>
 
-      {actionNotice && <p style={{ color: '#166534', fontWeight: '700', fontSize: '12px', marginBottom: '16px', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '10px 12px', borderRadius: '10px' }}>{actionNotice}</p>}
+      {actionNotice && <p style={{ color: '#064e3b', fontWeight: '700', fontSize: '12px', marginBottom: '16px', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '10px 12px', borderRadius: '10px' }}>{actionNotice}</p>}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        <div style={{ border: '1px solid #dbe8e2', borderRadius: '14px', padding: '18px', background: 'linear-gradient(180deg, #0c4a30 0%, #134b36 100%)', color: '#ffffff', boxShadow: '0 10px 24px rgba(12, 74, 48, 0.18)' }}>
+        <div style={{ border: '1px solid #064e3b', borderRadius: '14px', padding: '18px', background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', color: '#ffffff', boxShadow: '0 10px 24px rgba(12, 74, 48, 0.2)' }}>
           <b style={{ display: 'block', marginBottom: '12px', color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '8px' }}>Detail Laporan</b>
           <div style={{ display: 'grid', gap: '8px', fontSize: '12px', color: '#f1f5f9' }}>
             <div><strong>ID Tiket:</strong> HD-{ticket.id}</div>
@@ -190,7 +206,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           </div>
         </div>
         
-        <div style={{ border: '1px solid #dbe8e2', borderRadius: '14px', padding: '18px', background: 'linear-gradient(180deg, #0c4a30 0%, #134b36 100%)', color: '#ffffff', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 10px 24px rgba(12, 74, 48, 0.18)' }}>
+        <div style={{ border: '1px solid #064e3b', borderRadius: '14px', padding: '18px', background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', color: '#ffffff', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 10px 24px rgba(12, 74, 48, 0.2)' }}>
           <div>
             <b style={{ display: 'block', marginBottom: '8px', color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '8px' }}>Masalah / Deskripsi</b>
             <p style={{ margin: 0, fontSize: '12px', color: '#f1f5f9', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{ticket.deskripsi}</p>
@@ -204,11 +220,11 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
               <p style={{ color: '#dbeafe', margin: 0, fontSize: '12px' }}>Belum ada tindakan yang tercatat.</p>
             ) : (
               <div style={{ display: 'grid', gap: 8, fontSize: '12px' }}>
-                <div style={{ padding: '10px 12px', borderRadius: '10px', background: '#064e3b', border: '1px solid rgba(134, 239, 172, 0.4)' }}>
-                  <div style={{ color: '#e2f0ea', fontWeight: 700, marginBottom: '4px' }}>Tindakan:</div>
-                  <div style={{ color: '#f1f5f9', marginBottom: '8px' }}>{trouble.tindakan}</div>
-                  <div style={{ color: '#e2f0ea', fontWeight: 700, marginBottom: '4px' }}>Hasil:</div>
-                  <div style={{ color: '#f1f5f9' }}>{trouble.hasil}</div>
+                <div style={{ padding: '12px 14px', borderRadius: '10px', background: '#ffffff', color: '#1f2937', border: '1px solid #cbd5e1', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}>
+                  <div style={{ color: '#0c4a30', fontWeight: 700, marginBottom: '4px' }}>Tindakan:</div>
+                  <div style={{ color: '#374151', marginBottom: '8px' }}>{trouble.tindakan}</div>
+                  <div style={{ color: '#0c4a30', fontWeight: 700, marginBottom: '4px' }}>Hasil:</div>
+                  <div style={{ color: '#374151' }}>{trouble.hasil}</div>
                 </div>
               </div>
             )}
@@ -218,7 +234,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
 
       {/* Kontrol Admin & Teknisi */}
       {isStaff && (
-        <div style={{ border: '1px solid #dbe8e2', borderRadius: '14px', padding: '20px', background: 'linear-gradient(180deg, #0c4a30 0%, #134b36 100%)', color: '#ffffff', display: 'grid', gap: '18px', boxShadow: '0 10px 24px rgba(12, 74, 48, 0.18)', width: '100%', boxSizing: 'border-box' }}>
+        <div style={{ border: '1px solid #064e3b', borderRadius: '14px', padding: '20px', background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', color: '#ffffff', display: 'grid', gap: '18px', boxShadow: '0 10px 24px rgba(12, 74, 48, 0.2)', width: '100%', boxSizing: 'border-box' }}>
           <b style={{ color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '8px' }}>Kontrol Teknisi & Admin</b>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', width: '100%' }}>
@@ -230,7 +246,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
                 name="status"
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                style={{ height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid rgba(134, 239, 172, 0.65)', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', boxSizing: 'border-box' }}
+                style={{ height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid #cbd5e1', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', boxSizing: 'border-box' }}
               >
                 <option value="NEW">NEW</option>
                 <option value="ASSIGNED">ASSIGNED</option>
@@ -240,14 +256,13 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
                 <option value="CLOSED">CLOSED</option>
               </select>
 
-              {/* Dropdown Teknisi saat status ASSIGNED */}
               {selectedStatus === 'ASSIGNED' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <label style={{ fontSize: '11px', color: '#e2f0ea' }}>Pilih Teknisi Penanggung Jawab:</label>
                   <select
                     name="teknisi"
                     defaultValue={ticket.teknisi ?? ''}
-                    style={{ height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid rgba(134, 239, 172, 0.65)', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', boxSizing: 'border-box' }}
+                    style={{ height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid #cbd5e1', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', boxSizing: 'border-box' }}
                     required
                   >
                     <option value="">-- Pilih Teknisi --</option>
@@ -260,7 +275,11 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
 
               <button 
                 type="submit" 
-                style={{ height: '38px', padding: '0 16px', backgroundColor: '#15803d', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 6px 16px rgba(0,0,0,0.12)', width: '100%', marginTop: 'auto' }}
+                style={{ height: '38px', padding: '0 16px', backgroundColor: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', width: '100%', marginTop: 'auto', transition: 'background 0.1s ease, transform 0.1s ease' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#065f46'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#047857'}
+                onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+                onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
               >
                 Perbarui Status
               </button>
@@ -270,7 +289,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
             <form onSubmit={handleUpdatePriority} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <label style={{ fontSize: '12px', fontWeight: '700', color: '#f1f5f9' }}>Prioritas Tiket</label>
               
-              <select name="prioritas" defaultValue={ticket.prioritas} style={{ height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid rgba(134, 239, 172, 0.65)', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', boxSizing: 'border-box' }}>
+              <select name="prioritas" defaultValue={ticket.prioritas} style={{ height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid #cbd5e1', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', boxSizing: 'border-box' }}>
                 <option value="level_1">Level 1 (Low)</option>
                 <option value="level_2">Level 2 (Medium)</option>
                 <option value="level_3">Level 3 (High)</option>
@@ -278,7 +297,11 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
 
               <button 
                 type="submit" 
-                style={{ height: '38px', padding: '0 16px', backgroundColor: '#15803d', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 6px 16px rgba(0,0,0,0.12)', width: '100%', marginTop: 'auto' }}
+                style={{ height: '38px', padding: '0 16px', backgroundColor: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', width: '100%', marginTop: 'auto', transition: 'background 0.1s ease, transform 0.1s ease' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#065f46'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#047857'}
+                onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+                onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
               >
                 Perbarui Prioritas
               </button>
@@ -291,14 +314,23 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', width: '100%' }}>
               <label style={{ fontSize: '12px', color: '#f1f5f9', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 Tindakan Perbaikan
-                <textarea name="tindakan" rows="3" value={tindakanVal} onChange={(e) => setTindakanVal(e.target.value)} required style={{ width: '100%', padding: '10px', border: '1px solid rgba(134, 239, 172, 0.65)', borderRadius: '8px', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', resize: 'vertical', boxSizing: 'border-box' }} placeholder="Tuliskan tindakan..."></textarea>
+                <textarea name="tindakan" rows="3" value={tindakanVal} onChange={(e) => setTindakanVal(e.target.value)} required style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', resize: 'vertical', boxSizing: 'border-box' }} placeholder="Tuliskan tindakan..."></textarea>
               </label>
               <label style={{ fontSize: '12px', color: '#f1f5f9', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 Hasil Akhir
-                <textarea name="hasil_akhir" rows="3" value={hasilVal} onChange={(e) => setHasilVal(e.target.value)} required style={{ width: '100%', padding: '10px', border: '1px solid rgba(134, 239, 172, 0.65)', borderRadius: '8px', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', resize: 'vertical', boxSizing: 'border-box' }} placeholder="Tuliskan hasil akhir..."></textarea>
+                <textarea name="hasil_akhir" rows="3" value={hasilVal} onChange={(e) => setHasilVal(e.target.value)} required style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', resize: 'vertical', boxSizing: 'border-box' }} placeholder="Tuliskan hasil akhir..."></textarea>
               </label>
             </div>
-            <button type="submit" style={{ width: '100%', height: '40px', marginTop: '6px', backgroundColor: '#15803d', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 8px 18px rgba(0,0,0,0.14)' }}>Simpan Penyelesaian</button>
+            <button 
+              type="submit" 
+              style={{ width: '100%', height: '40px', marginTop: '6px', backgroundColor: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 6px 16px rgba(0,0,0,0.15)', transition: 'background 0.1s ease, transform 0.1s ease' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#065f46'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#047857'}
+              onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+              onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              Simpan Penyelesaian
+            </button>
           </form>
         </div>
       )}
@@ -418,14 +450,30 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
               key={t.id} 
               onClick={() => setSelectedTicketId(t.id)}
               style={{
-                backgroundColor: '#0c4a30',
+                background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)',
                 color: '#ffffff',
                 borderRadius: '12px',
                 padding: '16px',
                 marginBottom: '12px',
                 cursor: 'pointer',
                 boxShadow: '0 8px 20px rgba(12, 74, 48, 0.25)',
-                transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                transition: 'transform 0.1s ease, box-shadow 0.1s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 12px 25px rgba(12, 74, 48, 0.35)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 8px 20px rgba(12, 74, 48, 0.25)';
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.transform = 'translateY(1px) scale(0.99)';
+                e.currentTarget.style.boxShadow = '0 4px 10px rgba(12, 74, 48, 0.2)';
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 12px 25px rgba(12, 74, 48, 0.35)';
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
