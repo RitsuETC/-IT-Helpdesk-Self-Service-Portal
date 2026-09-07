@@ -69,9 +69,13 @@ export default function Report({ token, user, onBack }) {
     }
   }
 
-  const formatDate = (date) => {
+  // Format Tanggal dan Waktu (Jam:Menit)
+  const formatDateTime = (date) => {
     if (!date) return '-'
-    return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+    const d = new Date(date)
+    const tgl = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+    const jam = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+    return `${tgl} ${jam}`
   }
 
   const statusLabel = { RESOLVED: 'Selesai', CLOSED: 'Ditutup' }
@@ -82,13 +86,13 @@ export default function Report({ token, user, onBack }) {
   const closedCount = tickets.filter(t => t.status === 'CLOSED').length
 
   return (
-    <div className="report-page" style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px' }}>
+    <div className="report-page" style={{ maxWidth: '1280px', margin: '0 auto', padding: '16px' }}>
       <style>{`
         /* STYLE KHUSUS HASIL PRINT / CETAK */
         @media print {
           @page {
             size: A4 landscape;
-            margin: 10mm;
+            margin: 8mm;
           }
           body {
             background: #ffffff !important;
@@ -116,7 +120,7 @@ export default function Report({ token, user, onBack }) {
           .report-table {
             width: 100% !important;
             border-collapse: collapse !important;
-            font-size: 7.5pt !important;
+            font-size: 7pt !important;
           }
           .report-table th {
             background-color: #0c4a30 !important;
@@ -225,22 +229,23 @@ export default function Report({ token, user, onBack }) {
             <thead>
               <tr style={{ background: '#0c4a30', color: '#ffffff', textTransform: 'uppercase', fontSize: '0.68rem', letterSpacing: '0.05em' }}>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '700' }}>ID</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '700', minWidth: '110px' }}>Judul</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '700', minWidth: '100px' }}>Judul</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '700' }}>Kategori</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '700' }}>Pelapor</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '700' }}>Ruangan</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '700' }}>Teknisi</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '700', minWidth: '130px' }}>Tindakan</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '700', minWidth: '130px' }}>Hasil/Solusi</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '700', minWidth: '120px' }}>Tindakan</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '700', minWidth: '120px' }}>Hasil/Solusi</th>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '700' }}>Status</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '700' }}>Selesai</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '700', minWidth: '105px' }}>Dibuat</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '700', minWidth: '105px' }}>Selesai</th>
                 <th className="action-column" style={{ padding: '10px 12px', textAlign: 'center', fontWeight: '700' }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
               {tickets.length === 0 ? (
                 <tr>
-                  <td colSpan="11" style={{ padding: '28px', textAlign: 'center', color: '#64748b' }}>
+                  <td colSpan="12" style={{ padding: '28px', textAlign: 'center', color: '#64748b' }}>
                     Tidak ada tiket yang sesuai filter.
                   </td>
                 </tr>
@@ -253,11 +258,9 @@ export default function Report({ token, user, onBack }) {
                     <td style={{ padding: '9px 12px', color: '#4b5563' }}>{ticket.pelapor_nama || '-'}</td>
                     <td style={{ padding: '9px 12px', color: '#4b5563' }}>{ticket.nama_ruangan || '-'}</td>
                     <td style={{ padding: '9px 12px', color: '#4b5563' }}>{ticket.teknisi_nama || '-'}</td>
-                    {/* KOLOM BARU: TINDAKAN */}
                     <td style={{ padding: '9px 12px', color: '#334155', fontSize: '0.75rem', lineHeight: '1.3' }}>
                       {ticket.tindakan || '-'}
                     </td>
-                    {/* KOLOM BARU: HASIL / SOLUSI */}
                     <td style={{ padding: '9px 12px', color: '#334155', fontSize: '0.75rem', lineHeight: '1.3' }}>
                       {ticket.hasil || '-'}
                     </td>
@@ -274,8 +277,13 @@ export default function Report({ token, user, onBack }) {
                         {statusLabel[ticket.status] || ticket.status}
                       </span>
                     </td>
+                    {/* WAKTU TIKET DIBUAT (TANGGAL + JAM) */}
                     <td style={{ padding: '9px 12px', color: '#6b7280', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                      {formatDate(ticket.status === 'RESOLVED' ? ticket.resolved_at : ticket.closed_at)}
+                      {formatDateTime(ticket.created_at)}
+                    </td>
+                    {/* WAKTU TIKET SELESAI (TANGGAL + JAM) */}
+                    <td style={{ padding: '9px 12px', color: '#6b7280', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                      {formatDateTime(ticket.status === 'RESOLVED' ? ticket.resolved_at : ticket.closed_at)}
                     </td>
                     <td className="action-column" style={{ padding: '9px 12px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                       <button onClick={() => setSelectedTicket(ticket)} style={{ background: '#0c4a30', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.725rem', fontWeight: '700' }}>
@@ -309,8 +317,8 @@ export default function Report({ token, user, onBack }) {
                 <div><b>Teknisi:</b> {selectedTicket.teknisi_nama || '-'}</div>
                 <div><b>Prioritas:</b> {selectedTicket.prioritas}</div>
                 <div><b>Status:</b> {selectedTicket.status}</div>
-                <div><b>Dibuat:</b> {formatDate(selectedTicket.created_at)}</div>
-                <div><b>Selesai:</b> {formatDate(selectedTicket.status === 'RESOLVED' ? selectedTicket.resolved_at : selectedTicket.closed_at)}</div>
+                <div><b>Dibuat:</b> {formatDateTime(selectedTicket.created_at)}</div>
+                <div><b>Selesai:</b> {formatDateTime(selectedTicket.status === 'RESOLVED' ? selectedTicket.resolved_at : selectedTicket.closed_at)}</div>
                 <div style={{ gridColumn: '1 / -1', background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '6px' }}>
                   <b>Tindakan Perbaikan:</b> <span style={{ display: 'block', marginTop: '2px', color: '#334155' }}>{selectedTicket.tindakan || '-'}</span>
                 </div>
