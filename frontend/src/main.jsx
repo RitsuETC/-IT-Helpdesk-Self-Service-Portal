@@ -432,7 +432,19 @@ function App() {
 
       {/* Sidebar Akun Presisi */}
       {showSidebar && session && (
-        <div className="sidebar-backdrop" onClick={() => setShowSidebar(false)}>
+        <div 
+          className="sidebar-backdrop" 
+          onClick={() => setShowSidebar(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            zIndex: 9998
+          }}
+        >
           <aside 
             className="account-sidebar" 
             aria-label="Menu akun" 
@@ -450,8 +462,8 @@ function App() {
               right: 0,
               top: 0,
               backgroundColor: '#ffffff',
-              zIndex: 1000,
-              boxShadow: '-2px 0 10px rgba(0,0,0,0.1)'
+              zIndex: 9999,
+              boxShadow: '-4px 0 20px rgba(0,0,0,0.15)'
             }}
           >
             <div>
