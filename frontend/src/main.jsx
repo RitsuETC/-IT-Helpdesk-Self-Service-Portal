@@ -104,17 +104,53 @@ function App() {
 
   return (
     <main className="app">
-      {/* Header dengan Navbar Position Rata Tengah */}
-      <header className="header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 32px' }}>
+      {/* Header dengan Nuansa Hijau Tua Gradasi & Navigasi Interaktif */}
+      <header className="header" style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        padding: '12px 32px',
+        background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)',
+        color: '#ffffff',
+        boxShadow: '0 4px 20px rgba(12, 74, 48, 0.2)'
+      }}>
         <button className="logo-button" onClick={() => setPage('landing')} aria-label="Ke Beranda" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', cursor: 'pointer' }}>
           <img className="logo" src={ummuhaniLogo} alt="Ummuhani" style={{ height: '36px', width: 'auto' }} />
-          <h1 className="header-title" style={{ fontSize: '1.2rem', margin: 0, fontWeight: 'bold' }}>IT Helpdesk</h1>
+          <h1 className="header-title" style={{ fontSize: '1.2rem', margin: 0, fontWeight: 'bold', color: '#ffffff' }}>IT Helpdesk</h1>
         </button>
 
-        {/* Navigasi Rata Tengah */}
-        <nav aria-label="Navigasi utama" style={{ display: 'flex', gap: '16px', alignItems: 'center', margin: '0 auto' }}>
-          <button onClick={() => setPage('landing')}>Beranda</button>
-          <button onClick={() => scrollToSection('sec-pesan')}>Pesan Tiket</button>
+        {/* Navigasi Rata Tengah dengan Pill Wrapper & Efek Klik Halus */}
+        <nav aria-label="Navigasi utama" style={{ 
+          display: 'flex', 
+          gap: '6px', 
+          alignItems: 'center', 
+          margin: '0 auto',
+          background: 'rgba(255, 255, 255, 0.08)',
+          padding: '6px 10px',
+          borderRadius: '30px',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255, 255, 255, 0.12)'
+        }}>
+          <button 
+            onClick={() => setPage('landing')}
+            style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+          >
+            Beranda
+          </button>
+          <button 
+            onClick={() => scrollToSection('sec-pesan')}
+            style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+          >
+            Pesan Tiket
+          </button>
           <button 
             onClick={() => {
               if (!session) {
@@ -123,25 +159,92 @@ function App() {
                 scrollToSection('sec-status')
               }
             }} 
-            style={{ position: 'relative' }}
+            style={{ position: 'relative', background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
           >
             Status Tiket
             {session && (session.user.role === 'admin' || session.user.role === 'teknisi') && unreadNotifications > 0 && (
-              <span className="nav-badge">{unreadNotifications}</span>
+              <span className="nav-badge" style={{ position: 'absolute', top: '2px', right: '4px', background: '#dc2626', color: '#fff', fontSize: '10px', padding: '1px 5px', borderRadius: '10px', fontWeight: 'bold' }}>{unreadNotifications}</span>
             )}
           </button>
-          <button onClick={() => scrollToSection('sec-knowledge')}>Knowledge Base</button>
-          {(session?.user.role === 'admin' || session?.user.role === 'teknisi') && <button onClick={() => { if (!session) { setShowLoginModal(true) } else { setPage('report') } }}>Laporan</button>}
+          <button 
+            onClick={() => scrollToSection('sec-knowledge')}
+            style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+          >
+            Knowledge Base
+          </button>
+          {(session?.user.role === 'admin' || session?.user.role === 'teknisi') && (
+            <button 
+              onClick={() => { if (!session) { setShowLoginModal(true) } else { setPage('report') } }}
+              style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
+              onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+            >
+              Laporan
+            </button>
+          )}
         </nav>
 
         <div className="account-action">
           {session ? (
-            <button className="account" onClick={() => setShowSidebar(true)}>
+            <button 
+              className="account" 
+              onClick={() => setShowSidebar(true)}
+              style={{
+                background: '#047857',
+                color: '#ffffff',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                fontWeight: '600',
+                fontSize: '13px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#065f46'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#047857'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.96)'; }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            >
               <span>👤</span>
               <span>Akun</span>
             </button>
           ) : (
-            <button className="login-nav-btn" onClick={() => setShowLoginModal(true)}>Login</button>
+            <button 
+              className="login-nav-btn" 
+              onClick={() => setShowLoginModal(true)}
+              style={{
+                background: '#047857',
+                color: '#ffffff',
+                border: 'none',
+                padding: '8px 18px',
+                borderRadius: '20px',
+                fontWeight: '600',
+                fontSize: '13px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#065f46'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#047857'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.96)'; }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            >
+              Login
+            </button>
           )}
         </div>
       </header>
@@ -201,14 +304,6 @@ function App() {
                   e.currentTarget.style.backgroundColor = '#059669';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = '0 4px 12px rgba(5, 150, 105, 0.3)';
-                }}
-                onMouseDown={(e) => {
-                  e.currentTarget.style.transform = 'translateY(1px) scale(0.98)';
-                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(5, 150, 105, 0.2)';
-                }}
-                onMouseUp={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(5, 150, 105, 0.4)';
                 }}
                 onClick={() => {
                   if (!session) {
