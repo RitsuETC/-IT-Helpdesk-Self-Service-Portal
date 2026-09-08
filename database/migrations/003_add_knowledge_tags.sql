@@ -1,0 +1,2 @@
+ALTER TABLE knowledge_article
+  ADD COLUMN IF NOT EXISTS tags TEXT NOT NULL DEFAULT '';
