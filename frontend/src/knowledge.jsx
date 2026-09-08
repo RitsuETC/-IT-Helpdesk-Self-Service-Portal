@@ -12,7 +12,7 @@ function youtubeId(url) {
 
 function Knowledge({ articles = [], initialArticle }) {
   const [query, setQuery] = useState('')
-  const [selectedTag, setSelectedTag] = useState('') // Diubah menjadi string tunggal (single select)
+  const [selectedTags, setSelectedTags] = useState([]) // Diubah kembali menjadi array untuk multi-select
   const [selectedArticle, setSelectedArticle] = useState(null)
   
   useEffect(() => {
@@ -37,33 +37,41 @@ function Knowledge({ articles = [], initialArticle }) {
     return Array.from(allTagsSet)
   }, [articles])
 
-  // Handler Pilih Tag (Single Select)
-  const handleSelectTag = (tag) => {
+  // Handler Toggle Tag (Multi-Select)
+  const handleToggleTagFilter = (tag) => {
     if (tag === 'all') {
-      setSelectedTag('')
+      setSelectedTags([])
       return
     }
-    // Jika tag yang diklik sama dengan yang sedang aktif, nonaktifkan (kembali ke semua), atau langsung set tag tersebut
-    setSelectedTag((prev) => (prev === tag ? '' : tag))
+
+    setSelectedTags((prev) => {
+      if (prev.includes(tag)) {
+        // Jika sudah ada, hapus dari daftar pilihan
+        return prev.filter((t) => t !== tag)
+      } else {
+        // Jika belum ada, tambahkan ke daftar pilihan
+        return [...prev, tag]
+      }
+    })
   }
 
-  // Filtering artikel berdasarkan single-tag yang dipilih dan pencarian teks
+  // Filtering artikel: Harus mengandung SEMUA tag yang dipilih (Logika AND) DAN cocok dengan query teks
   const visibleArticles = useMemo(() => 
     articles.filter((article) => {
       const rawTags = article.tags || article.nama_kategori || ''
       const articleTags = rawTags.split(',').map((t) => t.trim().toLowerCase())
 
-      // Jika tidak ada tag yang dipilih (selectedTag kosong), tampilkan semua artikel
-      const matchTag =
-        !selectedTag ||
-        articleTags.includes(selectedTag.toLowerCase())
+      // Cek apakah artikel memiliki SELURUH tag yang dipilih di selectedTags
+      const matchTags =
+        selectedTags.length === 0 ||
+        selectedTags.every((st) => articleTags.includes(st.toLowerCase()))
 
       const matchQuery =
         article.judul?.toLowerCase().includes(query.toLowerCase()) ||
         article.content?.toLowerCase().includes(query.toLowerCase())
 
-      return matchTag && matchQuery
-    }), [query, selectedTag, articles]
+      return matchTags && matchQuery
+    }), [query, selectedTags, articles]
   )
 
   return (
@@ -86,7 +94,7 @@ function Knowledge({ articles = [], initialArticle }) {
         </div>
       </div>
       
-      {/* Toolbar Pencarian & Filter Single-Tag */}
+      {/* Toolbar Pencarian & Filter Multi-Tag */}
       <div className="knowledge-filter" style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px', background: '#ffffff', padding: '16px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)', border: '1px solid #e5e7eb' }}>
         
         {/* Input Teks Pencarian */}
@@ -101,25 +109,25 @@ function Knowledge({ articles = [], initialArticle }) {
           />
         </label>
 
-        {/* Deretan Chips/Badges Filter Single-Tag */}
+        {/* Deretan Chips/Badges Filter Multi-Tag */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ fontSize: '12px', fontWeight: '700', color: '#6b7280', marginRight: '4px' }}>Filter Tag:</span>
           
           {/* Tombol 'Semua Tag' */}
           <button
-            onClick={() => handleSelectTag('all')}
+            onClick={() => handleToggleTagFilter('all')}
             style={{
               padding: '5px 12px',
               borderRadius: '20px',
               border: '1px solid',
-              borderColor: !selectedTag ? '#0c4a30' : '#d1d5db',
-              backgroundColor: !selectedTag ? '#0c4a30' : '#ffffff',
-              color: !selectedTag ? '#ffffff' : '#374151',
+              borderColor: selectedTags.length === 0 ? '#0c4a30' : '#d1d5db',
+              backgroundColor: selectedTags.length === 0 ? '#0c4a30' : '#ffffff',
+              color: selectedTags.length === 0 ? '#ffffff' : '#374151',
               fontSize: '12px',
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
-              boxShadow: !selectedTag ? '0 4px 10px rgba(12, 74, 48, 0.2)' : 'none'
+              boxShadow: selectedTags.length === 0 ? '0 4px 10px rgba(12, 74, 48, 0.2)' : 'none'
             }}
           >
             Semua Tag
@@ -127,26 +135,26 @@ function Knowledge({ articles = [], initialArticle }) {
 
           {/* List Tag Interaktif */}
           {tagsList.map((tag) => {
-            const isActive = selectedTag === tag
+            const isSelected = selectedTags.includes(tag)
             return (
               <button
                 key={tag}
-                onClick={() => handleSelectTag(tag)}
+                onClick={() => handleToggleTagFilter(tag)}
                 style={{
                   padding: '5px 12px',
                   borderRadius: '20px',
                   border: '1px solid',
-                  borderColor: isActive ? '#0c4a30' : '#d1d5db',
-                  backgroundColor: isActive ? '#0c4a30' : '#ffffff',
-                  color: isActive ? '#ffffff' : '#374151',
+                  borderColor: isSelected ? '#0c4a30' : '#d1d5db',
+                  backgroundColor: isSelected ? '#0c4a30' : '#ffffff',
+                  color: isSelected ? '#ffffff' : '#374151',
                   fontSize: '12px',
                   fontWeight: '600',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
-                  boxShadow: isActive ? '0 4px 10px rgba(12, 74, 48, 0.2)' : 'none'
+                  boxShadow: isSelected ? '0 4px 10px rgba(12, 74, 48, 0.2)' : 'none'
                 }}
               >
-                {isActive ? '✓ ' : ''}#{tag}
+                {isSelected ? '✓ ' : ''}#{tag}
               </button>
             )
           })}
@@ -157,7 +165,7 @@ function Knowledge({ articles = [], initialArticle }) {
       <div className="article-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
         {visibleArticles.length === 0 ? (
           <p style={{ color: '#6b7280', fontSize: '13px', gridColumn: '1 / -1', textAlign: 'center', padding: '30px' }}>
-            Tidak ada artikel yang cocok dengan tag atau pencarian tersebut.
+            Tidak ada artikel yang memiliki kombinasi tag tersebut.
           </p>
         ) : (
           visibleArticles.map((article) => (
