@@ -12,7 +12,7 @@ function youtubeId(url) {
 
 function Knowledge({ articles = [], initialArticle }) {
   const [query, setQuery] = useState('')
-  const [selectedTags, setSelectedTags] = useState([]) // Array untuk menampung banyak tag yang dipilih
+  const [selectedTag, setSelectedTag] = useState('') // Diubah menjadi string tunggal (single select)
   const [selectedArticle, setSelectedArticle] = useState(null)
   
   useEffect(() => {
@@ -27,7 +27,6 @@ function Knowledge({ articles = [], initialArticle }) {
     const allTagsSet = new Set()
     
     articles.forEach((article) => {
-      // Ambil dari article.tags atau fallback ke article.nama_kategori
       const rawTags = article.tags || article.nama_kategori || ''
       rawTags.split(',').forEach((t) => {
         const trimmed = t.trim()
@@ -38,35 +37,33 @@ function Knowledge({ articles = [], initialArticle }) {
     return Array.from(allTagsSet)
   }, [articles])
 
-  // Toggle/Pilih Multi-Tag Filter
-  const handleToggleTagFilter = (tag) => {
+  // Handler Pilih Tag (Single Select)
+  const handleSelectTag = (tag) => {
     if (tag === 'all') {
-      setSelectedTags([])
+      setSelectedTag('')
       return
     }
-
-    setSelectedTags((prev) => 
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    )
+    // Jika tag yang diklik sama dengan yang sedang aktif, nonaktifkan (kembali ke semua), atau langsung set tag tersebut
+    setSelectedTag((prev) => (prev === tag ? '' : tag))
   }
 
-  // Filtering artikel berdasarkan multi-tag yang dipilih dan pencarian teks
+  // Filtering artikel berdasarkan single-tag yang dipilih dan pencarian teks
   const visibleArticles = useMemo(() => 
     articles.filter((article) => {
       const rawTags = article.tags || article.nama_kategori || ''
       const articleTags = rawTags.split(',').map((t) => t.trim().toLowerCase())
 
-      // Jika tidak ada tag yang dipilih (selectedTags kosong), tampilkan semua artikel
+      // Jika tidak ada tag yang dipilih (selectedTag kosong), tampilkan semua artikel
       const matchTag =
-        selectedTags.length === 0 ||
-        selectedTags.some((st) => articleTags.includes(st.toLowerCase()))
+        !selectedTag ||
+        articleTags.includes(selectedTag.toLowerCase())
 
       const matchQuery =
         article.judul?.toLowerCase().includes(query.toLowerCase()) ||
         article.content?.toLowerCase().includes(query.toLowerCase())
 
       return matchTag && matchQuery
-    }), [query, selectedTags, articles]
+    }), [query, selectedTag, articles]
   )
 
   return (
@@ -89,7 +86,7 @@ function Knowledge({ articles = [], initialArticle }) {
         </div>
       </div>
       
-      {/* Toolbar Pencarian & Filter Multi-Tag */}
+      {/* Toolbar Pencarian & Filter Single-Tag */}
       <div className="knowledge-filter" style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px', background: '#ffffff', padding: '16px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)', border: '1px solid #e5e7eb' }}>
         
         {/* Input Teks Pencarian */}
@@ -104,25 +101,25 @@ function Knowledge({ articles = [], initialArticle }) {
           />
         </label>
 
-        {/* Deretan Chips/Badges Filter Multi-Tag */}
+        {/* Deretan Chips/Badges Filter Single-Tag */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ fontSize: '12px', fontWeight: '700', color: '#6b7280', marginRight: '4px' }}>Filter Tag:</span>
           
           {/* Tombol 'Semua Tag' */}
           <button
-            onClick={() => handleToggleTagFilter('all')}
+            onClick={() => handleSelectTag('all')}
             style={{
               padding: '5px 12px',
               borderRadius: '20px',
               border: '1px solid',
-              borderColor: selectedTags.length === 0 ? '#0c4a30' : '#d1d5db',
-              backgroundColor: selectedTags.length === 0 ? '#0c4a30' : '#ffffff',
-              color: selectedTags.length === 0 ? '#ffffff' : '#374151',
+              borderColor: !selectedTag ? '#0c4a30' : '#d1d5db',
+              backgroundColor: !selectedTag ? '#0c4a30' : '#ffffff',
+              color: !selectedTag ? '#ffffff' : '#374151',
               fontSize: '12px',
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
-              boxShadow: selectedTags.length === 0 ? '0 4px 10px rgba(12, 74, 48, 0.2)' : 'none'
+              boxShadow: !selectedTag ? '0 4px 10px rgba(12, 74, 48, 0.2)' : 'none'
             }}
           >
             Semua Tag
@@ -130,11 +127,11 @@ function Knowledge({ articles = [], initialArticle }) {
 
           {/* List Tag Interaktif */}
           {tagsList.map((tag) => {
-            const isActive = selectedTags.includes(tag)
+            const isActive = selectedTag === tag
             return (
               <button
                 key={tag}
-                onClick={() => handleToggleTagFilter(tag)}
+                onClick={() => handleSelectTag(tag)}
                 style={{
                   padding: '5px 12px',
                   borderRadius: '20px',
