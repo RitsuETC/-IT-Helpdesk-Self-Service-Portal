@@ -174,7 +174,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
       </button>
       
       <div className="tickets-toolbar" style={{ display: 'block', borderBottom: '1px solid #d1ded8', paddingBottom: '16px', marginBottom: '20px' }}>
-        <h2 className="tickets-heading" style={{ color: '#0c4a30', fontSize: '22px', marginBottom: '4px', letterSpacing: '0.01em', fontWeight: '700' }}>{ticket.judul}</h2>
+        <h2 className="tickets-heading" style={{ color: '#0c4a30', fontSize: '22px', marginBottom: '4px', letterSpacing: '0.01em', fontWeight: '700', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{ticket.judul}</h2>
         <p className="history-description" style={{ color: '#4b5563', fontSize: '13px', margin: 0 }}>Informasi lengkap dan pembaruan status laporan tiket.</p>
       </div>
 
@@ -201,7 +201,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
         <div style={{ border: '1px solid #064e3b', borderRadius: '14px', padding: '18px', background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', color: '#ffffff', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 10px 24px rgba(12, 74, 48, 0.2)' }}>
           <div>
             <b style={{ display: 'block', marginBottom: '8px', color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '8px' }}>Masalah / Deskripsi</b>
-            <p style={{ margin: 0, fontSize: '12px', color: '#f1f5f9', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{ticket.deskripsi}</p>
+            <p style={{ margin: 0, fontSize: '12px', color: '#f1f5f9', lineHeight: '1.6', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{ticket.deskripsi}</p>
           </div>
 
           <div>
@@ -212,7 +212,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
               <p style={{ color: '#dbeafe', margin: 0, fontSize: '12px' }}>Belum ada tindakan yang tercatat.</p>
             ) : (
               <div style={{ display: 'grid', gap: 8, fontSize: '12px' }}>
-                <div style={{ padding: '12px 14px', borderRadius: '10px', background: '#ffffff', color: '#1f2937', border: '1px solid #cbd5e1', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}>
+                <div style={{ padding: '12px 14px', borderRadius: '10px', background: '#ffffff', color: '#1f2937', border: '1px solid #cbd5e1', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap' }}>
                   <div style={{ color: '#0c4a30', fontWeight: 700, marginBottom: '4px' }}>Tindakan:</div>
                   <div style={{ color: '#374151', marginBottom: '8px' }}>{trouble.tindakan}</div>
                   <div style={{ color: '#0c4a30', fontWeight: 700, marginBottom: '4px' }}>Hasil:</div>
@@ -411,7 +411,6 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
           </select>
         </label>
         
-        {/* Tombol Buat Tiket Baru dengan Warna & Efek Baru */}
         <button 
           className="create-ticket" 
           onClick={() => setShowCreateForm(true)}
@@ -456,7 +455,9 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
                 marginBottom: '12px',
                 cursor: 'pointer',
                 boxShadow: '0 8px 20px rgba(12, 74, 48, 0.25)',
-                transition: 'transform 0.1s ease, box-shadow 0.1s ease'
+                transition: 'transform 0.1s ease, box-shadow 0.1s ease',
+                wordBreak: 'break-word',
+                overflowWrap: 'anywhere'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-2px)';
@@ -492,7 +493,6 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
         )}
       </div>
 
-      {/* Pop-up (Modal) Buat Tiket Baru yang Dipercantik */}
       {showCreateForm && (
         <div 
           className="modal-backdrop" 
