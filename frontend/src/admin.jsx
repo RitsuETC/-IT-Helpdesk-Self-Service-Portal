@@ -162,6 +162,14 @@ function Admin({ token, articles, onChanged, onError, user }) {
     ? knowledge.tags 
     : (knowledge.tags ? knowledge.tags.split(',').map(t => t.trim()).filter(Boolean) : [])
 
+  const availableTags = [...new Set([
+    ...setup.categories.map((category) => category.nama_kategori),
+    ...articles.flatMap((article) => {
+      const rawTags = Array.isArray(article.tags) ? article.tags : String(article.tags || '').split(',')
+      return rawTags.map((tag) => tag.trim()).filter(Boolean)
+    })
+  ])]
+
   return (
     <section className="admin-page" style={{ maxWidth: '1100px', margin: '0 auto', padding: '20px', color: '#1f2937' }}>
       <style>{`
@@ -413,15 +421,15 @@ function Admin({ token, articles, onChanged, onError, user }) {
                 Pilih Multi-Tag / Kategori (Bisa Pilih Banyak)
               </label>
 
-              {/* Tag dari Kategori Master */}
+              {/* Tag yang sudah tersedia, termasuk tag kustom dari artikel sebelumnya */}
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                {setup.categories.map((cat) => {
-                  const isSelected = selectedTagsList.includes(cat.nama_kategori)
+                {availableTags.map((tagName) => {
+                  const isSelected = selectedTagsList.includes(tagName)
                   return (
                     <button
-                      key={cat.id}
+                      key={tagName}
                       type="button"
-                      onClick={() => toggleTag(cat.nama_kategori)}
+                      onClick={() => toggleTag(tagName)}
                       style={{
                         padding: '4px 10px',
                         borderRadius: '16px',
@@ -434,7 +442,7 @@ function Admin({ token, articles, onChanged, onError, user }) {
                         transition: 'all 0.15s ease'
                       }}
                     >
-                      {isSelected ? '✓ ' : '+ '}#{cat.nama_kategori}
+                      {isSelected ? '✓ ' : '+ '}#{tagName}
                     </button>
                   )
                 })}
