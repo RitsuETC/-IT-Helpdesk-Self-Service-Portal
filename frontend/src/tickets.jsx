@@ -157,21 +157,32 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   const isStaff = user?.role === 'admin' || user?.role === 'teknisi'
 
   return (
-    <div className="tickets-page" style={{ backgroundColor: '#f8faf9', color: '#1f2937', padding: '24px', borderRadius: '18px', margin: '0 auto', maxWidth: '100%', boxShadow: '0 12px 32px rgba(15, 23, 42, 0.08)' }}>
-      <button 
-        onClick={onBack} 
-        style={{ marginBottom: '18px', background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', color: '#ffffff', border: 'none', padding: '9px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', boxShadow: '0 6px 16px rgba(12, 74, 48, 0.2)', transition: 'transform 0.1s ease, box-shadow 0.1s ease' }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 8px 20px rgba(12, 74, 48, 0.3)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 6px 16px rgba(12, 74, 48, 0.2)';
-        }}
-      >
-        ← Kembali ke Daftar
-      </button>
+    <div className="tickets-page" style={{ backgroundColor: '#f8faf9', color: '#1f2937', padding: '24px', borderRadius: '18px', margin: '0 auto', maxWidth: '100%', boxShadow: '0 12px 32px rgba(15, 23, 42, 0.08)', border: isStaff ? '2px solid #047857' : '1px solid #dce5df' }}>
+      
+      {/* Banner Khusus Admin / Teknisi agar terlihat jelas perbedaannya */}
+      {isStaff && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#064e3b', color: '#ffffff', padding: '10px 16px', borderRadius: '10px', marginBottom: '20px', fontSize: '13px', fontWeight: '700', boxShadow: '0 4px 12px rgba(6, 78, 59, 0.2)' }}>
+          <span>🛠️ Panel Kontrol {user?.role === 'admin' ? 'Admin' : 'Teknisi'}</span>
+          <span style={{ backgroundColor: '#047857', padding: '3px 10px', borderRadius: '6px', fontSize: '11px', textTransform: 'uppercase' }}>Mode Staff</span>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+        <button 
+          onClick={onBack} 
+          style={{ background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', color: '#ffffff', border: 'none', padding: '9px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', boxShadow: '0 6px 16px rgba(12, 74, 48, 0.2)', transition: 'transform 0.1s ease, box-shadow 0.1s ease' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 8px 20px rgba(12, 74, 48, 0.3)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 6px 16px rgba(12, 74, 48, 0.2)';
+          }}
+        >
+          ← Kembali ke Daftar
+        </button>
+      </div>
       
       <div className="tickets-toolbar" style={{ display: 'block', borderBottom: '1px solid #d1ded8', paddingBottom: '16px', marginBottom: '20px' }}>
         <h2 className="tickets-heading" style={{ color: '#0c4a30', fontSize: '22px', marginBottom: '4px', letterSpacing: '0.01em', fontWeight: '700', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{ticket.judul}</h2>
@@ -225,8 +236,10 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
       </div>
 
       {isStaff && (
-        <div style={{ border: '1px solid #064e3b', borderRadius: '14px', padding: '20px', background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', color: '#ffffff', display: 'grid', gap: '18px', boxShadow: '0 10px 24px rgba(12, 74, 48, 0.2)', width: '100%', boxSizing: 'border-box' }}>
-          <b style={{ color: '#e2f0ea', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '8px' }}>Kontrol Teknisi & Admin</b>
+        <div style={{ border: '2px dashed #a7f3d0', borderRadius: '14px', padding: '20px', background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', color: '#ffffff', display: 'grid', gap: '18px', boxShadow: '0 10px 24px rgba(12, 74, 48, 0.2)', width: '100%', boxSizing: 'border-box' }}>
+          <b style={{ color: '#e2f0ea', fontSize: '14px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            ⚙️ Panel Kontrol Teknisi & Admin
+          </b>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', width: '100%' }}>
             <form onSubmit={handleUpdateStatus} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
