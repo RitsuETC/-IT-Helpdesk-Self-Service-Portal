@@ -159,10 +159,9 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   return (
     <div className="tickets-page" style={{ backgroundColor: '#f8faf9', color: '#1f2937', padding: '24px', borderRadius: '18px', margin: '0 auto', maxWidth: '100%', boxShadow: '0 12px 32px rgba(15, 23, 42, 0.08)', border: isStaff ? '2px solid #047857' : '1px solid #dce5df' }}>
       
-      {/* Banner Khusus Admin / Teknisi agar terlihat jelas perbedaannya */}
       {isStaff && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#064e3b', color: '#ffffff', padding: '10px 16px', borderRadius: '10px', marginBottom: '20px', fontSize: '13px', fontWeight: '700', boxShadow: '0 4px 12px rgba(6, 78, 59, 0.2)' }}>
-          <span>🛠️ Panel Kontrol {user?.role === 'admin' ? 'Admin' : 'Teknisi'}</span>
+          <span>Panel Kontrol {user?.role === 'admin' ? 'Admin' : 'Teknisi'}</span>
           <span style={{ backgroundColor: '#047857', padding: '3px 10px', borderRadius: '6px', fontSize: '11px', textTransform: 'uppercase' }}>Mode Staff</span>
         </div>
       )}
@@ -236,14 +235,37 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
       </div>
 
       {isStaff && (
-        <div style={{ border: '2px dashed #a7f3d0', borderRadius: '14px', padding: '20px', background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', color: '#ffffff', display: 'grid', gap: '18px', boxShadow: '0 10px 24px rgba(12, 74, 48, 0.2)', width: '100%', boxSizing: 'border-box' }}>
-          <b style={{ color: '#e2f0ea', fontSize: '14px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            ⚙️ Panel Kontrol Teknisi & Admin
+        <div style={{ border: '2px dashed #a7f3d0', borderRadius: '14px', padding: '20px', background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', color: '#ffffff', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 10px 24px rgba(12, 74, 48, 0.2)', width: '100%', boxSizing: 'border-box' }}>
+          <b style={{ color: '#e2f0ea', fontSize: '15px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '10px' }}>
+            Panel Kontrol Teknisi & Admin (Alur Penanganan)
           </b>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', width: '100%' }}>
+          {/* LANGKAH 1: ATUR PRIORITAS */}
+          <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#6ee7b7', marginBottom: '8px' }}>
+              Langkah 1: Tentukan Prioritas Tiket
+            </div>
+            <form onSubmit={handleUpdatePriority} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <select name="prioritas" defaultValue={ticket.prioritas} style={{ height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid #cbd5e1', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', boxSizing: 'border-box' }}>
+                <option value="level_1">Level 1 (Low)</option>
+                <option value="level_2">Level 2 (Medium)</option>
+                <option value="level_3">Level 3 (High)</option>
+              </select>
+              <button 
+                type="submit" 
+                style={{ height: '38px', padding: '0 16px', backgroundColor: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', width: '100%' }}
+              >
+                Simpan Prioritas
+              </button>
+            </form>
+          </div>
+
+          {/* LANGKAH 2: UPDATE STATUS & TEKNISI */}
+          <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#6ee7b7', marginBottom: '8px' }}>
+              Langkah 2: Perbarui Status & Penugasan Teknisi
+            </div>
             <form onSubmit={handleUpdateStatus} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <label style={{ fontSize: '12px', fontWeight: '700', color: '#f1f5f9' }}>Status Tiket</label>
               <select
                 name="status"
                 value={selectedStatus}
@@ -277,48 +299,38 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
 
               <button 
                 type="submit" 
-                style={{ height: '38px', padding: '0 16px', backgroundColor: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', width: '100%', marginTop: 'auto' }}
+                style={{ height: '38px', padding: '0 16px', backgroundColor: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', width: '100%' }}
               >
-                Perbarui Status
-              </button>
-            </form>
-
-            <form onSubmit={handleUpdatePriority} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <label style={{ fontSize: '12px', fontWeight: '700', color: '#f1f5f9' }}>Prioritas Tiket</label>
-              <select name="prioritas" defaultValue={ticket.prioritas} style={{ height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid #cbd5e1', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', boxSizing: 'border-box' }}>
-                <option value="level_1">Level 1 (Low)</option>
-                <option value="level_2">Level 2 (Medium)</option>
-                <option value="level_3">Level 3 (High)</option>
-              </select>
-
-              <button 
-                type="submit" 
-                style={{ height: '38px', padding: '0 16px', backgroundColor: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', width: '100%', marginTop: 'auto' }}
-              >
-                Perbarui Prioritas
+                Simpan Status
               </button>
             </form>
           </div>
 
-          <form onSubmit={handleResolve} style={{ display: 'grid', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '16px', width: '100%' }}>
-            <b style={{ fontSize: '12px', color: '#e2f0ea' }}>Form Penyelesaian Tiket</b>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', width: '100%' }}>
-              <label style={{ fontSize: '12px', color: '#f1f5f9', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                Tindakan Perbaikan
-                <textarea name="tindakan" rows="3" value={tindakanVal} onChange={(e) => setTindakanVal(e.target.value)} required style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', resize: 'vertical', boxSizing: 'border-box' }} placeholder="Tuliskan tindakan..."></textarea>
-              </label>
-              <label style={{ fontSize: '12px', color: '#f1f5f9', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                Hasil Akhir
-                <textarea name="hasil_akhir" rows="3" value={hasilVal} onChange={(e) => setHasilVal(e.target.value)} required style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', resize: 'vertical', boxSizing: 'border-box' }} placeholder="Tuliskan hasil akhir..."></textarea>
-              </label>
+          {/* LANGKAH 3: FORM PENYELESAIAN */}
+          <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#6ee7b7', marginBottom: '8px' }}>
+              Langkah 3: Catat Solusi / Penyelesaian Akhir
             </div>
-            <button 
-              type="submit" 
-              style={{ width: '100%', height: '40px', marginTop: '6px', backgroundColor: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 6px 16px rgba(0,0,0,0.15)' }}
-            >
-              Simpan Penyelesaian
-            </button>
-          </form>
+            <form onSubmit={handleResolve} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', width: '100%' }}>
+                <label style={{ fontSize: '12px', color: '#f1f5f9', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  Tindakan Perbaikan
+                  <textarea name="tindakan" rows="3" value={tindakanVal} onChange={(e) => setTindakanVal(e.target.value)} required style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', resize: 'vertical', boxSizing: 'border-box' }} placeholder="Tuliskan tindakan..."></textarea>
+                </label>
+                <label style={{ fontSize: '12px', color: '#f1f5f9', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  Hasil Akhir
+                  <textarea name="hasil_akhir" rows="3" value={hasilVal} onChange={(e) => setHasilVal(e.target.value)} required style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', backgroundColor: '#ffffff', color: '#1f2937', resize: 'vertical', boxSizing: 'border-box' }} placeholder="Tuliskan hasil akhir..."></textarea>
+                </label>
+              </div>
+              <button 
+                type="submit" 
+                style={{ width: '100%', height: '40px', backgroundColor: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 6px 16px rgba(0,0,0,0.15)' }}
+              >
+                Simpan & Selesaikan Tiket
+              </button>
+            </form>
+          </div>
+
         </div>
       )}
     </div>
