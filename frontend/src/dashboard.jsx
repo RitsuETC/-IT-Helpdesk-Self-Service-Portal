@@ -31,15 +31,34 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
   }
 
   useEffect(() => {
-    loadData()
+    let isMounted = true
+
+    const fetchData = async () => {
+      try {
+        if (token) {
+          const statsRes = await api('/tickets/stats', { token })
+          if (isMounted) setStats(statsRes.data || { total: 0, new: 0, process: 0, resolved: 0 })
+
+          const listRes = await api('/tickets', { token })
+          if (isMounted) setTickets(listRes.data || [])
+        }
+      } catch (err) {
+        console.error('Gagal memuat data dashboard:', err)
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+
+    fetchData()
 
     if (!token) return
 
-    const timer = setInterval(() => {
-      loadData()
-    }, 3000)
+    const timer = setInterval(fetchData, 5000)
 
-    return () => clearInterval(timer)
+    return () => {
+      isMounted = false;
+      clearInterval(timer)
+    }
   }, [token])
 
   // Active tickets exclude RESOLVED and CLOSED
@@ -130,8 +149,8 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
             <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>›</span>
           </button>
 
-          {/* Controls Slide (1/15) */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Controls Slide */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button 
               onClick={prevSlide} 
               disabled={activeTickets.length === 0}
@@ -139,15 +158,15 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
                 background: 'rgba(255, 255, 255, 0.15)',
                 border: 'none',
                 color: '#fff',
-                  width: '32px',
+                width: '32px',
                 height: '32px',
                 borderRadius: '50%',
-                  cursor: activeTickets.length === 0 ? 'not-allowed' : 'pointer',
-                  display: 'flex',
+                cursor: activeTickets.length === 0 ? 'not-allowed' : 'pointer',
+                display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '0.9rem',
-                  opacity: activeTickets.length === 0 ? 0.4 : 1
+                opacity: activeTickets.length === 0 ? 0.4 : 1
               }}
             >
               ‹
@@ -159,9 +178,8 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
               onClick={nextSlide} 
               disabled={activeTickets.length === 0}
               style={{
-                background: 'transparent',
-                border: 'none',
                 background: 'rgba(255, 255, 255, 0.15)',
+                border: 'none',
                 color: '#fff',
                 width: '32px',
                 height: '32px',
@@ -179,14 +197,14 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
           </div>
         </div>
 
-        {/* Tabel Widget Langsung tanpa Garis Atas */}
+        {/* Tabel Widget Langsung */}
         <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', color: '#fff', textAlign: 'left', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+          <table style={{ width: '100%', color: '#fff', textAlign: 'left', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
             <thead>
               <tr style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.775rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 <th style={{ paddingBottom: '8px', fontWeight: '600' }}>ID TIKET</th>
                 <th style={{ paddingBottom: '8px', fontWeight: '600' }}>PELAPOR</th>
-                <th style={{ paddingBottom: '8px', fontWeight: '600' }}>PERANGKAT</th>
+                <th style={{ paddingBottom: '8px', fontWeight: '600' }}>KATEGORI</th>
                 <th style={{ paddingBottom: '8px', fontWeight: '600', textAlign: 'right' }}>STATUS</th>
               </tr>
             </thead>
@@ -211,10 +229,14 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
                 </tr>
               ) : (
                 visibleActiveTickets.map((activeTicket) => (
-                  <tr key={activeTicket.id} style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
+                  <tr 
+                    key={activeTicket.id} 
+                    onClick={() => setSelectedTicket(activeTicket)}
+                    style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)', cursor: 'pointer' }}
+                  >
                     <td style={{ paddingTop: '10px', fontWeight: '700', letterSpacing: '0.02em' }}>{activeTicket.code || `HD-${activeTicket.id}`}</td>
-                    <td style={{ paddingTop: '10px', opacity: 0.95 }}>{activeTicket.reporter_name || user?.username || '-'}</td>
-                    <td style={{ paddingTop: '10px', opacity: 0.95 }}>{activeTicket.category || activeTicket.device || '-'}</td>
+                    <td style={{ paddingTop: '10px', opacity: 0.95 }}>{activeTicket.pelapor_nama || activeTicket.reporter_name || activeTicket.pelapor || user?.username || '-'}</td>
+                    <td style={{ paddingTop: '10px', opacity: 0.95 }}>{activeTicket.nama_kategori || activeTicket.kategori || activeTicket.category || activeTicket.device || '-'}</td>
                     <td style={{ paddingTop: '10px', textAlign: 'right' }}>
                       <span style={{
                         backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -236,79 +258,83 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
       </div>
 
       {showHistory && (
-      <div style={{ marginTop: '16px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <h3 style={{ margin: 0, fontSize: '1rem', color: '#0f172a' }}>Riwayat Tiket</h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button
-              type="button"
-              onClick={() => changeHistory(-1)}
-              disabled={historyTickets.length <= 2}
-              style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '50%',
-                border: '1px solid #cbd5e1',
-                background: '#fff',
-                color: '#334155',
-                cursor: historyTickets.length <= 2 ? 'not-allowed' : 'pointer',
-                opacity: historyTickets.length <= 2 ? 0.5 : 1,
-                fontSize: '1rem'
-              }}
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              onClick={() => changeHistory(1)}
-              disabled={historyTickets.length <= 2}
-              style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '50%',
-                border: '1px solid #cbd5e1',
-                background: '#fff',
-                color: '#334155',
-                cursor: historyTickets.length <= 2 ? 'not-allowed' : 'pointer',
-                opacity: historyTickets.length <= 2 ? 0.5 : 1,
-                fontSize: '1rem'
-              }}
-            >
-              ›
-            </button>
+        <div style={{ marginTop: '16px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <h3 style={{ margin: 0, fontSize: '1rem', color: '#0f172a' }}>Riwayat Tiket</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => changeHistory(-1)}
+                disabled={historyTickets.length <= 2}
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
+                  border: '1px solid #cbd5e1',
+                  background: '#fff',
+                  color: '#334155',
+                  cursor: historyTickets.length <= 2 ? 'not-allowed' : 'pointer',
+                  opacity: historyTickets.length <= 2 ? 0.5 : 1,
+                  fontSize: '1rem'
+                }}
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={() => changeHistory(1)}
+                disabled={historyTickets.length <= 2}
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
+                  border: '1px solid #cbd5e1',
+                  background: '#fff',
+                  color: '#334155',
+                  cursor: historyTickets.length <= 2 ? 'not-allowed' : 'pointer',
+                  opacity: historyTickets.length <= 2 ? 0.5 : 1,
+                  fontSize: '1rem'
+                }}
+              >
+                ›
+              </button>
+            </div>
           </div>
-        </div>
 
-        {historyTickets.length === 0 ? (
-          <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>Belum ada tiket yang selesai atau ditutup.</p>
-        ) : (
-          <div style={{ display: 'grid', gap: '12px' }}>
-            {visibleHistoryTickets.map((ticket) => (
-              <div key={ticket.id} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 14px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                  <strong style={{ color: '#0f172a', fontSize: '0.82rem' }}>{ticket.code || `HD-${ticket.id}`}</strong>
-                  <span style={{
-                    backgroundColor: ticket.status === 'CLOSED' ? '#e2e8f0' : '#dcfce7',
-                    color: ticket.status === 'CLOSED' ? '#334155' : '#166534',
-                    borderRadius: '999px',
-                    padding: '4px 8px',
-                    fontSize: '0.68rem',
-                    fontWeight: '700'
-                  }}>
-                    {ticket.status}
-                  </span>
+          {historyTickets.length === 0 ? (
+            <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>Belum ada tiket yang selesai atau ditutup.</p>
+          ) : (
+            <div style={{ display: 'grid', gap: '12px' }}>
+              {visibleHistoryTickets.map((ticket) => (
+                <div 
+                  key={ticket.id} 
+                  onClick={() => setSelectedTicket(ticket)}
+                  style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 14px', cursor: 'pointer' }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <strong style={{ color: '#0f172a', fontSize: '0.82rem' }}>{ticket.code || `HD-${ticket.id}`}</strong>
+                    <span style={{
+                      backgroundColor: ticket.status === 'CLOSED' ? '#e2e8f0' : '#dcfce7',
+                      color: ticket.status === 'CLOSED' ? '#334155' : '#166534',
+                      borderRadius: '999px',
+                      padding: '4px 8px',
+                      fontSize: '0.68rem',
+                      fontWeight: '700'
+                    }}>
+                      {ticket.status}
+                    </span>
+                  </div>
+                  <div style={{ color: '#334155', fontSize: '0.85rem', fontWeight: '600', marginBottom: '4px' }}>
+                    {ticket.judul || ticket.title || ticket.nama_kategori || ticket.kategori || ticket.category || 'Tiket'}
+                  </div>
+                  <div style={{ color: '#64748b', fontSize: '0.75rem' }}>
+                    {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : 'Tanggal tidak tersedia'}
+                  </div>
                 </div>
-                <div style={{ color: '#334155', fontSize: '0.85rem', fontWeight: '600', marginBottom: '4px' }}>
-                  {ticket.title || ticket.category || ticket.device || 'Tiket'}
-                </div>
-                <div style={{ color: '#64748b', fontSize: '0.75rem' }}>
-                  {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : 'Tanggal tidak tersedia'}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Modal Pop-up Seluruh Tiket */}
@@ -373,7 +399,7 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
                 <thead>
                   <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
                     <th style={{ padding: '12px 16px', fontWeight: '600' }}>ID Tiket</th>
-                    <th style={{ padding: '12px 16px', fontWeight: '600' }}>Judul / Perangkat</th>
+                    <th style={{ padding: '12px 16px', fontWeight: '600' }}>Judul / Kategori</th>
                     <th style={{ padding: '12px 16px', fontWeight: '600' }}>Status</th>
                     <th style={{ padding: '12px 16px', fontWeight: '600' }}>Tanggal</th>
                   </tr>
@@ -385,46 +411,34 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
                     </tr>
                   ) : (
                     tickets.map((t) => (
-                          <tr
-                            key={t.id}
-                            onClick={() => {
-                              if (!t.status || (t.status !== 'RESOLVED' && t.status !== 'CLOSED')) {
-                                setSelectedTicket(t)
-                              }
-                            }}
-                            style={{ borderBottom: '1px solid #f1f5f9', cursor: (!t.status || (t.status !== 'RESOLVED' && t.status !== 'CLOSED')) ? 'pointer' : 'default' }}
-                          >
-                            <td style={{ padding: '12px 16px', fontWeight: '700', color: '#0f172a' }}>{t.code || `HD-${t.id}`}</td>
-                            <td style={{ padding: '12px 16px', color: '#334155' }}>{t.title || t.category || '-'}</td>
-                            <td style={{ padding: '12px 16px' }}>
-                              <span style={{
-                                padding: '4px 10px',
-                                borderRadius: '12px',
-                                fontSize: '0.75rem',
-                                fontWeight: '600',
-                                backgroundColor: t.status === 'NEW' ? '#fef3c7' : t.status === 'RESOLVED' ? '#dcfce7' : '#dbeafe',
-                                color: t.status === 'NEW' ? '#92400e' : t.status === 'RESOLVED' ? '#166534' : '#1e40af'
-                              }}>
-                                {t.status}
-                              </span>
-                            </td>
-                            <td style={{ padding: '12px 16px', color: '#64748b' }}>
-                              {t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}
-                            </td>
-                          </tr>
-                        ))
+                      <tr
+                        key={t.id}
+                        onClick={() => setSelectedTicket(t)}
+                        style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
+                      >
+                        <td style={{ padding: '12px 16px', fontWeight: '700', color: '#0f172a' }}>{t.code || `HD-${t.id}`}</td>
+                        <td style={{ padding: '12px 16px', color: '#334155' }}>{t.judul || t.title || t.nama_kategori || t.kategori || t.category || '-'}</td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span style={{
+                            padding: '4px 10px',
+                            borderRadius: '12px',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            backgroundColor: t.status === 'NEW' ? '#fef3c7' : t.status === 'RESOLVED' ? '#dcfce7' : '#dbeafe',
+                            color: t.status === 'NEW' ? '#92400e' : t.status === 'RESOLVED' ? '#166534' : '#1e40af'
+                          }}>
+                            {t.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', color: '#64748b' }}>
+                          {t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>
             </div>
-
-            {selectedTicket && (
-              <div onClick={() => setSelectedTicket(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
-                <div onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: 900, background: '#fff', borderRadius: 12, padding: 20, maxHeight: '90vh', overflowY: 'auto' }}>
-                  <TicketDetail token={token} user={user} ticketId={selectedTicket.id} onBack={() => setSelectedTicket(null)} onError={(m) => console.error(m)} />
-                </div>
-              </div>
-            )}
 
             <div style={{ marginTop: '20px', textAlign: 'right' }}>
               <button 
@@ -443,6 +457,15 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
                 Tutup
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pop-up Detail Tiket (Global) */}
+      {selectedTicket && (
+        <div onClick={() => setSelectedTicket(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: 900, background: '#fff', borderRadius: 12, padding: 20, maxHeight: '90vh', overflowY: 'auto' }}>
+            <TicketDetail token={token} user={user} ticketId={selectedTicket.id} onBack={() => setSelectedTicket(null)} onError={(m) => console.error(m)} />
           </div>
         </div>
       )}
