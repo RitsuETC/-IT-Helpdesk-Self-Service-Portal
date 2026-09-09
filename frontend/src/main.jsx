@@ -10,6 +10,7 @@ import HistoryCarousel from './history.jsx'
 import Knowledge from './knowledge.jsx'
 import Admin from './admin.jsx'
 import Report from './report.jsx'
+import Inventory from './inventory.jsx'
 
 const savedSession = JSON.parse(localStorage.getItem('helpdesk-session') || 'null')
 
@@ -190,6 +191,14 @@ function App() {
               onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
             >
               Laporan
+            </button>
+          )}
+          {(session?.user.role === 'admin' || session?.user.role === 'teknisi') && (
+            <button 
+              onClick={() => setPage('inventory')}
+              style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
+            >
+              Inventaris
             </button>
           )}
         </nav>
@@ -389,6 +398,15 @@ function App() {
         />
       )}
 
+      {(session?.user.role === 'admin' || session?.user.role === 'teknisi') && page === 'inventory' && (
+        <Inventory
+          token={session.token}
+          user={session.user}
+          onBack={() => setPage('landing')}
+          onError={setNotice}
+        />
+      )}
+
       {/* Popup Login Modal */}
       {showLoginModal && (
         <div className="modal-backdrop" onClick={() => setShowLoginModal(false)}>
@@ -488,6 +506,11 @@ function App() {
               {session.user.role === 'admin' && (
                 <button className="admin-menu" onClick={() => { setShowSidebar(false); setPage('admin') }}>
                   Admin Knowledge
+                </button>
+              )}
+              {(session.user.role === 'admin' || session.user.role === 'teknisi') && (
+                <button className="admin-menu" onClick={() => { setShowSidebar(false); setPage('inventory') }}>
+                  Inventaris
                 </button>
               )}
               <button 

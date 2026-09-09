@@ -10,6 +10,7 @@ const knowledgeRoutes = require("./routes/knowledge");
 const troubleshootingRoutes = require("./routes/troubleshooting");
 const adminRoutes = require("./routes/admin");
 const notificationsRoutes = require("./routes/notifications");
+const inventoryRoutes = require("./routes/inventory");
 
 const app = express();
 
@@ -68,6 +69,7 @@ app.use("/api/knowledge", knowledgeRoutes);
 app.use("/api/troubleshooting", troubleshootingRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/notifications", notificationsRoutes);
+app.use("/api/inventory", inventoryRoutes);
 
 
 
