@@ -18,6 +18,7 @@ function App() {
   const [page, setPage] = useState('landing')
   const [session, setSession] = useState(savedSession)
   const [showLoginModal, setShowLoginModal] = useState(false)
+  const [showCreateTicketModal, setShowCreateTicketModal] = useState(false)
   const [showSidebar, setShowSidebar] = useState(false)
   const [articles, setArticles] = useState([])
   const [notice, setNotice] = useState('')
@@ -318,7 +319,11 @@ function App() {
                   if (!session) {
                     setShowLoginModal(true)
                   } else {
-                    setPage('tickets')
+                      if (session.user.role === 'user') {
+                        setShowCreateTicketModal(true)
+                      } else {
+                        setPage('tickets')
+                      }
                   }
                 }}
               >
@@ -369,6 +374,20 @@ function App() {
           user={session?.user} 
           onError={setNotice} 
           onRequireLogin={() => setShowLoginModal(true)}
+        />
+      )}
+
+      {showCreateTicketModal && session?.user.role === 'user' && (
+        <Tickets
+          token={session.token}
+          user={session.user}
+          createOnly
+          onCloseCreate={() => setShowCreateTicketModal(false)}
+          onError={setNotice}
+          onRequireLogin={() => {
+            setShowCreateTicketModal(false)
+            setShowLoginModal(true)
+          }}
         />
       )}
 

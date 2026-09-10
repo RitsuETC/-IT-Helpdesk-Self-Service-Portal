@@ -358,7 +358,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   )
 }
 
-export default function Tickets({ token, user, onError, onRequireLogin }) {
+export default function Tickets({ token, user, onError, onRequireLogin, createOnly = false, onCloseCreate }) {
   const [tickets, setTickets] = useState([])
   const [selectedTicketId, setSelectedTicketId] = useState(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -395,6 +395,10 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
     }
   }, [token])
 
+  useEffect(() => {
+    if (createOnly) setShowCreateForm(true)
+  }, [createOnly])
+
   const handleCreateTicket = async (e) => {
     e.preventDefault()
     const form = new FormData(e.currentTarget)
@@ -410,6 +414,7 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
         }
       })
       setShowCreateForm(false)
+      onCloseCreate?.()
       loadTickets()
     } catch (err) {
       onError(err.message)
@@ -439,6 +444,35 @@ export default function Tickets({ token, user, onError, onRequireLogin }) {
 
     return ticketPriority === filterVal
   })
+
+  if (createOnly) {
+    return showCreateForm ? (
+      <div
+        className="modal-backdrop"
+        onClick={() => { setShowCreateForm(false); onCloseCreate?.() }}
+        style={{ zIndex: 1100 }}
+      >
+        <form
+          className="ticket-form"
+          onClick={(event) => event.stopPropagation()}
+          onSubmit={handleCreateTicket}
+        >
+          <button
+            type="button"
+            className="close-ticket-form"
+            onClick={() => { setShowCreateForm(false); onCloseCreate?.() }}
+            aria-label="Tutup form tiket"
+          >×</button>
+          <h2>Buat Tiket Baru</h2>
+          <label>Judul Kendala<input name="judul" required placeholder="Contoh: Printer Rusak" /></label>
+          <label>Kategori<select name="kategori"><option value="Hardware">Hardware</option><option value="Software">Software</option><option value="Jaringan">Jaringan</option><option value="Lainnya">Lainnya</option></select></label>
+          <label>Lokasi / Ruangan<select name="ruangan" required defaultValue=""><option value="" disabled>-- Pilih Ruangan --</option>{rooms.map((room) => <option key={room.id} value={room.id}>{room.ruangan}</option>)}</select></label>
+          <label>Deskripsi Masalah<textarea name="deskripsi" required placeholder="Jelaskan kendala secara rinci..." rows="3" /></label>
+          <button type="submit">Kirim Laporan Tiket</button>
+        </form>
+      </div>
+    ) : null
+  }
 
   return (
     <div className="tickets-page">
