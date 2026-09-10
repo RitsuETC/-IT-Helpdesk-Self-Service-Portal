@@ -161,7 +161,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
       
       {isStaff && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#022c22', color: '#ffffff', padding: '14px 20px', borderRadius: '14px', marginBottom: '22px', fontSize: '13px', fontWeight: '800', boxShadow: '0 6px 16px rgba(2, 44, 34, 0.3)' }}>
-          <span style={{ letterSpacing: '0.02em' }}>⚡ Panel Kontrol {user?.role === 'admin' ? 'Admin' : 'Teknisi'}</span>
+          <span style={{ letterSpacing: '0.02em' }}>Panel Kontrol {user?.role === 'admin' ? 'Admin' : 'Teknisi'}</span>
           <span style={{ backgroundColor: '#059669', padding: '5px 12px', borderRadius: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', boxShadow: '0 2px 6px rgba(5, 150, 105, 0.4)' }}>Mode Staff Aktif</span>
         </div>
       )}
@@ -195,7 +195,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
           onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
         >
-          <b style={{ display: 'block', marginBottom: '14px', color: '#6ee7b7', fontSize: '14px', borderBottom: '1px solid rgba(110, 231, 183, 0.2)', paddingBottom: '8px', letterSpacing: '0.03em' }}>📋 Detail Laporan</b>
+          <b style={{ display: 'block', marginBottom: '14px', color: '#6ee7b7', fontSize: '14px', borderBottom: '1px solid rgba(110, 231, 183, 0.2)', paddingBottom: '8px', letterSpacing: '0.03em' }}>Detail Laporan</b>
           <div style={{ display: 'grid', gap: '10px', fontSize: '12px', color: '#f0fdf4' }}>
             <div><strong>ID Tiket:</strong> HD-{ticket.id}</div>
             <div><strong>Pelapor:</strong> {ticket.pelapor_nama || ticket.pelapor || '-'}</div>
@@ -216,12 +216,12 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
         >
           <div>
-            <b style={{ display: 'block', marginBottom: '8px', color: '#6ee7b7', fontSize: '14px', borderBottom: '1px solid rgba(110, 231, 183, 0.2)', paddingBottom: '8px', letterSpacing: '0.03em' }}>💬 Masalah / Deskripsi</b>
+            <b style={{ display: 'block', marginBottom: '8px', color: '#6ee7b7', fontSize: '14px', borderBottom: '1px solid rgba(110, 231, 183, 0.2)', paddingBottom: '8px', letterSpacing: '0.03em' }}>Masalah / Deskripsi</b>
             <p style={{ margin: 0, fontSize: '12px', color: '#f0fdf4', lineHeight: '1.6', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{ticket.deskripsi}</p>
           </div>
 
           <div>
-            <b style={{ display: 'block', marginBottom: '8px', color: '#6ee7b7', fontSize: '14px', borderBottom: '1px solid rgba(110, 231, 183, 0.2)', paddingBottom: '8px', letterSpacing: '0.03em' }}>🛠️ Tindakan / Hasil</b>
+            <b style={{ display: 'block', marginBottom: '8px', color: '#6ee7b7', fontSize: '14px', borderBottom: '1px solid rgba(110, 231, 183, 0.2)', paddingBottom: '8px', letterSpacing: '0.03em' }}>Tindakan / Hasil</b>
             {troublesLoading ? (
               <p style={{ color: '#a7f3d0', margin: 0, fontSize: '12px' }}>Memuat tindakan...</p>
             ) : !trouble ? (
@@ -245,7 +245,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           
           <div style={{ borderBottom: '2px solid #e6f4ed', paddingBottom: '14px' }}>
             <span style={{ fontSize: '16px', fontWeight: '900', color: '#022c22', display: 'block', letterSpacing: '0.01em' }}>
-              🎯 Panduan Alur Kerja Penanganan Tiket
+              Panduan Alur Kerja Penanganan Tiket
             </span>
             <span style={{ fontSize: '12px', color: '#047857', fontWeight: '600' }}>
               Selesaikan proses secara berurutan mulai dari langkah pertama hingga selesai.
@@ -391,10 +391,10 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   )
 }
 
-export default function Tickets({ token, user, onError, onRequireLogin }) {
+export default function Tickets({ token, user, onError, onRequireLogin, initialOpenCreate = false }) {
   const [tickets, setTickets] = useState([])
   const [selectedTicketId, setSelectedTicketId] = useState(null)
-  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showCreateForm, setShowCreateForm] = useState(initialOpenCreate)
   const [priorityFilter, setPriorityFilter] = useState('ALL')
   const [rooms, setRooms] = useState([])
 
