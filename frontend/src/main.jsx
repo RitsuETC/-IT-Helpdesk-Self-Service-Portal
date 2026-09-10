@@ -18,16 +18,11 @@ function App() {
   const [page, setPage] = useState('landing')
   const [session, setSession] = useState(savedSession)
   const [showLoginModal, setShowLoginModal] = useState(false)
-  const [showCreateTicketModal, setShowCreateTicketModal] = useState(false) // State khusus pop-up form buat tiket
   const [showSidebar, setShowSidebar] = useState(false)
   const [articles, setArticles] = useState([])
   const [notice, setNotice] = useState('')
   const [selectedArticle, setSelectedArticle] = useState(null)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
-
-  // State untuk form input tiket langsung di modal
-  const [ticketForm, setTicketForm] = useState({ title: '', category: 'Hardware', roomId: '', description: '' })
-  const [rooms, setRooms] = useState([])
 
   const loadArticles = async () => {
     try {
@@ -48,17 +43,7 @@ function App() {
     }
   }
 
-  const loadRooms = async () => {
-    try {
-      const res = await api('/rooms', session ? { token: session.token } : {})
-      setRooms(res.data || [])
-    } catch (err) {
-      // ignore or handle
-    }
-  }
-
   useEffect(() => { loadArticles() }, [session])
-  useEffect(() => { if (showCreateTicketModal) loadRooms() }, [showCreateTicketModal])
 
   useEffect(() => {
     let timer
@@ -95,23 +80,6 @@ function App() {
       setShowLoginModal(false)
     } catch (error) { 
       setNotice(error.message) 
-    }
-  }
-
-  const handleCreateTicketSubmit = async (e) => {
-    e.preventDefault()
-    try {
-      await api('/tickets', {
-        method: 'POST',
-        token: session.token,
-        body: ticketForm
-      })
-      setShowCreateTicketModal(false)
-      setTicketForm({ title: '', category: 'Hardware', roomId: '', description: '' })
-      setNotice('Tiket berhasil dikirim!')
-      // Refresh atau arahkan jika perlu
-    } catch (err) {
-      setNotice(err.message)
     }
   }
 
@@ -152,7 +120,7 @@ function App() {
           <h1 className="header-title" style={{ fontSize: '1.2rem', margin: 0, fontWeight: 'bold', color: '#ffffff' }}>IT Helpdesk</h1>
         </button>
 
-        {/* Navigasi Rata Tengah dengan Pill Wrapper */}
+        {/* Navigasi Rata Tengah dengan Pill Wrapper & Efek Klik Halus */}
         <nav aria-label="Navigasi utama" style={{ 
           display: 'flex', 
           gap: '6px', 
@@ -166,13 +134,21 @@ function App() {
         }}>
           <button 
             onClick={() => setPage('landing')}
-            style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}
+            style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
           >
             Beranda
           </button>
           <button 
             onClick={() => scrollToSection('sec-pesan')}
-            style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}
+            style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
           >
             Pesan Tiket
           </button>
@@ -184,7 +160,11 @@ function App() {
                 scrollToSection('sec-status')
               }
             }} 
-            style={{ position: 'relative', background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}
+            style={{ position: 'relative', background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
           >
             Status Tiket
             {session && (session.user.role === 'admin' || session.user.role === 'teknisi') && unreadNotifications > 0 && (
@@ -193,14 +173,22 @@ function App() {
           </button>
           <button 
             onClick={() => scrollToSection('sec-knowledge')}
-            style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}
+            style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
           >
             Knowledge Base
           </button>
           {(session?.user.role === 'admin' || session?.user.role === 'teknisi') && (
             <button 
               onClick={() => { if (!session) { setShowLoginModal(true) } else { setPage('report') } }}
-              style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}
+              style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
+              onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
             >
               Laporan
             </button>
@@ -208,7 +196,7 @@ function App() {
           {(session?.user.role === 'admin' || session?.user.role === 'teknisi') && (
             <button 
               onClick={() => setPage('inventory')}
-              style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}
+              style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
             >
               Inventaris
             </button>
@@ -232,8 +220,13 @@ function App() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                transition: 'all 0.15s ease'
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#065f46'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#047857'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.96)'; }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
             >
               <span>👤</span>
               <span>Akun</span>
@@ -251,8 +244,13 @@ function App() {
                 fontWeight: '600',
                 fontSize: '13px',
                 cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                transition: 'all 0.15s ease'
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#065f46'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#047857'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.96)'; }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
             >
               Login
             </button>
@@ -306,11 +304,21 @@ function App() {
                   boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
                   transition: 'all 0.15s ease'
                 }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#047857';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(5, 150, 105, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#059669';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(5, 150, 105, 0.3)';
+                }}
                 onClick={() => {
                   if (!session) {
                     setShowLoginModal(true)
                   } else {
-                    setShowCreateTicketModal(true) // Langsung buka pop-up form buat tiket
+                    setPage('tickets')
                   }
                 }}
               >
@@ -335,7 +343,7 @@ function App() {
                 token={session?.token} 
                 user={session?.user} 
                 onTroubleshooting={() => scrollToSection('sec-knowledge')} 
-                onTickets={() => setPage('tickets')} // Kembali normal mengarah ke halaman penuh daftar tiket
+                onTickets={() => setPage('tickets')} 
                 onKnowledge={() => scrollToSection('sec-knowledge')} 
                 onRequireLogin={() => setShowLoginModal(true)}
                 showHistory={false}
@@ -354,7 +362,7 @@ function App() {
         </section>
       )}
 
-      {/* Halaman Daftar Tiket (Dikembalikan Normal sebagai Halaman Penuh) */}
+      {/* Halaman khusus jika membuka tiket/knowledge secara full */}
       {page === 'tickets' && (
         <Tickets 
           token={session?.token} 
@@ -437,137 +445,6 @@ function App() {
               </button>
             </form>
           </section>
-        </div>
-      )}
-
-      {/* Popup Khusus Form Buat Tiket (Sesuai Gambar Referensi Anda) */}
-      {showCreateTicketModal && (
-        <div 
-          className="modal-backdrop" 
-          onClick={() => setShowCreateTicketModal(false)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9998
-          }}
-        >
-          <div 
-            onClick={(e) => e.stopPropagation()} 
-            style={{ 
-              background: '#fff', 
-              padding: '28px', 
-              borderRadius: '16px', 
-              maxWidth: '550px', 
-              width: '90%', 
-              position: 'relative', 
-              maxHeight: '90vh', 
-              overflowY: 'auto',
-              boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
-            }}
-          >
-            <button 
-              onClick={() => setShowCreateTicketModal(false)} 
-              style={{ 
-                position: 'absolute', 
-                top: '16px', 
-                right: '20px', 
-                background: 'none', 
-                border: 'none', 
-                fontSize: '1.5rem', 
-                cursor: 'pointer',
-                color: '#64748b',
-                fontWeight: 'bold'
-              }}
-              aria-label="Tutup modal"
-            >
-              ×
-            </button>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-              <span style={{ background: '#d1fae5', color: '#065f46', padding: '6px 12px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.9rem' }}>Buat Tiket Baru</span>
-            </div>
-
-            <form onSubmit={handleCreateTicketSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '6px', color: '#334155' }}>Judul Kendala</label>
-                <input 
-                  type="text" 
-                  placeholder="Contoh: Printer Rusak"
-                  value={ticketForm.title}
-                  onChange={(e) => setTicketForm({ ...ticketForm, title: e.target.value })}
-                  required
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', boxSizing: 'border-box' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '6px', color: '#334155' }}>Kategori</label>
-                <select 
-                  value={ticketForm.category}
-                  onChange={(e) => setTicketForm({ ...ticketForm, category: e.target.value })}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: '#fff', boxSizing: 'border-box' }}
-                >
-                  <option value="Hardware">Hardware</option>
-                  <option value="Software">Software</option>
-                  <option value="Jaringan">Jaringan</option>
-                  <option value="Lainnya">Lainnya</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '6px', color: '#334155' }}>Lokasi / Ruangan</label>
-                <select 
-                  value={ticketForm.roomId}
-                  onChange={(e) => setTicketForm({ ...ticketForm, roomId: e.target.value })}
-                  required
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: '#fff', boxSizing: 'border-box' }}
-                >
-                  <option value="">-- Pilih Ruangan --</option>
-                  {rooms.map(room => (
-                    <option key={room.id} value={room.id}>{room.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '6px', color: '#334155' }}>Deskripsi Masalah</label>
-                <textarea 
-                  rows="4"
-                  placeholder="Jelaskan kendala secara rinci..."
-                  value={ticketForm.description}
-                  onChange={(e) => setTicketForm({ ...ticketForm, description: e.target.value })}
-                  required
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', boxSizing: 'border-box', resize: 'vertical' }}
-                />
-              </div>
-
-              <button 
-                type="submit"
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  backgroundColor: '#059669',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontWeight: 'bold',
-                  fontSize: '1rem',
-                  cursor: 'pointer',
-                  marginTop: '8px',
-                  boxShadow: '0 4px 12px rgba(5, 150, 105, 0.2)'
-                }}
-              >
-                Kirim Laporan Tiket
-              </button>
-            </form>
-          </div>
         </div>
       )}
 
