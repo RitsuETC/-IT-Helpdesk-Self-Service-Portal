@@ -391,10 +391,10 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   )
 }
 
-export default function Tickets({ token, user, onError, onRequireLogin, initialOpenCreate = false }) {
+export default function Tickets({ token, user, onError, onRequireLogin, createOnly = false, onCloseCreate, initialOpenCreate = false }) {
   const [tickets, setTickets] = useState([])
   const [selectedTicketId, setSelectedTicketId] = useState(null)
-  const [showCreateForm, setShowCreateForm] = useState(initialOpenCreate)
+  const [showCreateForm, setShowCreateForm] = useState(initialOpenCreate || createOnly)
   const [priorityFilter, setPriorityFilter] = useState('ALL')
   const [rooms, setRooms] = useState([])
 
@@ -429,8 +429,8 @@ export default function Tickets({ token, user, onError, onRequireLogin, initialO
   }, [token])
 
   useEffect(() => {
-    if (createOnly) setShowCreateForm(true)
-  }, [createOnly])
+    if (createOnly || initialOpenCreate) setShowCreateForm(true)
+  }, [createOnly, initialOpenCreate])
 
   const handleCreateTicket = async (e) => {
     e.preventDefault()
