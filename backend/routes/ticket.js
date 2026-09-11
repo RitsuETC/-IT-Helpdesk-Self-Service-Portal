@@ -131,14 +131,18 @@ router.get("/stats", verifyToken, async (req, res) => {
     if (req.user.role === "user") {
       whereClause = " WHERE t.akun = $1 ";
       params.push(req.user.id);
+    } else if (!["admin", "teknisi"].includes(req.user.role)) {
+      return res.status(403).json({
+        message: "Role tidak memiliki akses untuk melihat statistik tiket",
+      });
     }
 
     const { rows } = await db.query(
       `SELECT
          COUNT(*) AS total,
-         COUNT(*) FILTER (WHERE t.status = 'NEW') AS new,
-         COUNT(*) FILTER (WHERE t.status IN ('ASSIGNED', 'IN_PROGRESS', 'WAITING')) AS process,
-         COUNT(*) FILTER (WHERE t.status IN ('RESOLVED', 'CLOSED')) AS resolved
+         COUNT(*) FILTER (WHERE t.status::text = 'NEW') AS new,
+         COUNT(*) FILTER (WHERE t.status::text IN ('ASSIGNED', 'IN_PROGRESS', 'WAITING')) AS process,
+         COUNT(*) FILTER (WHERE t.status::text IN ('RESOLVED', 'CLOSED')) AS resolved
        FROM tiket t
        ${whereClause}`,
       params
