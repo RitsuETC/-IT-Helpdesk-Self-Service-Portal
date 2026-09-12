@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from './api.js'
 import { TicketDetail } from './tickets.jsx'
 
-export default function Dashboard({ token, user, onTroubleshooting, onTickets, onKnowledge, onRequireLogin, showHistory = true }) {
+export default function Dashboard({ token, user, onTroubleshooting, onTickets, onKnowledge, onRequireLogin, showHistory = true, onNavigateAdmin }) {
   const [stats, setStats] = useState({ total: 0, new: 0, process: 0, resolved: 0 })
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
@@ -10,6 +10,10 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
   const [historyIndex, setHistoryIndex] = useState(0)
   const [showAllModal, setShowAllModal] = useState(false)
   const [selectedTicket, setSelectedTicket] = useState(null)
+
+  // Deteksi role admin atau teknisi
+  const userRole = (user?.role || '').toLowerCase()
+  const isAdminOrTechnician = ['admin', 'teknisi', 'technician'].includes(userRole) || user?.is_admin || user?.is_technician
 
   const loadData = async () => {
     try {
@@ -386,7 +390,7 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
               backgroundColor: '#ffffff',
               borderRadius: '20px',
               width: '90%',
-              maxWidth: '850px',
+              maxWidth: '950px',
               maxHeight: '85vh',
               padding: '28px',
               display: 'flex',
@@ -429,23 +433,25 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
                     <th style={{ padding: '14px 18px', fontWeight: '700' }}>Judul / Kategori</th>
                     <th style={{ padding: '14px 18px', fontWeight: '700' }}>Status</th>
                     <th style={{ padding: '14px 18px', fontWeight: '700' }}>Tanggal</th>
+                    {isAdminOrTechnician && (
+                      <th style={{ padding: '14px 18px', fontWeight: '700', textAlign: 'center' }}>Aksi</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {tickets.length === 0 ? (
                     <tr>
-                      <td colSpan="4" style={{ padding: '32px', textAlign: 'center', color: '#64748b' }}>Tidak ada data tiket.</td>
+                      <td colSpan={isAdminOrTechnician ? 5 : 4} style={{ padding: '32px', textAlign: 'center', color: '#64748b' }}>Tidak ada data tiket.</td>
                     </tr>
                   ) : (
                     tickets.map((t) => (
                       <tr
                         key={t.id}
-                        onClick={() => setSelectedTicket(t)}
-                        style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer', background: '#fff', transition: 'background 0.15s' }}
+                        style={{ borderBottom: '1px solid #f1f5f9', background: '#fff', transition: 'background 0.15s' }}
                       >
-                        <td style={{ padding: '14px 18px', fontWeight: '800', color: '#064e3b' }}>{t.code || `HD-${t.id}`}</td>
-                        <td style={{ padding: '14px 18px', color: '#334155', fontWeight: '500' }}>{t.judul || t.title || t.nama_kategori || t.kategori || t.category || '-'}</td>
-                        <td style={{ padding: '14px 18px' }}>
+                        <td style={{ padding: '14px 18px', fontWeight: '800', color: '#064e3b', cursor: 'pointer' }} onClick={() => setSelectedTicket(t)}>{t.code || `HD-${t.id}`}</td>
+                        <td style={{ padding: '14px 18px', color: '#334155', fontWeight: '500', cursor: 'pointer' }} onClick={() => setSelectedTicket(t)}>{t.judul || t.title || t.nama_kategori || t.kategori || t.category || '-'}</td>
+                        <td style={{ padding: '14px 18px', cursor: 'pointer' }} onClick={() => setSelectedTicket(t)}>
                           <span style={{
                             padding: '4px 12px',
                             borderRadius: '999px',
@@ -457,9 +463,40 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
                             {t.status}
                           </span>
                         </td>
-                        <td style={{ padding: '14px 18px', color: '#64748b', fontSize: '0.8rem' }}>
+                        <td style={{ padding: '14px 18px', color: '#64748b', fontSize: '0.8rem', cursor: 'pointer' }} onClick={() => setSelectedTicket(t)}>
                           {t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}
                         </td>
+                        
+                        {/* Kolom Aksi Khusus Admin / Teknisi */}
+                        {isAdminOrTechnician && (
+                          <td style={{ padding: '14px 18px', textAlign: 'center' }}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowAllModal(false);
+                                if (onNavigateAdmin) {
+                                  onNavigateAdmin(t); // Mengarahkan ke panel kontrol admin
+                                } else {
+                                  setSelectedTicket(t); // Fallback ke modal detail jika props navigasi belum ada
+                                }
+                              }}
+                              style={{
+                                backgroundColor: '#064e3b',
+                                color: '#ffffff',
+                                border: 'none',
+                                padding: '6px 14px',
+                                borderRadius: '8px',
+                                fontSize: '0.75rem',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 4px rgba(6, 78, 59, 0.2)',
+                                transition: 'background 0.2s'
+                              }}
+                            >
+                              Edit
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     ))
                   )}
