@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from './api.js'
 import { TicketDetail } from './tickets.jsx'
 
-export default function Dashboard({ token, user, onTroubleshooting, onTickets, onKnowledge, onRequireLogin, showHistory = true, onNavigateAdmin }) {
+export default function Dashboard({ token, user, onTroubleshooting, onTickets, onKnowledge, onRequireLogin, showHistory = true, onNavigateAdmin, onEditAdmin }) {
   const [stats, setStats] = useState({ total: 0, new: 0, process: 0, resolved: 0 })
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
@@ -433,15 +433,13 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
                     <th style={{ padding: '14px 18px', fontWeight: '700' }}>Judul / Kategori</th>
                     <th style={{ padding: '14px 18px', fontWeight: '700' }}>Status</th>
                     <th style={{ padding: '14px 18px', fontWeight: '700' }}>Tanggal</th>
-                    {isAdminOrTechnician && (
-                      <th style={{ padding: '14px 18px', fontWeight: '700', textAlign: 'center' }}>Aksi</th>
-                    )}
+                    <th style={{ padding: '14px 18px', fontWeight: '700', textAlign: 'center' }}>Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
                   {tickets.length === 0 ? (
                     <tr>
-                      <td colSpan={isAdminOrTechnician ? 5 : 4} style={{ padding: '32px', textAlign: 'center', color: '#64748b' }}>Tidak ada data tiket.</td>
+                      <td colSpan="5" style={{ padding: '32px', textAlign: 'center', color: '#64748b' }}>Tidak ada data tiket.</td>
                     </tr>
                   ) : (
                     tickets.map((t) => (
@@ -467,17 +465,19 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
                           {t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}
                         </td>
                         
-                        {/* Kolom Aksi Khusus Admin / Teknisi */}
-                        {isAdminOrTechnician && (
-                          <td style={{ padding: '14px 18px', textAlign: 'center' }}>
+                        {/* Kolom Aksi yang Muncul untuk Semua User, Beda Label & Fungsi */}
+                        <td style={{ padding: '14px 18px', textAlign: 'center' }}>
+                          {isAdminOrTechnician ? (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setShowAllModal(false);
-                                if (onNavigateAdmin) {
-                                  onNavigateAdmin(t); // Mengarahkan ke panel kontrol admin
+                                if (onEditAdmin) {
+                                  onEditAdmin(t);
+                                } else if (onNavigateAdmin) {
+                                  onNavigateAdmin(t);
                                 } else {
-                                  setSelectedTicket(t); // Fallback ke modal detail jika props navigasi belum ada
+                                  setSelectedTicket(t);
                                 }
                               }}
                               style={{
@@ -495,8 +495,30 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
                             >
                               Edit
                             </button>
-                          </td>
-                        )}
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowAllModal(false);
+                                setSelectedTicket(t); // Membuka modal versi user (TicketDetail)
+                              }}
+                              style={{
+                                backgroundColor: '#f0fdf4',
+                                color: '#064e3b',
+                                border: '1px solid #86efac',
+                                padding: '6px 14px',
+                                borderRadius: '8px',
+                                fontSize: '0.75rem',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 4px rgba(6, 78, 59, 0.05)',
+                                transition: 'background 0.2s'
+                              }}
+                            >
+                              Detail
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))
                   )}
