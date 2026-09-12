@@ -524,14 +524,15 @@ export default function Tickets({ token, user, onError, onRequireLogin, createOn
   }
 
   return (
-    <div className="tickets-page">
-      <h2 className="tickets-heading">Daftar Tiket Bantuan</h2>
-      <p className="history-description">Kelola dan pantau seluruh laporan kendala IT Anda di sini.</p>
+    <div className="tickets-page" style={{ width: '100%', boxSizing: 'border-box' }}>
+      <h2 className="tickets-heading" style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', margin: '0 0 4px 0' }}>Daftar Tiket Bantuan</h2>
+      <p className="history-description" style={{ color: '#64748b', fontSize: '13px', margin: '0 0 20px 0' }}>Kelola dan pantau seluruh laporan kendala IT Anda di sini.</p>
 
-      <div className="tickets-toolbar">
-        <label className="priority-filter">
+      {/* TOOLBAR */}
+      <div className="tickets-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '20px' }}>
+        <label className="priority-filter" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: '600', color: '#334155' }}>
           Filter Prioritas:
-          <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
+          <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor: '#ffffff', outline: 'none' }}>
             <option value="ALL">Semua Prioritas</option>
             <option value="Critical">Critical</option>
             <option value="High">High</option>
@@ -547,7 +548,7 @@ export default function Tickets({ token, user, onError, onRequireLogin, createOn
             background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
             color: '#ffffff',
             border: 'none',
-            padding: '10px 20px',
+            padding: '10px 18px',
             borderRadius: '10px',
             fontWeight: '700',
             fontSize: '13px',
@@ -568,67 +569,94 @@ export default function Tickets({ token, user, onError, onRequireLogin, createOn
         </button>
       </div>
 
-      <div className="ticket-grid">
+      {/* GRID KARTU TIKET */}
+      <div className="ticket-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
         {filteredTickets.length === 0 ? (
-          <p className="empty-tickets">Tidak ada tiket ditemukan.</p>
+          <p className="empty-tickets" style={{ gridColumn: '1 / -1', color: '#64748b', textAlign: 'center', padding: '30px' }}>Tidak ada tiket ditemukan.</p>
         ) : (
-          filteredTickets.map(t => (
+          filteredTickets.map(t => {
+            const kategoriNama = t.nama_kategori || t.kategori || t.category || ''
+            return (
               <div 
-              key={t.id} 
+                key={t.id} 
                 onClick={() => setSelectedTicketId(t.id)}
-              style={{
-                background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)',
-                color: '#ffffff',
-                borderRadius: '12px',
-                padding: '16px',
-                marginBottom: '12px',
-                cursor: 'pointer',
-                boxShadow: '0 8px 20px rgba(12, 74, 48, 0.25)',
-                transition: 'transform 0.1s ease, box-shadow 0.1s ease',
-                wordBreak: 'break-word',
-                overflowWrap: 'anywhere'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 12px 25px rgba(12, 74, 48, 0.35)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 8px 20px rgba(12, 74, 48, 0.25)';
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontWeight: 'bold', fontSize: '13px', color: '#e2f0ea' }}>HD-{t.id}</span>
-                <span style={{ 
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)', 
-                  padding: '2px 8px', 
-                  borderRadius: '20px', 
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  color: '#ffffff'
-                }}>
-                  {t.status}
-                </span>
+                style={{
+                  background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)',
+                  color: '#ffffff',
+                  borderRadius: '14px',
+                  padding: '18px',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 20px rgba(12, 74, 48, 0.2)',
+                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  boxSizing: 'border-box'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-3px)';
+                  e.currentTarget.style.boxShadow = '0 12px 25px rgba(12, 74, 48, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(12, 74, 48, 0.2)';
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <span style={{ fontWeight: '800', fontSize: '13px', color: '#e2f0ea', letterSpacing: '0.03em' }}>
+                      {t.code || `HD-${t.id}`}
+                    </span>
+                    <span style={{ 
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)', 
+                      padding: '3px 10px', 
+                      borderRadius: '20px', 
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      color: '#ffffff',
+                      letterSpacing: '0.02em'
+                    }}>
+                      {t.status}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '15px', fontWeight: '700', marginBottom: '14px', color: '#ffffff', lineHeight: '1.4' }}>
+                    {t.judul}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#cbd5e1', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '10px' }}>
+                    <span>
+                      {t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'} {kategoriNama ? `(${kategoriNama})` : ''}
+                    </span>
+                    <span className={`priority-dot ${t.prioritas?.toLowerCase()}`} title={t.prioritas}></span>
+                  </div>
+
+                  {user?.role === 'admin' && (
+                    <button
+                      type="button"
+                      className="danger-button"
+                      onClick={(event) => { event.stopPropagation(); handleDeleteTicket(t) }}
+                      style={{ 
+                        marginTop: '12px', 
+                        width: '100%', 
+                        padding: '8px', 
+                        borderRadius: '8px', 
+                        backgroundColor: '#fee2e2', 
+                        color: '#dc2626', 
+                        border: 'none', 
+                        fontWeight: '700', 
+                        fontSize: '12px', 
+                        cursor: 'pointer' 
+                      }}
+                    >
+                      Hapus Tiket
+                    </button>
+                  )}
+                </div>
               </div>
-              <div style={{ fontSize: '14px', fontWeight: '500', marginBottom: '12px', color: '#ffffff' }}>{t.judul}</div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#cbd5e1' }}>
-                <span>
-                  {new Date(t.created_at).toLocaleDateString()} ({t.kategori})
-                </span>
-                <span className={`priority-dot ${t.prioritas?.toLowerCase()}`} title={t.prioritas}></span>
-              </div>
-              {user?.role === 'admin' && (
-                <button
-                  type="button"
-                  className="danger-button"
-                  onClick={(event) => { event.stopPropagation(); handleDeleteTicket(t) }}
-                  style={{ marginTop: '12px' }}
-                >
-                  Hapus tiket
-                </button>
-              )}
-            </div>
-          ))
+            )
+          })
         )}
       </div>
 
