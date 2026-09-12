@@ -373,6 +373,34 @@ router.get("/:id", verifyToken, async (req, res) => {
   }
 });
 
+router.delete("/:id", verifyToken, authorizeRole("admin"), async (req, res) => {
+  try {
+    const usage = await db.query(
+      "SELECT count(*) AS total FROM sparepart_transaction WHERE id_tiket = $1",
+      [req.params.id]
+    );
+
+    if (Number(usage.rows[0].total)) {
+      return res.status(409).json({
+        message: "Tiket masih digunakan pada transaksi sparepart dan tidak dapat dihapus",
+      });
+    }
+
+    const result = await db.query("DELETE FROM tiket WHERE id = $1", [req.params.id]);
+    if (!result.rowCount) {
+      return res.status(404).json({ message: "Tiket tidak ditemukan" });
+    }
+
+    res.json({ message: "Tiket berhasil dihapus" });
+  } catch (error) {
+    console.error("Delete ticket error:", error);
+    res.status(409).json({
+      message: "Tiket tidak dapat dihapus karena masih memiliki data terkait",
+      error: error.message,
+    });
+  }
+});
+
 // ADMIN/TEKNISI dapat mengubah prioritas tiket
 router.patch(
   "/:id/priority",

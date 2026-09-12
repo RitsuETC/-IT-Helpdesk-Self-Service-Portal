@@ -55,8 +55,22 @@ router.post("/rooms", async (req, res) => {
 
 router.delete("/rooms/:id", async (req, res) => {
   try {
-    const usage = await db.query("SELECT count(*) AS total FROM tiket WHERE ruangan = $1", [req.params.id]);
-    if (Number(usage.rows[0].total)) return res.status(409).json({ message: "Ruangan masih dipakai tiket dan tidak dapat dihapus" });
+    const usage = await db.query(`
+      SELECT
+        (SELECT count(*) FROM tiket WHERE ruangan = $1) AS tickets,
+        (SELECT count(*) FROM asset WHERE id_ruangan = $1) AS assets,
+        (SELECT count(*) FROM asset_movement WHERE from_location = $1 OR to_location = $1) AS movements
+    `, [req.params.id]);
+    const references = usage.rows[0];
+    const details = [];
+    if (Number(references.tickets)) details.push(`${references.tickets} tiket`);
+    if (Number(references.assets)) details.push(`${references.assets} aset`);
+    if (Number(references.movements)) details.push(`${references.movements} riwayat pergerakan aset`);
+    if (details.length) {
+      return res.status(409).json({
+        message: `Ruangan masih digunakan oleh ${details.join(', ')} dan tidak dapat dihapus`
+      });
+    }
     const result = await db.query("DELETE FROM unit WHERE id = $1", [req.params.id]);
     if (!result.rowCount) return res.status(404).json({ message: "Ruangan tidak ditemukan" });
     res.json({ message: "Ruangan berhasil dihapus" });

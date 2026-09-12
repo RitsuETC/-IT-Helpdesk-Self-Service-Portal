@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from './api.js'
+import { confirmAction } from './confirm.js'
 
 export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   const [ticket, setTicket] = useState(null)
@@ -454,6 +455,21 @@ export default function Tickets({ token, user, onError, onRequireLogin, createOn
     }
   }
 
+  const handleDeleteTicket = async (ticket) => {
+    const confirmed = await confirmAction(
+      `Hapus tiket HD-${ticket.id}? Data tiket dan riwayat penyelesaiannya akan dihapus.`
+    )
+    if (!confirmed) return
+
+    try {
+      await api(`/tickets/${ticket.id}`, { token, method: 'DELETE' })
+      if (selectedTicketId === ticket.id) setSelectedTicketId(null)
+      await loadTickets()
+    } catch (err) {
+      onError(err.message)
+    }
+  }
+
   if (selectedTicketId) {
     return (
       <TicketDetail 
@@ -557,9 +573,9 @@ export default function Tickets({ token, user, onError, onRequireLogin, createOn
           <p className="empty-tickets">Tidak ada tiket ditemukan.</p>
         ) : (
           filteredTickets.map(t => (
-            <div 
+              <div 
               key={t.id} 
-              onClick={() => setSelectedTicketId(t.id)}
+                onClick={() => setSelectedTicketId(t.id)}
               style={{
                 background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)',
                 color: '#ffffff',
@@ -601,6 +617,16 @@ export default function Tickets({ token, user, onError, onRequireLogin, createOn
                 </span>
                 <span className={`priority-dot ${t.prioritas?.toLowerCase()}`} title={t.prioritas}></span>
               </div>
+              {user?.role === 'admin' && (
+                <button
+                  type="button"
+                  className="danger-button"
+                  onClick={(event) => { event.stopPropagation(); handleDeleteTicket(t) }}
+                  style={{ marginTop: '12px' }}
+                >
+                  Hapus tiket
+                </button>
+              )}
             </div>
           ))
         )}
