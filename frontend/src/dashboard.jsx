@@ -109,22 +109,35 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
 
   return (
     <div style={{ width: '100%', fontFamily: 'Inter, system-ui, sans-serif' }}>
-      {/* Card Hijau Widget Utama */}
+      {/* Card Utama: Gradasi Emerald / Deep Forest Green yang Sangat Kaya & Mewah */}
       <div 
         style={{
-          backgroundColor: '#065f46',
-          backgroundImage: 'linear-gradient(135deg, #065f46 0%, #047857 100%)',
+          background: 'linear-gradient(135deg, #022c22 0%, #064e3b 50%, #047857 100%)',
           color: '#ffffff',
-          borderRadius: '16px',
-          padding: '20px 24px',
-          boxShadow: '0 10px 25px -5px rgba(4, 120, 87, 0.25)',
+          borderRadius: '20px',
+          padding: '24px 28px',
+          boxShadow: '0 20px 35px -10px rgba(2, 44, 34, 0.45), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          border: '1px solid rgba(167, 243, 208, 0.15)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '12px'
+          gap: '16px',
+          position: 'relative',
+          overflow: 'hidden'
         }}
       >
+        {/* Efek Glow Dekoratif di Background Card */}
+        <div style={{
+          position: 'absolute',
+          top: '-50%',
+          right: '-20%',
+          width: '250px',
+          height: '250px',
+          background: 'radial-gradient(circle, rgba(52, 211, 153, 0.2) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+
         {/* Header Widget */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1 }}>
           <button 
             onClick={() => {
               if (!token) onRequireLogin()
@@ -132,64 +145,69 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
             }}
             style={{
               backgroundColor: '#ffffff',
-              color: '#047857',
+              color: '#022c22',
               border: 'none',
-              padding: '8px 16px',
-              borderRadius: '20px',
-              fontWeight: '600',
+              padding: '10px 20px',
+              borderRadius: '999px',
+              fontWeight: '700',
               cursor: 'pointer',
               fontSize: '0.875rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.06)'
+              gap: '8px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              transition: 'all 0.2s ease'
             }}
           >
             <span>Seluruh Tiket</span>
-            <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>›</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: '900', color: '#059669' }}>›</span>
           </button>
 
           {/* Controls Slide */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(2, 44, 34, 0.4)', padding: '4px', borderRadius: '999px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
             <button 
               onClick={prevSlide} 
               disabled={activeTickets.length === 0}
               style={{
-                background: 'rgba(255, 255, 255, 0.15)',
+                background: 'rgba(255, 255, 255, 0.1)',
                 border: 'none',
                 color: '#fff',
-                width: '32px',
-                height: '32px',
+                width: '30px',
+                height: '30px',
                 borderRadius: '50%',
                 cursor: activeTickets.length === 0 ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '0.9rem',
-                opacity: activeTickets.length === 0 ? 0.4 : 1
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                opacity: activeTickets.length === 0 ? 0.3 : 1,
+                transition: 'background 0.2s'
               }}
             >
               ‹
             </button>
-            <span style={{ fontSize: '0.85rem', fontWeight: '600', minWidth: '36px', textAlign: 'center', opacity: 0.9 }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: '700', minWidth: '40px', textAlign: 'center', color: '#a7f3d0' }}>
               {activeTickets.length > 0 ? `${currentIndex + 1}/${activeTickets.length}` : '0/0'}
             </span>
             <button 
               onClick={nextSlide} 
               disabled={activeTickets.length === 0}
               style={{
-                background: 'rgba(255, 255, 255, 0.15)',
+                background: 'rgba(255, 255, 255, 0.1)',
                 border: 'none',
                 color: '#fff',
-                width: '32px',
-                height: '32px',
+                width: '30px',
+                height: '30px',
                 borderRadius: '50%',
                 cursor: activeTickets.length === 0 ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '0.9rem',
-                opacity: activeTickets.length === 0 ? 0.4 : 1
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                opacity: activeTickets.length === 0 ? 0.3 : 1,
+                transition: 'background 0.2s'
               }}
             >
               ›
@@ -198,32 +216,32 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
         </div>
 
         {/* Tabel Widget Langsung */}
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', zIndex: 1 }}>
           <table style={{ width: '100%', color: '#fff', textAlign: 'left', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
             <thead>
-              <tr style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.775rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                <th style={{ paddingBottom: '8px', fontWeight: '600' }}>ID TIKET</th>
-                <th style={{ paddingBottom: '8px', fontWeight: '600' }}>PELAPOR</th>
-                <th style={{ paddingBottom: '8px', fontWeight: '600' }}>KATEGORI</th>
-                <th style={{ paddingBottom: '8px', fontWeight: '600', textAlign: 'right' }}>STATUS</th>
+              <tr style={{ color: '#a7f3d0', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(167, 243, 208, 0.2)' }}>
+                <th style={{ paddingBottom: '12px', fontWeight: '700' }}>ID TIKET</th>
+                <th style={{ paddingBottom: '12px', fontWeight: '700' }}>PELAPOR</th>
+                <th style={{ paddingBottom: '12px', fontWeight: '700' }}>KATEGORI</th>
+                <th style={{ paddingBottom: '12px', fontWeight: '700', textAlign: 'right' }}>STATUS</th>
               </tr>
             </thead>
             <tbody>
               {!token ? (
                 <tr>
-                  <td colSpan="4" style={{ padding: '16px 0', textAlign: 'center', color: 'rgba(255, 255, 255, 0.85)', fontSize: '0.9rem', borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
+                  <td colSpan="4" style={{ padding: '24px 0', textAlign: 'center', color: '#a7f3d0', fontSize: '0.9rem' }}>
                     Silakan login untuk melihat status tiket Anda.
                   </td>
                 </tr>
               ) : loading ? (
                 <tr>
-                  <td colSpan="4" style={{ padding: '16px 0', textAlign: 'center', color: 'rgba(255, 255, 255, 0.85)', borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
+                  <td colSpan="4" style={{ padding: '24px 0', textAlign: 'center', color: '#a7f3d0' }}>
                     Memuat data tiket...
                   </td>
                 </tr>
               ) : tickets.length === 0 ? (
                 <tr>
-                  <td colSpan="4" style={{ padding: '16px 0', textAlign: 'center', color: 'rgba(255, 255, 255, 0.85)', borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
+                  <td colSpan="4" style={{ padding: '24px 0', textAlign: 'center', color: '#a7f3d0' }}>
                     Tidak ada tiket aktif saat ini.
                   </td>
                 </tr>
@@ -232,19 +250,22 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
                   <tr 
                     key={activeTicket.id} 
                     onClick={() => setSelectedTicket(activeTicket)}
-                    style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)', cursor: 'pointer' }}
+                    style={{ borderBottom: '1px solid rgba(167, 243, 208, 0.1)', cursor: 'pointer', transition: 'background 0.2s' }}
                   >
-                    <td style={{ paddingTop: '10px', fontWeight: '700', letterSpacing: '0.02em' }}>{activeTicket.code || `HD-${activeTicket.id}`}</td>
-                    <td style={{ paddingTop: '10px', opacity: 0.95 }}>{activeTicket.pelapor_nama || activeTicket.reporter_name || activeTicket.pelapor || user?.username || '-'}</td>
-                    <td style={{ paddingTop: '10px', opacity: 0.95 }}>{activeTicket.nama_kategori || activeTicket.kategori || activeTicket.category || activeTicket.device || '-'}</td>
-                    <td style={{ paddingTop: '10px', textAlign: 'right' }}>
+                    <td style={{ padding: '14px 0', fontWeight: '800', letterSpacing: '0.03em', color: '#ffffff' }}>{activeTicket.code || `HD-${activeTicket.id}`}</td>
+                    <td style={{ padding: '14px 0', color: '#ecfdf5', opacity: 0.95 }}>{activeTicket.pelapor_nama || activeTicket.reporter_name || activeTicket.pelapor || user?.username || '-'}</td>
+                    <td style={{ padding: '14px 0', color: '#ecfdf5', opacity: 0.95 }}>{activeTicket.nama_kategori || activeTicket.kategori || activeTicket.category || activeTicket.device || '-'}</td>
+                    <td style={{ padding: '14px 0', textAlign: 'right' }}>
                       <span style={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                        padding: '4px 10px',
-                        borderRadius: '12px',
-                        fontSize: '0.75rem',
-                        fontWeight: '700',
-                        letterSpacing: '0.03em'
+                        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                        border: '1px solid rgba(255, 255, 255, 0.25)',
+                        padding: '5px 12px',
+                        borderRadius: '999px',
+                        fontSize: '0.72rem',
+                        fontWeight: '800',
+                        letterSpacing: '0.05em',
+                        color: '#ffffff',
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
                       }}>
                         {activeTicket.status}
                       </span>
@@ -258,24 +279,26 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
       </div>
 
       {showHistory && (
-        <div style={{ marginTop: '16px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h3 style={{ margin: 0, fontSize: '1rem', color: '#0f172a' }}>Riwayat Tiket</h3>
+        <div style={{ marginTop: '20px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 6px -1px rgba(6, 78, 59, 0.05)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#022c22', fontWeight: '800', letterSpacing: '-0.01em' }}>Riwayat Tiket Selesai</h3>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <button
                 type="button"
                 onClick={() => changeHistory(-1)}
                 disabled={historyTickets.length <= 2}
                 style={{
-                  width: '28px',
-                  height: '28px',
+                  width: '32px',
+                  height: '32px',
                   borderRadius: '50%',
-                  border: '1px solid #cbd5e1',
-                  background: '#fff',
-                  color: '#334155',
+                  border: '1px solid #86efac',
+                  background: '#ffffff',
+                  color: '#064e3b',
                   cursor: historyTickets.length <= 2 ? 'not-allowed' : 'pointer',
-                  opacity: historyTickets.length <= 2 ? 0.5 : 1,
-                  fontSize: '1rem'
+                  opacity: historyTickets.length <= 2 ? 0.4 : 1,
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                 }}
               >
                 ‹
@@ -285,15 +308,17 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
                 onClick={() => changeHistory(1)}
                 disabled={historyTickets.length <= 2}
                 style={{
-                  width: '28px',
-                  height: '28px',
+                  width: '32px',
+                  height: '32px',
                   borderRadius: '50%',
-                  border: '1px solid #cbd5e1',
-                  background: '#fff',
-                  color: '#334155',
+                  border: '1px solid #86efac',
+                  background: '#ffffff',
+                  color: '#064e3b',
                   cursor: historyTickets.length <= 2 ? 'not-allowed' : 'pointer',
-                  opacity: historyTickets.length <= 2 ? 0.5 : 1,
-                  fontSize: '1rem'
+                  opacity: historyTickets.length <= 2 ? 0.4 : 1,
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                 }}
               >
                 ›
@@ -302,32 +327,32 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
           </div>
 
           {historyTickets.length === 0 ? (
-            <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>Belum ada tiket yang selesai atau ditutup.</p>
+            <p style={{ margin: 0, color: '#047857', fontSize: '0.9rem', fontStyle: 'italic' }}>Belum ada tiket yang selesai atau ditutup.</p>
           ) : (
-            <div style={{ display: 'grid', gap: '12px' }}>
+            <div style={{ display: 'grid', gap: '10px' }}>
               {visibleHistoryTickets.map((ticket) => (
                 <div 
                   key={ticket.id} 
                   onClick={() => setSelectedTicket(ticket)}
-                  style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 14px', cursor: 'pointer' }}
+                  style={{ background: '#ffffff', border: '1px solid #d1fae5', borderRadius: '12px', padding: '14px 16px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(6, 78, 59, 0.03)', transition: 'transform 0.15s ease, box-shadow 0.15s ease' }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                    <strong style={{ color: '#0f172a', fontSize: '0.82rem' }}>{ticket.code || `HD-${ticket.id}`}</strong>
+                    <strong style={{ color: '#064e3b', fontSize: '0.85rem', fontWeight: '800' }}>{ticket.code || `HD-${ticket.id}`}</strong>
                     <span style={{
                       backgroundColor: ticket.status === 'CLOSED' ? '#e2e8f0' : '#dcfce7',
                       color: ticket.status === 'CLOSED' ? '#334155' : '#166534',
                       borderRadius: '999px',
-                      padding: '4px 8px',
-                      fontSize: '0.68rem',
-                      fontWeight: '700'
+                      padding: '3px 10px',
+                      fontSize: '0.7rem',
+                      fontWeight: '800'
                     }}>
                       {ticket.status}
                     </span>
                   </div>
-                  <div style={{ color: '#334155', fontSize: '0.85rem', fontWeight: '600', marginBottom: '4px' }}>
+                  <div style={{ color: '#0f172a', fontSize: '0.9rem', fontWeight: '700', marginBottom: '4px' }}>
                     {ticket.judul || ticket.title || ticket.nama_kategori || ticket.kategori || ticket.category || 'Tiket'}
                   </div>
-                  <div style={{ color: '#64748b', fontSize: '0.75rem' }}>
+                  <div style={{ color: '#059669', fontSize: '0.75rem', fontWeight: '500' }}>
                     {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : 'Tanggal tidak tersedia'}
                   </div>
                 </div>
@@ -347,8 +372,8 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
             left: 0,
             width: '100vw',
             height: '100vh',
-            backgroundColor: 'rgba(15, 23, 42, 0.6)',
-            backdropFilter: 'blur(4px)',
+            backgroundColor: 'rgba(2, 44, 34, 0.7)',
+            backdropFilter: 'blur(6px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -359,32 +384,34 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: '#ffffff',
-              borderRadius: '16px',
+              borderRadius: '20px',
               width: '90%',
-              maxWidth: '800px',
-              maxHeight: '80vh',
-              padding: '24px',
+              maxWidth: '850px',
+              maxHeight: '85vh',
+              padding: '28px',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+              boxShadow: '0 25px 50px -12px rgba(2, 44, 34, 0.35)',
+              border: '1px solid #a7f3d0'
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
-                <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.25rem', fontWeight: '700' }}>Daftar Seluruh Tiket</h3>
-                <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Daftar lengkap status tiket yang terdaftar pada akun Anda.</p>
+                <h3 style={{ margin: 0, color: '#022c22', fontSize: '1.35rem', fontWeight: '800' }}>Daftar Seluruh Tiket</h3>
+                <p style={{ margin: '4px 0 0 0', color: '#047857', fontSize: '0.85rem' }}>Daftar lengkap status tiket yang terdaftar pada akun Anda.</p>
               </div>
               <button 
                 onClick={() => setShowAllModal(false)}
                 style={{ 
-                  background: '#f1f5f9', 
-                  border: 'none', 
-                  width: '32px', 
-                  height: '32px', 
+                  background: '#f0fdf4', 
+                  border: '1px solid #bbf7d0', 
+                  width: '36px', 
+                  height: '36px', 
                   borderRadius: '50%', 
                   fontSize: '1.2rem', 
                   cursor: 'pointer', 
-                  color: '#64748b',
+                  color: '#064e3b',
+                  fontWeight: 'bold',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -394,43 +421,43 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
               </button>
             </div>
 
-            <div style={{ overflowY: 'auto', flex: 1, border: '1px solid #e2e8f0', borderRadius: '10px' }}>
+            <div style={{ overflowY: 'auto', flex: 1, border: '1px solid #bbf7d0', borderRadius: '12px', background: '#fafaf9' }}>
               <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
                 <thead>
-                  <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
-                    <th style={{ padding: '12px 16px', fontWeight: '600' }}>ID Tiket</th>
-                    <th style={{ padding: '12px 16px', fontWeight: '600' }}>Judul / Kategori</th>
-                    <th style={{ padding: '12px 16px', fontWeight: '600' }}>Status</th>
-                    <th style={{ padding: '12px 16px', fontWeight: '600' }}>Tanggal</th>
+                  <tr style={{ backgroundColor: '#f0fdf4', borderBottom: '1px solid #bbf7d0', color: '#064e3b' }}>
+                    <th style={{ padding: '14px 18px', fontWeight: '700' }}>ID Tiket</th>
+                    <th style={{ padding: '14px 18px', fontWeight: '700' }}>Judul / Kategori</th>
+                    <th style={{ padding: '14px 18px', fontWeight: '700' }}>Status</th>
+                    <th style={{ padding: '14px 18px', fontWeight: '700' }}>Tanggal</th>
                   </tr>
                 </thead>
                 <tbody>
                   {tickets.length === 0 ? (
                     <tr>
-                      <td colSpan="4" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>Tidak ada data tiket.</td>
+                      <td colSpan="4" style={{ padding: '32px', textAlign: 'center', color: '#64748b' }}>Tidak ada data tiket.</td>
                     </tr>
                   ) : (
                     tickets.map((t) => (
                       <tr
                         key={t.id}
                         onClick={() => setSelectedTicket(t)}
-                        style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
+                        style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer', background: '#fff', transition: 'background 0.15s' }}
                       >
-                        <td style={{ padding: '12px 16px', fontWeight: '700', color: '#0f172a' }}>{t.code || `HD-${t.id}`}</td>
-                        <td style={{ padding: '12px 16px', color: '#334155' }}>{t.judul || t.title || t.nama_kategori || t.kategori || t.category || '-'}</td>
-                        <td style={{ padding: '12px 16px' }}>
+                        <td style={{ padding: '14px 18px', fontWeight: '800', color: '#064e3b' }}>{t.code || `HD-${t.id}`}</td>
+                        <td style={{ padding: '14px 18px', color: '#334155', fontWeight: '500' }}>{t.judul || t.title || t.nama_kategori || t.kategori || t.category || '-'}</td>
+                        <td style={{ padding: '14px 18px' }}>
                           <span style={{
-                            padding: '4px 10px',
-                            borderRadius: '12px',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
+                            padding: '4px 12px',
+                            borderRadius: '999px',
+                            fontSize: '0.72rem',
+                            fontWeight: '700',
                             backgroundColor: t.status === 'NEW' ? '#fef3c7' : t.status === 'RESOLVED' ? '#dcfce7' : '#dbeafe',
                             color: t.status === 'NEW' ? '#92400e' : t.status === 'RESOLVED' ? '#166534' : '#1e40af'
                           }}>
                             {t.status}
                           </span>
                         </td>
-                        <td style={{ padding: '12px 16px', color: '#64748b' }}>
+                        <td style={{ padding: '14px 18px', color: '#64748b', fontSize: '0.8rem' }}>
                           {t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}
                         </td>
                       </tr>
@@ -444,14 +471,15 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
               <button 
                 onClick={() => setShowAllModal(false)}
                 style={{
-                  backgroundColor: '#0f172a',
+                  backgroundColor: '#064e3b',
                   color: '#fff',
                   border: 'none',
-                  padding: '10px 20px',
-                  borderRadius: '8px',
-                  fontWeight: '600',
+                  padding: '10px 24px',
+                  borderRadius: '10px',
+                  fontWeight: '700',
                   fontSize: '0.875rem',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 10px rgba(6, 78, 59, 0.3)'
                 }}
               >
                 Tutup
@@ -463,8 +491,8 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
 
       {/* Pop-up Detail Tiket (Global) */}
       {selectedTicket && (
-        <div onClick={() => setSelectedTicket(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: 900, background: '#fff', borderRadius: 12, padding: 20, maxHeight: '90vh', overflowY: 'auto' }}>
+        <div onClick={() => setSelectedTicket(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(2, 44, 34, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, backdropFilter: 'blur(4px)' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: 900, background: '#fff', borderRadius: '16px', padding: 24, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
             <TicketDetail token={token} user={user} ticketId={selectedTicket.id} onBack={() => setSelectedTicket(null)} onError={(m) => console.error(m)} />
           </div>
         </div>
