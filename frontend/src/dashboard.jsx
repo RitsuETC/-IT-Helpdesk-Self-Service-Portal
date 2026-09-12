@@ -465,7 +465,7 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
                           {t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}
                         </td>
                         
-                        {/* Kolom Aksi yang Muncul untuk Semua User, Beda Label & Fungsi */}
+                        {/* Kolom Aksi Konsisten Menggunakan Tombol Solid ala Admin/Teknisi (#064e3b) untuk Semua Role */}
                         <td style={{ padding: '14px 18px', textAlign: 'center' }}>
                           {isAdminOrTechnician ? (
                             <button
@@ -503,15 +503,15 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
                                 setSelectedTicket(t); // Membuka modal versi user (TicketDetail)
                               }}
                               style={{
-                                backgroundColor: '#f0fdf4',
-                                color: '#064e3b',
-                                border: '1px solid #86efac',
+                                backgroundColor: '#064e3b',
+                                color: '#ffffff',
+                                border: 'none',
                                 padding: '6px 14px',
                                 borderRadius: '8px',
                                 fontSize: '0.75rem',
                                 fontWeight: '700',
                                 cursor: 'pointer',
-                                boxShadow: '0 2px 4px rgba(6, 78, 59, 0.05)',
+                                boxShadow: '0 2px 4px rgba(6, 78, 59, 0.2)',
                                 transition: 'background 0.2s'
                               }}
                             >
