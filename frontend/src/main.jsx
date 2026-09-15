@@ -210,7 +210,14 @@ function App() {
             </button>
           )}
           {session?.user.role === 'admin' && (
-            <button onClick={() => setPage('audit-log')} style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}>
+            <button 
+              onClick={() => setPage('audit-log')} 
+              style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
+              onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+            >
               Log Aktivitas
             </button>
           )}
@@ -218,6 +225,10 @@ function App() {
             <button 
               onClick={() => setPage('inventory')}
               style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
+              onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
             >
               Inventaris
             </button>
@@ -339,11 +350,11 @@ function App() {
                   if (!session) {
                     setShowLoginModal(true)
                   } else {
-                      if (session.user.role === 'user') {
-                        setShowCreateTicketModal(true)
-                      } else {
-                        setPage('tickets')
-                      }
+                    if (session.user.role === 'user') {
+                      setShowCreateTicketModal(true)
+                    } else {
+                      setPage('tickets')
+                    }
                   }
                 }}
               >
