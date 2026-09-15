@@ -2,6 +2,7 @@ const express = require("express");
 const db = require("../db");
 const verifyToken = require("../middleware/verifyToken");
 const authorizeRole = require("../middleware/roleMiddleware");
+const { logAudit } = require('../utils/audit');
 
 const router = express.Router();
 let hasVideoUrl;
@@ -104,6 +105,8 @@ router.post("/", verifyToken, authorizeRole("admin"), async (req, res) => {
     const query = `INSERT INTO knowledge_article (${fields.join(", ")}) VALUES (${placeholders.join(", ")}) RETURNING id`;
     const result = await db.query(query, values);
 
+    await logAudit(db, req, { action: 'CREATE_KNOWLEDGE', detail: `Menambahkan artikel knowledge: ${judul.trim()}`, entityType: 'knowledge_article', entityId: result.rows[0].id });
+
     res.status(201).json({ message: "Knowledge berhasil ditambahkan", data: result.rows[0] });
   } catch (error) { res.status(500).json({ message: "Gagal menambahkan knowledge", error: error.message }); }
 });
@@ -143,14 +146,16 @@ router.put("/:id", verifyToken, authorizeRole("admin"), async (req, res) => {
     const result = await db.query(query, values);
 
     if (!result.rowCount) return res.status(404).json({ message: "Knowledge tidak ditemukan" });
+    await logAudit(db, req, { action: 'UPDATE_KNOWLEDGE', detail: `Memperbarui artikel knowledge: ${judul.trim()}`, entityType: 'knowledge_article', entityId: req.params.id });
     res.json({ message: "Knowledge berhasil diperbarui" });
   } catch (error) { res.status(500).json({ message: "Gagal memperbarui knowledge", error: error.message }); }
 });
 
 router.delete("/:id", verifyToken, authorizeRole("admin"), async (req, res) => {
   try {
-    const result = await db.query("DELETE FROM knowledge_article WHERE id = $1", [req.params.id]);
+    const result = await db.query("DELETE FROM knowledge_article WHERE id = $1 RETURNING id, judul", [req.params.id]);
     if (!result.rowCount) return res.status(404).json({ message: "Knowledge tidak ditemukan" });
+    await logAudit(db, req, { action: 'DELETE_KNOWLEDGE', detail: `Menghapus artikel knowledge: ${result.rows[0].judul}`, entityType: 'knowledge_article', entityId: result.rows[0].id });
     res.json({ message: "Knowledge berhasil dihapus" });
   } catch (error) { res.status(500).json({ message: "Gagal menghapus knowledge", error: error.message }); }
 });

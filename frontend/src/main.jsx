@@ -11,6 +11,7 @@ import Knowledge from './knowledge.jsx'
 import Admin from './admin.jsx'
 import Report from './report.jsx'
 import Inventory from './inventory.jsx'
+import AuditLog from './audit-log.jsx'
 
 const savedSession = JSON.parse(localStorage.getItem('helpdesk-session') || 'null')
 
@@ -24,6 +25,20 @@ function App() {
   const [notice, setNotice] = useState('')
   const [selectedArticle, setSelectedArticle] = useState(null)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
+
+  useEffect(() => {
+    const handleExpiredSession = () => {
+      setSession(null)
+      setShowSidebar(false)
+      setShowCreateTicketModal(false)
+      setUnreadNotifications(0)
+      setPage('landing')
+      setNotice('Sesi Anda sudah berakhir. Silakan login kembali.')
+      setShowLoginModal(true)
+    }
+    window.addEventListener('helpdesk:session-expired', handleExpiredSession)
+    return () => window.removeEventListener('helpdesk:session-expired', handleExpiredSession)
+  }, [])
 
   const loadArticles = async () => {
     try {
@@ -192,6 +207,11 @@ function App() {
               onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
             >
               Laporan
+            </button>
+          )}
+          {session?.user.role === 'admin' && (
+            <button onClick={() => setPage('audit-log')} style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}>
+              Log Aktivitas
             </button>
           )}
           {(session?.user.role === 'admin' || session?.user.role === 'teknisi') && (
@@ -426,6 +446,10 @@ function App() {
         />
       )}
 
+      {session?.user.role === 'admin' && page === 'audit-log' && (
+        <AuditLog token={session.token} onBack={() => setPage('landing')} onError={setNotice} />
+      )}
+
       {/* Popup Login Modal */}
       {showLoginModal && (
         <div className="modal-backdrop" onClick={() => setShowLoginModal(false)}>
@@ -525,6 +549,11 @@ function App() {
               {session.user.role === 'admin' && (
                 <button className="admin-menu" onClick={() => { setShowSidebar(false); setPage('admin') }}>
                   Admin Knowledge
+                </button>
+              )}
+              {session.user.role === 'admin' && (
+                <button className="admin-menu" onClick={() => { setShowSidebar(false); setPage('audit-log') }}>
+                  Log Aktivitas
                 </button>
               )}
               {(session.user.role === 'admin' || session.user.role === 'teknisi') && (

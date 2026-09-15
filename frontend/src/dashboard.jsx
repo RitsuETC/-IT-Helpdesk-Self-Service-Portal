@@ -28,7 +28,7 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
         setTickets([])
       }
     } catch (err) {
-      console.error(err)
+      if (!err.sessionExpired) console.error(err)
     } finally {
       setLoading(false)
     }
@@ -47,7 +47,7 @@ export default function Dashboard({ token, user, onTroubleshooting, onTickets, o
           if (isMounted) setTickets(listRes.data || [])
         }
       } catch (err) {
-        console.error('Gagal memuat data dashboard:', err)
+        if (!err.sessionExpired) console.error('Gagal memuat data dashboard:', err)
       } finally {
         if (isMounted) setLoading(false)
       }

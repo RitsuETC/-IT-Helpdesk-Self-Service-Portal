@@ -13,6 +13,13 @@ export async function api(path, { token, method = 'GET', body } = {}) {
   if (!response.ok) {
     const err = new Error(result.message || 'Permintaan gagal diproses')
     err.status = response.status
+    // A token can expire while dashboard polling is active. Clear it once at
+    // the API boundary so every page stops using the stale session.
+    if (response.status === 401 && token) {
+      localStorage.removeItem('helpdesk-session')
+      window.dispatchEvent(new CustomEvent('helpdesk:session-expired'))
+      err.sessionExpired = true
+    }
     throw err
   }
   return result

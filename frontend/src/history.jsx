@@ -23,7 +23,7 @@ export default function HistoryCarousel({ token, user, onError }) {
       const history = (res.data || []).filter((t) => ['RESOLVED', 'CLOSED'].includes(t.status))
       setTickets(history)
     } catch (err) {
-      console.error(err)
+      if (!err.sessionExpired) console.error(err)
     } finally {
       setLoading(false)
     }

@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const db = require("../db");
 const verifyToken = require("../middleware/verifyToken");
 const authorizeRole = require("../middleware/roleMiddleware");
+const { logAudit } = require('../utils/audit');
 
 const router = express.Router();
 router.use(verifyToken, authorizeRole("admin"));
@@ -23,6 +24,7 @@ router.post("/categories", async (req, res) => {
     const name = req.body.nama_kategori?.trim();
     if (!name) return res.status(400).json({ message: "Nama kategori wajib diisi" });
     const { rows } = await db.query("INSERT INTO knowledge_kategori (nama_kategori) VALUES ($1) RETURNING id, nama_kategori", [name]);
+    await logAudit(db, req, { action: 'CREATE_CATEGORY', detail: `Menambahkan kategori ${rows[0].nama_kategori}`, entityType: 'knowledge_category', entityId: rows[0].id });
     res.status(201).json({ data: rows[0] });
   } catch (error) { res.status(500).json({ message: "Gagal menambah kategori", error: error.message }); }
 });
@@ -38,8 +40,9 @@ router.delete("/categories/:id", async (req, res) => {
     if (Number(usage.rows[0].total)) {
       return res.status(409).json({ message: "Kategori masih dipakai tiket atau Knowledge Base dan tidak dapat dihapus" });
     }
-    const result = await db.query("DELETE FROM knowledge_kategori WHERE id = $1", [req.params.id]);
+    const result = await db.query("DELETE FROM knowledge_kategori WHERE id = $1 RETURNING id, nama_kategori", [req.params.id]);
     if (!result.rowCount) return res.status(404).json({ message: "Kategori tidak ditemukan" });
+    await logAudit(db, req, { action: 'DELETE_CATEGORY', detail: `Menghapus kategori ${result.rows[0].nama_kategori}`, entityType: 'knowledge_category', entityId: result.rows[0].id });
     res.json({ message: "Kategori berhasil dihapus" });
   } catch (error) { res.status(500).json({ message: "Gagal menghapus kategori", error: error.message }); }
 });
@@ -49,6 +52,7 @@ router.post("/rooms", async (req, res) => {
     const room = req.body.ruangan?.trim();
     if (!room) return res.status(400).json({ message: "Nama ruangan wajib diisi" });
     const { rows } = await db.query("INSERT INTO unit (ruangan) VALUES ($1) RETURNING id, ruangan", [room]);
+    await logAudit(db, req, { action: 'CREATE_ROOM', detail: `Menambahkan ruangan ${rows[0].ruangan}`, entityType: 'room', entityId: rows[0].id });
     res.status(201).json({ data: rows[0] });
   } catch (error) { res.status(500).json({ message: "Gagal menambah ruangan", error: error.message }); }
 });
@@ -71,8 +75,9 @@ router.delete("/rooms/:id", async (req, res) => {
         message: `Ruangan masih digunakan oleh ${details.join(', ')} dan tidak dapat dihapus`
       });
     }
-    const result = await db.query("DELETE FROM unit WHERE id = $1", [req.params.id]);
+    const result = await db.query("DELETE FROM unit WHERE id = $1 RETURNING id, ruangan", [req.params.id]);
     if (!result.rowCount) return res.status(404).json({ message: "Ruangan tidak ditemukan" });
+    await logAudit(db, req, { action: 'DELETE_ROOM', detail: `Menghapus ruangan ${result.rows[0].ruangan}`, entityType: 'room', entityId: result.rows[0].id });
     res.json({ message: "Ruangan berhasil dihapus" });
   } catch (error) { res.status(500).json({ message: "Gagal menghapus ruangan", error: error.message }); }
 });
@@ -81,8 +86,9 @@ router.patch("/users/:id/role", async (req, res) => {
   try {
     const { role } = req.body;
     if (!["user", "admin", "teknisi"].includes(role)) return res.status(400).json({ message: "Role tidak valid" });
-    const result = await db.query("UPDATE login SET role = $1 WHERE id = $2", [role, req.params.id]);
+    const result = await db.query("UPDATE login SET role = $1 WHERE id = $2 RETURNING id, \"Nama\" AS nama", [role, req.params.id]);
     if (!result.rowCount) return res.status(404).json({ message: "Akun tidak ditemukan" });
+    await logAudit(db, req, { action: 'UPDATE_USER_ROLE', detail: `Mengubah role ${result.rows[0].nama} menjadi ${role}`, entityType: 'user', entityId: result.rows[0].id });
     res.json({ message: "Role akun berhasil diperbarui" });
   } catch (error) { res.status(500).json({ message: "Gagal memperbarui role", error: error.message }); }
 });
@@ -95,6 +101,7 @@ router.post("/users", async (req, res) => {
     if (existing.rowCount) return res.status(409).json({ message: "Email sudah digunakan" });
     const hash = await bcrypt.hash(password, 10);
     const { rows } = await db.query('INSERT INTO login ("Nama", email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, "Nama" AS nama, email, role', [nama.trim(), email.trim(), hash, role]);
+    await logAudit(db, req, { action: 'CREATE_USER', detail: `Membuat akun ${rows[0].nama} sebagai ${role}`, entityType: 'user', entityId: rows[0].id });
     res.status(201).json({ data: rows[0] });
   } catch (error) { res.status(500).json({ message: "Gagal membuat akun", error: error.message }); }
 });
@@ -104,8 +111,9 @@ router.delete("/users/:id", async (req, res) => {
     if (Number(req.params.id) === req.user.id) return res.status(400).json({ message: "Anda tidak dapat menghapus akun sendiri" });
     const usage = await db.query("SELECT count(*) AS total FROM tiket WHERE akun = $1 OR teknisi = $1", [req.params.id]);
     if (Number(usage.rows[0].total)) return res.status(409).json({ message: "Akun memiliki riwayat tiket dan tidak dapat dihapus" });
-    const result = await db.query("DELETE FROM login WHERE id = $1", [req.params.id]);
+    const result = await db.query('DELETE FROM login WHERE id = $1 RETURNING id, "Nama" AS nama', [req.params.id]);
     if (!result.rowCount) return res.status(404).json({ message: "Akun tidak ditemukan" });
+    await logAudit(db, req, { action: 'DELETE_USER', detail: `Menghapus akun ${result.rows[0].nama}`, entityType: 'user', entityId: result.rows[0].id });
     res.json({ message: "Akun berhasil dihapus" });
   } catch (error) { res.status(500).json({ message: "Gagal menghapus akun", error: error.message }); }
 });

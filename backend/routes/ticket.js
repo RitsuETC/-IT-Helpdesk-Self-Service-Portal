@@ -2,6 +2,7 @@ const express = require("express");
 const db = require("../db");
 const verifyToken = require("../middleware/verifyToken");
 const authorizeRole = require("../middleware/roleMiddleware");
+const { logAudit } = require('../utils/audit');
 
 const router = express.Router();
 
@@ -386,11 +387,12 @@ router.delete("/:id", verifyToken, authorizeRole("admin"), async (req, res) => {
       });
     }
 
-    const result = await db.query("DELETE FROM tiket WHERE id = $1", [req.params.id]);
+    const result = await db.query("DELETE FROM tiket WHERE id = $1 RETURNING id, judul", [req.params.id]);
     if (!result.rowCount) {
       return res.status(404).json({ message: "Tiket tidak ditemukan" });
     }
 
+    await logAudit(db, req, { action: 'DELETE_TICKET', detail: `Menghapus tiket HD-${result.rows[0].id}: ${result.rows[0].judul}`, entityType: 'ticket', entityId: result.rows[0].id });
     res.json({ message: "Tiket berhasil dihapus" });
   } catch (error) {
     console.error("Delete ticket error:", error);
@@ -427,7 +429,7 @@ router.patch(
       }
 
       const ticket = await db.query(
-        "SELECT id, teknisi FROM tiket WHERE id = $1 LIMIT 1",
+        "SELECT id, teknisi, prioritas FROM tiket WHERE id = $1 LIMIT 1",
         [req.params.id]
       );
 
@@ -451,6 +453,8 @@ router.patch(
          RETURNING id, prioritas`,
         [priorityKey, req.params.id]
       );
+
+      await logAudit(db, req, { action: 'UPDATE_PRIORITY_TICKET', detail: `Mengubah prioritas tiket HD-${req.params.id} dari ${ticket.rows[0].prioritas} menjadi ${rows[0].prioritas}`, entityType: 'ticket', entityId: req.params.id, metadata: { before: ticket.rows[0].prioritas, after: rows[0].prioritas } });
 
       res.json({
         message: "Prioritas tiket berhasil diperbarui",
@@ -571,6 +575,8 @@ router.post("/", verifyToken, async (req, res) => {
       console.error('Failed to insert notifications:', notifErr.message);
     }
 
+    await logAudit(db, req, { action: 'CREATE_TICKET', detail: `Membuat tiket HD-${rows[0].id}: ${rows[0].judul}`, entityType: 'ticket', entityId: rows[0].id });
+
     res.status(201).json({
       message: "Tiket berhasil dibuat",
       ticket: rows[0],
@@ -610,7 +616,7 @@ router.patch(
       }
 
       const ticket = await db.query(
-        "SELECT id, teknisi FROM tiket WHERE id = $1 LIMIT 1",
+        "SELECT id, teknisi, status FROM tiket WHERE id = $1 LIMIT 1",
         [req.params.id]
       );
 
@@ -676,6 +682,8 @@ router.patch(
         [status, req.params.id, teknisiToSet]
       );
 
+      await logAudit(db, req, { action: 'UPDATE_STATUS_TICKET', detail: `Mengubah status tiket HD-${req.params.id} dari ${ticket.rows[0].status} menjadi ${rows[0].status}`, entityType: 'ticket', entityId: req.params.id, metadata: { before: ticket.rows[0].status, after: rows[0].status } });
+
       res.json({
         message: "Status tiket berhasil diperbarui",
         data: rows[0],
@@ -716,7 +724,7 @@ router.patch(
       }
 
       const ticket = await db.query(
-        "SELECT id, status FROM tiket WHERE id = $1 LIMIT 1",
+        "SELECT id, status, teknisi FROM tiket WHERE id = $1 LIMIT 1",
         [req.params.id]
       );
 
@@ -758,6 +766,8 @@ router.patch(
          RETURNING id, teknisi, status, resolved_at, closed_at`,
         [teknisi, status, req.params.id]
       );
+
+      await logAudit(db, req, { action: 'ASSIGN_TICKET', detail: `Menugaskan ${technician.rows[0].nama} ke tiket HD-${req.params.id}`, entityType: 'ticket', entityId: req.params.id, metadata: { teknisi_id: teknisi, before_status: ticket.rows[0].status, after_status: rows[0].status } });
 
       res.json({
         message: "Teknisi berhasil ditugaskan",
@@ -806,6 +816,8 @@ router.patch(
         "UPDATE tiket SET status = 'IN_PROGRESS' WHERE id = $1",
         [req.params.id]
       );
+
+      await logAudit(db, req, { action: 'UPDATE_STATUS_TICKET', detail: `Memulai pengerjaan tiket HD-${req.params.id} (status ${ticket.rows[0].status} menjadi IN_PROGRESS)`, entityType: 'ticket', entityId: req.params.id, metadata: { before: ticket.rows[0].status, after: 'IN_PROGRESS' } });
 
       res.json({
         message: "Tiket berhasil dimulai",
@@ -913,6 +925,8 @@ router.patch(
         [finalSolusi, req.params.id]
       );
 
+      await logAudit(db, req, { action: 'RESOLVE_TICKET', detail: `Menyelesaikan tiket HD-${req.params.id}`, entityType: 'ticket', entityId: req.params.id, metadata: { before: ticket.rows[0].status, after: rows[0].status } });
+
       res.json({
         message: "Tiket berhasil diselesaikan",
         data: {
@@ -958,7 +972,7 @@ router.patch("/:id/close", verifyToken, async (req, res) => {
       });
     }
 
-    const { rows } = await db.query(
+      const { rows } = await db.query(
       `UPDATE tiket
        SET
          status = 'CLOSED',
@@ -970,7 +984,9 @@ router.patch("/:id/close", verifyToken, async (req, res) => {
          status,
          closed_at`,
       [req.params.id]
-    );
+      );
+
+    await logAudit(db, req, { action: 'CLOSE_TICKET', detail: `Menutup tiket HD-${req.params.id}`, entityType: 'ticket', entityId: req.params.id, metadata: { before: ticket.rows[0].status, after: rows[0].status } });
 
     res.json({
       message: "Tiket berhasil ditutup",
