@@ -6,8 +6,9 @@ const { logAudit } = require('../utils/audit');
 
 const router = express.Router();
 router.use(verifyToken, authorizeRole('admin', 'teknisi'));
-const adminOnly = authorizeRole('admin');
 const workRoles = authorizeRole('admin', 'teknisi');
+// Administrators and technicians manage operational inventory records.
+const adminOnly = workRoles;
 
 const positiveInt = (value) => Number.isInteger(Number(value)) && Number(value) > 0;
 const dateValue = (value) => value || null;
@@ -154,6 +155,7 @@ const maintenanceFields = ['id_asset', 'maintenance_type', 'start_date', 'end_da
 router.get('/maintenance', async (_req, res) => { try { const { rows } = await db.query(`SELECT m.*, a.asset_code, l."Nama" AS pic_name FROM maintenance m JOIN asset a ON a.id_asset = m.id_asset LEFT JOIN login l ON l.id = m.id_pic ORDER BY m.start_date DESC`); res.json({ data: rows }); } catch (error) { res.status(500).json({ message: 'Gagal mengambil maintenance', error: error.message }); } });
 router.post('/maintenance', workRoles, async (req, res) => { try { const values = maintenanceFields.map((field) => req.body[field] ?? (field === 'id_pic' ? req.user.id : field === 'status' ? 'scheduled' : field === 'cost' ? 0 : null)); const { rows } = await db.query(`INSERT INTO maintenance (${maintenanceFields.join(', ')}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`, values); await logAudit(db, req, { action: 'CREATE_MAINTENANCE', detail: `Mencatat maintenance aset #${rows[0].id_asset}`, entityType: 'maintenance', entityId: rows[0].id }); res.status(201).json({ data: rows[0] }); } catch (error) { res.status(500).json({ message: 'Gagal mencatat maintenance', error: error.message }); } });
 router.put('/maintenance/:id', workRoles, async (req, res) => { try { const values = maintenanceFields.map((field) => req.body[field] ?? null); values.push(req.params.id); const { rows } = await db.query(`UPDATE maintenance SET ${maintenanceFields.map((field, i) => `${field} = $${i + 1}`).join(', ')}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`, values); if (!rows.length) return res.status(404).json({ message: 'Maintenance tidak ditemukan' }); await logAudit(db, req, { action: 'UPDATE_MAINTENANCE', detail: `Memperbarui maintenance aset #${rows[0].id_asset}`, entityType: 'maintenance', entityId: rows[0].id }); res.json({ data: rows[0] }); } catch (error) { res.status(500).json({ message: 'Gagal mengubah maintenance', error: error.message }); } });
+router.delete('/maintenance/:id', workRoles, async (req, res) => { try { const result = await db.query('DELETE FROM maintenance WHERE id = $1 RETURNING id, id_asset', [req.params.id]); if (!result.rowCount) return res.status(404).json({ message: 'Maintenance tidak ditemukan' }); await logAudit(db, req, { action: 'DELETE_MAINTENANCE', detail: `Menghapus maintenance aset #${result.rows[0].id_asset}`, entityType: 'maintenance', entityId: result.rows[0].id }); res.json({ message: 'Maintenance berhasil dihapus' }); } catch (error) { res.status(500).json({ message: 'Gagal menghapus maintenance', error: error.message }); } });
 
 const procurementFields = ['po_number', 'request_date', 'approval_date', 'received_date', 'supplier', 'status', 'total_cost', 'notes'];
 router.get('/procurement', async (_req, res) => { try { const procurements = await db.query('SELECT * FROM procurement ORDER BY request_date DESC'); const details = await db.query('SELECT * FROM procurement_detail ORDER BY id'); res.json({ data: procurements.rows.map((item) => ({ ...item, details: details.rows.filter((detail) => detail.id_procurement === item.id) })) }); } catch (error) { res.status(500).json({ message: 'Gagal mengambil pengadaan', error: error.message }); } });

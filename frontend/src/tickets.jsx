@@ -12,6 +12,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   const [hasilVal, setHasilVal] = useState('')
   const [technicians, setTechnicians] = useState([])
   const [selectedStatus, setSelectedStatus] = useState('NEW')
+  const now = useCurrentTime()
 
   const loadDetail = async () => {
     if (!ticketId) return
@@ -208,6 +209,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
               <span className={`priority-dot ${ticket.prioritas?.toLowerCase()}`}></span>
             </div>
             <div><strong>Status:</strong> {ticket.status || '-'}</div>
+            <div><strong>SLA:</strong> <SlaBadge ticket={ticket} now={now} /></div>
             <div><strong>Tanggal:</strong> {ticket.created_at ? new Date(ticket.created_at).toLocaleString() : '-'}</div>
           </div>
         </div>
@@ -266,9 +268,9 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
             </div>
             <form onSubmit={handleUpdatePriority} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <select name="prioritas" defaultValue={ticket.prioritas} style={{ height: '42px', padding: '0 14px', borderRadius: '10px', border: '1px solid #34d399', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#022c22', fontWeight: '600', boxSizing: 'border-box', outline: 'none' }}>
-                <option value="level_1">Level 1 (Low)</option>
+                <option value="level_1">Level 1 (High)</option>
                 <option value="level_2">Level 2 (Medium)</option>
-                <option value="level_3">Level 3 (High)</option>
+                <option value="level_3">Level 3 (Low)</option>
               </select>
               <button 
                 type="submit" 
@@ -359,6 +361,12 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
               </span>
             </div>
             <form onSubmit={handleResolve} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ padding: '12px', background: '#ecfdf5', border: '1px solid #86efac', borderRadius: '10px' }}>
+                <span style={{ display: 'block', color: '#047857', fontSize: '11px', fontWeight: 800, marginBottom: '8px' }}>⚡ Balasan cepat</span>
+                <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
+                  {CANNED_RESPONSES.map((response) => <button key={response.label} type="button" onClick={() => { setTindakanVal(response.tindakan); setHasilVal(response.hasil) }} style={{ border: '1px solid #34d399', background: '#fff', color: '#047857', borderRadius: '7px', padding: '7px 9px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>{response.label}</button>)}
+                </div>
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px', width: '100%' }}>
                 <label style={{ fontSize: '12px', color: '#047857', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   Tindakan Perbaikan
@@ -400,6 +408,7 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
   const [rooms, setRooms] = useState([])
   const [ticketDraft, setTicketDraft] = useState({ judul: '', deskripsi: '' })
   const [suggestionDismissed, setSuggestionDismissed] = useState(false)
+  const now = useCurrentTime()
 
   const suggestions = useMemo(() => findRelevantArticles(articles, ticketDraft.judul, ticketDraft.deskripsi), [articles, ticketDraft])
   const updateDraft = (field) => (event) => {
@@ -636,6 +645,7 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
                       {t.status}
                     </span>
                   </div>
+                  <SlaBadge ticket={t} now={now} />
                   <div style={{ fontSize: '15px', fontWeight: '700', marginBottom: '14px', color: '#ffffff', lineHeight: '1.4' }}>
                     {t.judul}
                   </div>
@@ -821,4 +831,44 @@ function SmartKnowledgeSuggestion({ articles, onResolved, onContinue, onOpenArti
       <button type="button" onClick={onContinue} style={{ background: '#fff', color: '#1d4ed8', border: '1px solid #93c5fd', borderRadius: '6px', padding: '7px 9px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>Lanjutkan Buat Tiket</button>
     </div>
   </aside>
+}
+
+const CANNED_RESPONSES = [
+  { label: 'Restart & uji ulang', tindakan: 'Melakukan restart perangkat/aplikasi dan pengujian ulang.', hasil: 'Layanan kembali normal setelah perangkat/aplikasi direstart.' },
+  { label: 'Cek koneksi jaringan', tindakan: 'Memeriksa kabel, koneksi jaringan, dan konfigurasi akses.', hasil: 'Koneksi jaringan kembali tersedia dan telah diuji.' },
+  { label: 'Update aplikasi', tindakan: 'Memperbarui aplikasi/driver ke versi yang direkomendasikan.', hasil: 'Aplikasi berjalan normal setelah pembaruan.' },
+  { label: 'Bersihkan antrian printer', tindakan: 'Membersihkan antrian cetak dan melakukan restart layanan printer.', hasil: 'Printer dapat mencetak kembali dengan normal.' },
+]
+
+function useCurrentTime() {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60_000)
+    return () => clearInterval(timer)
+  }, [])
+  return now
+}
+
+function slaConfiguration(priority) {
+  const value = String(priority || '').toLowerCase()
+  if (value === 'level_1' || value === 'high' || value === 'critical') return { hours: value === 'critical' ? 2 : 4, label: value === 'critical' ? 'Critical' : 'High' }
+  if (value === 'level_2' || value === 'medium') return { hours: 12, label: 'Medium' }
+  return { hours: 24, label: 'Low' }
+}
+
+function SlaBadge({ ticket, now }) {
+  if (!ticket?.created_at) return null
+  if (['RESOLVED', 'CLOSED'].includes(ticket.status)) return <span style={{ display: 'inline-block', marginTop: '7px', color: '#a7f3d0', fontSize: '10px', fontWeight: 800 }}>✓ SLA selesai</span>
+  const sla = slaConfiguration(ticket.prioritas)
+  const remaining = new Date(ticket.created_at).getTime() + sla.hours * 3_600_000 - now
+  const overdue = remaining <= 0
+  const minutes = Math.floor(Math.abs(remaining) / 60_000)
+  const hour = Math.floor(minutes / 60)
+  const minute = minutes % 60
+  const warning = !overdue && remaining <= sla.hours * 3_600_000 * 0.25
+  const background = overdue ? '#fee2e2' : warning ? '#fef3c7' : '#dcfce7'
+  const color = overdue ? '#b91c1c' : warning ? '#b45309' : '#166534'
+  return <span title={`Target SLA ${sla.label}: ${sla.hours} jam sejak tiket dibuat`} style={{ display: 'inline-block', marginTop: '7px', background, color, borderRadius: '999px', padding: '4px 7px', fontSize: '10px', fontWeight: 800 }}>
+    {overdue ? `SLA lewat ${hour}j ${minute}m` : `SLA ${hour}j ${minute}m`}
+  </span>
 }

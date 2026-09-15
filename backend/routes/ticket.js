@@ -530,6 +530,20 @@ router.post("/", verifyToken, async (req, res) => {
       roomId = roomRes.rows[0].id;
     }
 
+    // Choose the technician with the smallest active-ticket workload. Ties use
+    // the lowest ID so assignment stays deterministic.
+    const technicianResult = await db.query(`
+      SELECT l.id, l."Nama" AS nama, COUNT(t.id) AS active_ticket_count
+      FROM login l
+      LEFT JOIN tiket t ON t.teknisi = l.id
+        AND t.status NOT IN ('RESOLVED', 'CLOSED')
+      WHERE l.role = 'teknisi'
+      GROUP BY l.id, l."Nama"
+      ORDER BY COUNT(t.id) ASC, l.id ASC
+      LIMIT 1
+    `);
+    const assignedTechnician = technicianResult.rows[0] || null;
+
     const { rows } = await db.query(
       `INSERT INTO tiket
         (
@@ -539,9 +553,11 @@ router.post("/", verifyToken, async (req, res) => {
           prioritas,
           deskripsi,
           akun,
+          teknisi,
+          status,
           created_at
         )
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::public.tiket_status_enum, NOW())
        RETURNING
         id,
         judul,
@@ -550,6 +566,7 @@ router.post("/", verifyToken, async (req, res) => {
         prioritas,
         deskripsi,
         akun,
+        teknisi,
         status,
         created_at,
         resolved_at,
@@ -561,21 +578,32 @@ router.post("/", verifyToken, async (req, res) => {
         ticketPriority,
         deskripsi.trim(),
         req.user.id,
+        assignedTechnician?.id || null,
+        assignedTechnician ? 'ASSIGNED' : 'NEW',
       ]
     );
 
     try {
-      const notifMsg = `Tiket baru: ${rows[0].judul}`;
+      const notifMsg = assignedTechnician
+        ? `Tiket baru HD-${rows[0].id} otomatis ditugaskan kepada Anda: ${rows[0].judul}`
+        : `Tiket baru: ${rows[0].judul}`;
       await db.query(
         `INSERT INTO notifications (user_id, tiket_id, message)
-         SELECT id, $1, $2 FROM login WHERE role IN ('admin','teknisi')`,
-        [rows[0].id, notifMsg]
+         SELECT id, $1, $2 FROM login WHERE role = 'admin' OR id = $3`,
+        [rows[0].id, notifMsg, assignedTechnician?.id || -1]
       );
     } catch (notifErr) {
       console.error('Failed to insert notifications:', notifErr.message);
     }
 
-    await logAudit(db, req, { action: 'CREATE_TICKET', detail: `Membuat tiket HD-${rows[0].id}: ${rows[0].judul}`, entityType: 'ticket', entityId: rows[0].id });
+    await logAudit(db, req, { action: 'CREATE_TICKET', detail: `Membuat tiket HD-${rows[0].id}: ${rows[0].judul}`, entityType: 'ticket', entityId: rows[0].id, metadata: { auto_assigned_to: assignedTechnician?.id || null } });
+    if (assignedTechnician) {
+      await db.query(
+        `INSERT INTO audit_log (actor_id, actor_name, action, detail, entity_type, entity_id, metadata)
+         VALUES (NULL, 'Sistem', 'AUTO_ASSIGN_TICKET', $1, 'ticket', $2, $3::jsonb)`,
+        [`Menugaskan tiket HD-${rows[0].id} kepada ${assignedTechnician.nama} karena memiliki beban tiket aktif paling sedikit`, String(rows[0].id), JSON.stringify({ technician_id: assignedTechnician.id, active_ticket_count: Number(assignedTechnician.active_ticket_count) })]
+      );
+    }
 
     res.status(201).json({
       message: "Tiket berhasil dibuat",
