@@ -388,7 +388,16 @@ function App() {
 
             {/* Bento Box 3: Knowledge Base & Troubleshooting */}
             <div id="sec-knowledge" className="bento-box" style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-              <h3 style={{ margin: '0 0 12px 0', fontSize: '1.2rem' }}>Knowledge Base & Solusi Mandiri</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Knowledge Base & Solusi Mandiri</h3>
+                <button
+                  type="button"
+                  onClick={() => { setSelectedArticle(null); setPage('knowledge') }}
+                  style={{ background: '#047857', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}
+                >
+                  Buka Knowledge Base →
+                </button>
+              </div>
               <Troubleshooting 
                 articles={articles} 
                 onOpenArticle={(article) => { setSelectedArticle(article); setPage('knowledge') }} 
@@ -403,8 +412,10 @@ function App() {
         <Tickets 
           token={session?.token} 
           user={session?.user} 
+          articles={articles}
           onError={setNotice} 
           onRequireLogin={() => setShowLoginModal(true)}
+          onOpenArticle={(article) => { setSelectedArticle(article); setPage('knowledge') }}
         />
       )}
 
@@ -412,9 +423,11 @@ function App() {
         <Tickets
           token={session.token}
           user={session.user}
+          articles={articles}
           createOnly
           onCloseCreate={() => setShowCreateTicketModal(false)}
           onError={setNotice}
+          onOpenArticle={(article) => { setSelectedArticle(article); setPage('knowledge') }}
           onRequireLogin={() => {
             setShowCreateTicketModal(false)
             setShowLoginModal(true)

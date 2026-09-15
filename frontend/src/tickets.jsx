@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { api } from './api.js'
 import { confirmAction } from './confirm.js'
 
@@ -392,12 +392,26 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   )
 }
 
-export default function Tickets({ token, user, onError, onRequireLogin, createOnly = false, onCloseCreate, initialOpenCreate = false }) {
+export default function Tickets({ token, user, articles = [], onError, onRequireLogin, onOpenArticle, createOnly = false, onCloseCreate, initialOpenCreate = false }) {
   const [tickets, setTickets] = useState([])
   const [selectedTicketId, setSelectedTicketId] = useState(null)
   const [showCreateForm, setShowCreateForm] = useState(initialOpenCreate || createOnly)
   const [priorityFilter, setPriorityFilter] = useState('ALL')
   const [rooms, setRooms] = useState([])
+  const [ticketDraft, setTicketDraft] = useState({ judul: '', deskripsi: '' })
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false)
+
+  const suggestions = useMemo(() => findRelevantArticles(articles, ticketDraft.judul, ticketDraft.deskripsi), [articles, ticketDraft])
+  const updateDraft = (field) => (event) => {
+    setTicketDraft((current) => ({ ...current, [field]: event.target.value }))
+    setSuggestionDismissed(false)
+  }
+  const closeCreateForm = () => {
+    setShowCreateForm(false)
+    setTicketDraft({ judul: '', deskripsi: '' })
+    setSuggestionDismissed(false)
+    onCloseCreate?.()
+  }
 
   const loadTickets = async () => {
     if (!token) return
@@ -448,6 +462,8 @@ export default function Tickets({ token, user, onError, onRequireLogin, createOn
         }
       })
       setShowCreateForm(false)
+      setTicketDraft({ judul: '', deskripsi: '' })
+      setSuggestionDismissed(false)
       onCloseCreate?.()
       loadTickets()
     } catch (err) {
@@ -498,7 +514,7 @@ export default function Tickets({ token, user, onError, onRequireLogin, createOn
     return showCreateForm ? (
       <div
         className="modal-backdrop"
-        onClick={() => { setShowCreateForm(false); onCloseCreate?.() }}
+        onClick={closeCreateForm}
         style={{ zIndex: 1100 }}
       >
         <form
@@ -509,14 +525,15 @@ export default function Tickets({ token, user, onError, onRequireLogin, createOn
           <button
             type="button"
             className="close-ticket-form"
-            onClick={() => { setShowCreateForm(false); onCloseCreate?.() }}
+            onClick={closeCreateForm}
             aria-label="Tutup form tiket"
           >×</button>
           <h2>Buat Tiket Baru</h2>
-          <label>Judul Kendala<input name="judul" required placeholder="Contoh: Printer Rusak" /></label>
+          <label>Judul Kendala<input name="judul" required value={ticketDraft.judul} onChange={updateDraft('judul')} placeholder="Contoh: Printer Rusak" /></label>
           <label>Kategori<select name="kategori"><option value="Hardware">Hardware</option><option value="Software">Software</option><option value="Jaringan">Jaringan</option><option value="Lainnya">Lainnya</option></select></label>
           <label>Lokasi / Ruangan<select name="ruangan" required defaultValue=""><option value="" disabled>-- Pilih Ruangan --</option>{rooms.map((room) => <option key={room.id} value={room.id}>{room.ruangan}</option>)}</select></label>
-          <label>Deskripsi Masalah<textarea name="deskripsi" required placeholder="Jelaskan kendala secara rinci..." rows="3" /></label>
+          <label>Deskripsi Masalah<textarea name="deskripsi" required value={ticketDraft.deskripsi} onChange={updateDraft('deskripsi')} placeholder="Jelaskan kendala secara rinci..." rows="3" /></label>
+          {!suggestionDismissed && <SmartKnowledgeSuggestion articles={suggestions} onResolved={closeCreateForm} onContinue={() => setSuggestionDismissed(true)} onOpenArticle={(article) => { closeCreateForm(); onOpenArticle?.(article) }} />}
           <button type="submit">Kirim Laporan Tiket</button>
         </form>
       </div>
@@ -543,7 +560,7 @@ export default function Tickets({ token, user, onError, onRequireLogin, createOn
         
         <button 
           className="create-ticket" 
-          onClick={() => setShowCreateForm(true)}
+          onClick={() => { setTicketDraft({ judul: '', deskripsi: '' }); setSuggestionDismissed(false); setShowCreateForm(true) }}
           style={{
             background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
             color: '#ffffff',
@@ -663,7 +680,7 @@ export default function Tickets({ token, user, onError, onRequireLogin, createOn
       {showCreateForm && (
         <div 
           className="modal-backdrop" 
-          onClick={() => setShowCreateForm(false)}
+          onClick={closeCreateForm}
           style={{
             position: 'fixed',
             top: 0,
@@ -700,7 +717,7 @@ export default function Tickets({ token, user, onError, onRequireLogin, createOn
             <button 
               type="button" 
               className="close-ticket-form" 
-              onClick={() => setShowCreateForm(false)}
+              onClick={closeCreateForm}
               style={{
                 position: 'absolute',
                 top: '16px',
@@ -719,7 +736,7 @@ export default function Tickets({ token, user, onError, onRequireLogin, createOn
             
             <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', fontWeight: '600', color: '#374151' }}>
               Judul Kendala
-              <input name="judul" required placeholder="Contoh: Printer Rusak" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '12px', outline: 'none' }} />
+              <input name="judul" required value={ticketDraft.judul} onChange={updateDraft('judul')} placeholder="Contoh: Printer Rusak" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '12px', outline: 'none' }} />
             </label>
 
             <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', fontWeight: '600', color: '#374151' }}>
@@ -744,8 +761,10 @@ export default function Tickets({ token, user, onError, onRequireLogin, createOn
 
             <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', fontWeight: '600', color: '#374151' }}>
               Deskripsi Masalah
-              <textarea name="deskripsi" required placeholder="Jelaskan kendala secara rinci..." rows="3" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '12px', resize: 'vertical', outline: 'none' }}></textarea>
+              <textarea name="deskripsi" required value={ticketDraft.deskripsi} onChange={updateDraft('deskripsi')} placeholder="Jelaskan kendala secara rinci..." rows="3" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '12px', resize: 'vertical', outline: 'none' }}></textarea>
             </label>
+
+            {!suggestionDismissed && <SmartKnowledgeSuggestion articles={suggestions} onResolved={closeCreateForm} onContinue={() => setSuggestionDismissed(true)} onOpenArticle={(article) => { closeCreateForm(); onOpenArticle?.(article) }} />}
 
             <button 
               type="submit"
@@ -772,4 +791,34 @@ export default function Tickets({ token, user, onError, onRequireLogin, createOn
       )}
     </div>
   )
+}
+
+function findRelevantArticles(articles, title, description) {
+  const stopWords = new Set(['yang', 'dan', 'atau', 'dari', 'untuk', 'dengan', 'pada', 'tidak', 'bisa', 'saya', 'ada', 'saat', 'ketika', 'sudah', 'belum', 'agar', 'ini', 'itu'])
+  const terms = `${title} ${description}`.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu)?.filter((word) => !stopWords.has(word)) || []
+  if (!terms.length) return []
+  return articles.map((article) => {
+    const heading = String(article.judul || article.title || '').toLowerCase()
+    const body = String(article.content || article.isi || '').toLowerCase()
+    const score = terms.reduce((total, term) => total + (heading.includes(term) ? 3 : 0) + (body.includes(term) ? 1 : 0), 0)
+    return { ...article, score }
+  }).filter((article) => article.score > 0).sort((a, b) => b.score - a.score).slice(0, 3)
+}
+
+function SmartKnowledgeSuggestion({ articles, onResolved, onContinue, onOpenArticle }) {
+  if (!articles.length) return null
+  return <aside style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '10px', padding: '12px', color: '#1e3a8a' }} aria-live="polite">
+    <strong style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>💡 Rekomendasi solusi dari Knowledge Base</strong>
+    <p style={{ fontSize: '11px', color: '#475569', margin: '0 0 8px' }}>Kami menemukan artikel yang mungkin membantu sebelum tiket dibuat.</p>
+    <div style={{ display: 'grid', gap: '6px', marginBottom: '10px' }}>
+      {articles.map((article) => <button key={article.id} type="button" onClick={() => onOpenArticle?.(article)} style={{ background: '#fff', border: '1px solid #dbeafe', borderRadius: '7px', padding: '8px 9px', fontSize: '11px', textAlign: 'left', cursor: 'pointer', color: '#1d4ed8' }}>
+        <span style={{ display: 'block', fontWeight: 700 }}>{article.judul || article.title} <span aria-hidden="true">→</span></span>
+        <span style={{ display: 'block', marginTop: '4px', color: '#475569', lineHeight: 1.45, whiteSpace: 'pre-wrap' }}>{String(article.content || article.isi || '').slice(0, 180)}{String(article.content || article.isi || '').length > 180 ? '…' : ''}</span>
+      </button>)}
+    </div>
+    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+      <button type="button" onClick={onResolved} style={{ background: '#047857', color: '#fff', border: 'none', borderRadius: '6px', padding: '7px 9px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>Masalah Teratasi</button>
+      <button type="button" onClick={onContinue} style={{ background: '#fff', color: '#1d4ed8', border: '1px solid #93c5fd', borderRadius: '6px', padding: '7px 9px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>Lanjutkan Buat Tiket</button>
+    </div>
+  </aside>
 }
