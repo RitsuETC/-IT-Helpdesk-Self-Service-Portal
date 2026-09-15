@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api } from './api.js'
+import TicketCharts from './chart.jsx'
 
-export default function Report({ token, user, onBack }) {
+export default function Report({ token, user, onBack, onError }) {
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -219,6 +220,8 @@ export default function Report({ token, user, onBack }) {
           <strong style={{ display: 'block', fontSize: '1.6rem', color: '#ffffff', marginTop: '2px' }}>{tickets.length}</strong>
         </div>
       </div>
+
+      <TicketCharts token={token} onError={onError} />
 
       {/* Tabel Utama */}
       {loading ? (
