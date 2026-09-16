@@ -474,29 +474,72 @@ function App() {
         <AuditLog token={session.token} onBack={() => setPage('landing')} onError={setNotice} />
       )}
 
-      {/* Popup Login Modal */}
+      {/* Popup Login Modal dengan Penyesuaian Gradasi Hijau Tua */}
       {showLoginModal && (
-        <div className="modal-backdrop" onClick={() => setShowLoginModal(false)}>
-          <section className="login-card" aria-label="Login" onClick={(e) => e.stopPropagation()}>
-            <button className="close-ticket-form" onClick={() => setShowLoginModal(false)} aria-label="Tutup modal">×</button>
-            <div className="login-brand">
-              <img src={ummuhaniLogo} alt="Ummuhani" />
-              <h2>IT Helpdesk</h2>
-              <p>Self-Service Portal</p>
+        <div className="modal-backdrop" onClick={() => setShowLoginModal(false)} style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9997
+        }}>
+          <section className="login-card" aria-label="Login" onClick={(e) => e.stopPropagation()} style={{
+            background: '#ffffff',
+            padding: '32px',
+            borderRadius: '20px',
+            width: '100%',
+            maxWidth: '400px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+            position: 'relative',
+            border: '1px solid #e2e8f0',
+            overflow: 'hidden'
+          }}>
+            {/* Aksen Garis Gradasi Hijau Tua */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '6px', background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)' }} />
+
+            <button className="close-ticket-form" onClick={() => setShowLoginModal(false)} aria-label="Tutup modal" style={{
+              position: 'absolute',
+              top: '16px',
+              right: '16px',
+              background: '#f1f5f9',
+              border: 'none',
+              borderRadius: '50%',
+              width: '32px',
+              height: '32px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              color: '#64748b',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>×</button>
+
+            <div className="login-brand" style={{ textAlign: 'center', marginBottom: '24px', marginTop: '8px' }}>
+              <img src={ummuhaniLogo} alt="Ummuhani" style={{ width: '48px', height: 'auto', marginBottom: '12px' }} />
+              <h2 style={{ fontSize: '1.4rem', color: '#064e3b', margin: '0 0 4px 0', fontWeight: '800' }}>IT Helpdesk</h2>
+              <p style={{ fontSize: '0.9rem', color: '#64748b', margin: 0 }}>Self-Service Portal</p>
             </div>
 
-            <form onSubmit={handleLogin}>
-              <label>
+            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>
                 Username
                 <input
                   name="username"
                   autoComplete="username"
                   placeholder="Masukkan username"
                   required
+                  style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none' }}
                 />
               </label>
 
-              <label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>
                 Password
                 <input
                   name="password"
@@ -504,10 +547,22 @@ function App() {
                   autoComplete="current-password"
                   placeholder="Masukkan password"
                   required
+                  style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none' }}
                 />
               </label>
 
-              <button className="login" type="submit">
+              <button className="login" type="submit" style={{
+                marginTop: '8px',
+                backgroundColor: '#047857',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '10px',
+                padding: '12px',
+                fontWeight: 'bold',
+                fontSize: '1rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(4, 120, 87, 0.3)'
+              }}>
                 Login
               </button>
             </form>
