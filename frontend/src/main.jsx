@@ -326,25 +326,25 @@ function App() {
                 style={{
                   width: '100%',
                   padding: '14px',
-                  backgroundColor: '#059669',
+                  backgroundColor: '#047857',
                   color: '#ffffff',
                   border: 'none',
                   borderRadius: '10px',
                   fontWeight: 'bold',
                   cursor: 'pointer',
                   fontSize: '1rem',
-                  boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
+                  boxShadow: '0 4px 12px rgba(4, 120, 87, 0.3)',
                   transition: 'all 0.15s ease'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#047857';
+                  e.currentTarget.style.backgroundColor = '#065f46';
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(5, 150, 105, 0.4)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(4, 120, 87, 0.4)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#059669';
+                  e.currentTarget.style.backgroundColor = '#047857';
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(5, 150, 105, 0.3)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(4, 120, 87, 0.3)';
                 }}
                 onClick={() => {
                   if (!session) {
@@ -474,7 +474,7 @@ function App() {
         <AuditLog token={session.token} onBack={() => setPage('landing')} onError={setNotice} />
       )}
 
-      {/* Popup Login Modal dengan Penyesuaian Gradasi Hijau Tua */}
+      {/* Popup Login Modal dengan Tombol Login yang Disamakan Persis Tombol Buat Tiket */}
       {showLoginModal && (
         <div className="modal-backdrop" onClick={() => setShowLoginModal(false)} style={{
           position: 'fixed',
@@ -551,18 +551,34 @@ function App() {
                 />
               </label>
 
-              <button className="login" type="submit" style={{
-                marginTop: '8px',
-                backgroundColor: '#047857',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '10px',
-                padding: '12px',
-                fontWeight: 'bold',
-                fontSize: '1rem',
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(4, 120, 87, 0.3)'
-              }}>
+              <button 
+                className="login" 
+                type="submit" 
+                style={{
+                  marginTop: '8px',
+                  width: '100%',
+                  padding: '14px',
+                  backgroundColor: '#047857',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: 'bold',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(4, 120, 87, 0.3)',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#065f46';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(4, 120, 87, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#047857';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(4, 120, 87, 0.3)';
+                }}
+              >
                 Login
               </button>
             </form>

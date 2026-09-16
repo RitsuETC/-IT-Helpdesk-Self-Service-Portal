@@ -268,23 +268,22 @@ button.account:hover {
 
 .login {
   width: 100%;
-  height: 43px;
-  margin-top: 3px;
-  border: 0;
-  border-radius: 9px;
-  background: linear-gradient(135deg, #168e08, #22a714);
-  color: #fff;
-  font-size: 12px;
+  padding: 14px;
+  background-color: #047857;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
   font-weight: bold;
-  letter-spacing: .4px;
-  box-shadow: 0 7px 16px rgb(22 142 8 / .18);
-  transition: .2s ease;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(4, 120, 87, 0.3);
+  transition: all 0.15s ease;
 }
 
 .login:hover {
-  background: linear-gradient(135deg, #107504, #168e08);
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgb(22 142 8 / .22);
+  background-color: #065f46;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(4, 120, 87, 0.4);
 }
 
 .login:active {
