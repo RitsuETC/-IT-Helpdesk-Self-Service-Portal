@@ -6,6 +6,64 @@ const { logAudit } = require('../utils/audit');
 
 const router = express.Router();
 
+async function canAccessTicket(ticketId, user) {
+  const result = await db.query('SELECT id, akun FROM tiket WHERE id = $1', [ticketId]);
+  if (!result.rowCount) return null;
+  if (user.role === 'user' && Number(result.rows[0].akun) !== Number(user.id)) return false;
+  return result.rows[0];
+}
+
+router.get('/:id/comments', verifyToken, async (req, res) => {
+  try {
+    const access = await canAccessTicket(req.params.id, req.user);
+    if (access === false) return res.status(403).json({ message: 'Anda tidak memiliki akses ke tiket ini' });
+    if (!access) return res.status(404).json({ message: 'Tiket tidak ditemukan' });
+    const { rows } = await db.query(`SELECT c.id, c.message, c.created_at, l."Nama" AS author_name, l.role AS author_role FROM ticket_comments c LEFT JOIN login l ON l.id = c.user_id WHERE c.ticket_id = $1 ORDER BY c.created_at ASC`, [req.params.id]);
+    res.json({ data: rows });
+  } catch (error) { res.status(500).json({ message: 'Gagal mengambil komentar tiket', error: error.message }); }
+});
+
+router.post('/:id/comments', verifyToken, async (req, res) => {
+  try {
+    const access = await canAccessTicket(req.params.id, req.user);
+    if (access === false) return res.status(403).json({ message: 'Anda tidak memiliki akses ke tiket ini' });
+    if (!access) return res.status(404).json({ message: 'Tiket tidak ditemukan' });
+    const message = String(req.body?.message || '').trim();
+    if (!message) return res.status(400).json({ message: 'Komentar wajib diisi' });
+    const { rows } = await db.query('INSERT INTO ticket_comments (ticket_id, user_id, message) VALUES ($1, $2, $3) RETURNING id, message, created_at', [req.params.id, req.user.id, message]);
+    await logAudit(db, req, { action: 'CREATE_TICKET_COMMENT', detail: `Menambahkan komentar pada tiket HD-${req.params.id}`, entityType: 'ticket', entityId: req.params.id });
+    res.status(201).json({ data: rows[0] });
+  } catch (error) { res.status(500).json({ message: 'Gagal menambahkan komentar', error: error.message }); }
+});
+
+router.get('/:id/timeline', verifyToken, async (req, res) => {
+  try {
+    const access = await canAccessTicket(req.params.id, req.user);
+    if (access === false) return res.status(403).json({ message: 'Anda tidak memiliki akses ke tiket ini' });
+    if (!access) return res.status(404).json({ message: 'Tiket tidak ditemukan' });
+    const { rows } = await db.query(`SELECT actor_name, action, detail, created_at FROM audit_log WHERE entity_type = 'ticket' AND entity_id = $1 ORDER BY created_at ASC`, [String(req.params.id)]);
+    res.json({ data: rows });
+  } catch (error) { res.status(500).json({ message: 'Gagal mengambil timeline tiket', error: error.message }); }
+});
+
+router.get('/:id/rating', verifyToken, async (req, res) => {
+  try { const access = await canAccessTicket(req.params.id, req.user); if (access === false) return res.status(403).json({ message: 'Anda tidak memiliki akses ke tiket ini' }); if (!access) return res.status(404).json({ message: 'Tiket tidak ditemukan' }); const { rows } = await db.query('SELECT rating, comment, created_at FROM ticket_ratings WHERE ticket_id = $1', [req.params.id]); res.json({ data: rows[0] || null }); } catch (error) { res.status(500).json({ message: 'Gagal mengambil rating', error: error.message }); }
+});
+
+router.post('/:id/rating', verifyToken, async (req, res) => {
+  try {
+    const ticket = await db.query('SELECT akun, status FROM tiket WHERE id = $1', [req.params.id]);
+    if (!ticket.rowCount) return res.status(404).json({ message: 'Tiket tidak ditemukan' });
+    if (Number(ticket.rows[0].akun) !== Number(req.user.id)) return res.status(403).json({ message: 'Hanya pelapor yang dapat memberi rating' });
+    if (!['RESOLVED', 'CLOSED'].includes(ticket.rows[0].status)) return res.status(400).json({ message: 'Rating tersedia setelah tiket selesai' });
+    const rating = Number(req.body?.rating); const comment = String(req.body?.comment || '').trim() || null;
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) return res.status(400).json({ message: 'Rating harus antara 1 sampai 5' });
+    const { rows } = await db.query(`INSERT INTO ticket_ratings (ticket_id, user_id, rating, comment) VALUES ($1,$2,$3,$4) ON CONFLICT (ticket_id) DO UPDATE SET rating = EXCLUDED.rating, comment = EXCLUDED.comment, updated_at = NOW() RETURNING rating, comment, updated_at`, [req.params.id, req.user.id, rating, comment]);
+    await logAudit(db, req, { action: 'RATE_TICKET_SERVICE', detail: `Memberikan rating ${rating}/5 untuk tiket HD-${req.params.id}`, entityType: 'ticket', entityId: req.params.id });
+    res.json({ data: rows[0] });
+  } catch (error) { res.status(500).json({ message: 'Gagal menyimpan rating', error: error.message }); }
+});
+
 // GET tiket berdasarkan role
 router.get("/", verifyToken, async (req, res) => {
   try {
