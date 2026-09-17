@@ -15,15 +15,30 @@ const dateValue = (value) => value || null;
 
 router.get('/setup', async (_req, res) => {
   try {
-    const [categories, sparepartCategories, rooms, users, tickets] = await Promise.all([
+    // TAMBAHKAN masterProducts ke dalam array destructuring dan Promise.all
+    const [categories, sparepartCategories, rooms, users, tickets, masterProducts] = await Promise.all([
       db.query('SELECT id, name FROM asset_category ORDER BY name'),
       db.query('SELECT id, name FROM sparepart_category ORDER BY name'),
       db.query('SELECT id, ruangan FROM unit ORDER BY ruangan'),
       db.query('SELECT id, "Nama" AS name, email, role FROM login ORDER BY "Nama"'),
-      db.query('SELECT id, judul FROM tiket ORDER BY id DESC LIMIT 100')
+      db.query('SELECT id, judul FROM tiket ORDER BY id DESC LIMIT 100'),
+      db.query('SELECT * FROM master_product ORDER BY product_name') // <--- QUERY BARU
     ]);
-    res.json({ data: { categories: categories.rows, sparepartCategories: sparepartCategories.rows, rooms: rooms.rows, users: users.rows, tickets: tickets.rows } });
-  } catch (error) { res.status(500).json({ message: 'Gagal mengambil data referensi inventaris', error: error.message }); }
+    
+    // Jangan lupa masukkan masterProducts.rows ke dalam JSON response
+    res.json({ 
+      data: { 
+        categories: categories.rows, 
+        sparepartCategories: sparepartCategories.rows, 
+        rooms: rooms.rows, 
+        users: users.rows, 
+        tickets: tickets.rows,
+        masterProducts: masterProducts.rows // <--- RESPON BARU
+      } 
+    });
+  } catch (error) { 
+    res.status(500).json({ message: 'Gagal mengambil data referensi inventaris', error: error.message }); 
+  }
 });
 
 router.get('/dashboard', async (_req, res) => {
@@ -41,6 +56,38 @@ router.get('/dashboard', async (_req, res) => {
     `);
     res.json({ data: rows[0] });
   } catch (error) { res.status(500).json({ message: 'Gagal mengambil dashboard inventaris', error: error.message }); }
+});
+
+const masterProductFields = ['sku_code', 'product_name', 'id_category', 'default_price', 'specifications'];
+router.post('/master-products', adminOnly, async (req, res) => {
+  try {
+    const { sku_code, product_name, id_category, default_price, specifications } = req.body;
+    if (!sku_code?.trim() || !product_name?.trim()) {
+      return res.status(400).json({ message: 'SKU dan nama produk wajib diisi' });
+    }
+    const values = [
+      sku_code.trim(), product_name.trim(), id_category || null, default_price || null,
+      specifications && typeof specifications === 'object' ? specifications : {}
+    ];
+    const { rows } = await db.query(
+      `INSERT INTO master_product (${masterProductFields.join(', ')})
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      values
+    );
+    await logAudit(db, req, { action: 'CREATE_MASTER_PRODUCT', detail: `Menambahkan master produk ${rows[0].sku_code}`, entityType: 'master_product', entityId: rows[0].id });
+    res.status(201).json({ data: rows[0] });
+  } catch (error) {
+    res.status(error.code === '23505' ? 409 : 500).json({ message: error.code === '23505' ? 'SKU sudah digunakan' : 'Gagal menambah master produk', error: error.message });
+  }
+});
+
+router.delete('/master-products/:id', adminOnly, async (req, res) => {
+  try {
+    const result = await db.query('DELETE FROM master_product WHERE id = $1 RETURNING id, sku_code', [req.params.id]);
+    if (!result.rowCount) return res.status(404).json({ message: 'Master produk tidak ditemukan' });
+    await logAudit(db, req, { action: 'DELETE_MASTER_PRODUCT', detail: `Menghapus master produk ${result.rows[0].sku_code}`, entityType: 'master_product', entityId: result.rows[0].id });
+    res.json({ message: 'Master produk berhasil dihapus' });
+  } catch (error) { res.status(500).json({ message: 'Gagal menghapus master produk', error: error.message }); }
 });
 
 router.get('/assets', async (req, res) => {
@@ -64,7 +111,13 @@ router.post('/assets', adminOnly, async (req, res) => {
   try {
     const { asset_code, id_ruangan } = req.body;
     if (!asset_code?.trim() || !positiveInt(id_ruangan)) return res.status(400).json({ message: 'Kode aset dan lokasi wajib diisi' });
-    const values = assetFields.map((field) => req.body[field] ?? (field === 'status' ? 'available' : field === 'condition' ? 'good' : null));
+    const values = assetFields.map((field) => {
+      const value = req.body[field];
+      if (field === 'status') return value || 'available';
+      if (field === 'condition') return value || 'good';
+      if (['id_category', 'id_user', 'serial_number', 'purchase_year', 'price', 'brand_model', 'notes'].includes(field)) return value || null;
+      return value ?? null;
+    });
     const { rows } = await db.query(`INSERT INTO asset (${assetFields.join(', ')}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`, values);
     await logAudit(db, req, { action: 'CREATE_ASSET', detail: `Menambahkan aset ${rows[0].asset_code}`, entityType: 'asset', entityId: rows[0].id_asset });
     res.status(201).json({ data: rows[0] });

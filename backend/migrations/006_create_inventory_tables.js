@@ -23,7 +23,7 @@ async function migrate() {
       ADD COLUMN IF NOT EXISTS id_user INTEGER REFERENCES login(id),
       ADD COLUMN IF NOT EXISTS brand_model VARCHAR(255),
       ADD COLUMN IF NOT EXISTS serial_number VARCHAR(255) UNIQUE,
-      ADD COLUMN IF NOT EXISTS purchase_year INTEGER,
+      ADD COLUMN IF NOT EXISTS purchase_year DATE,
       ADD COLUMN IF NOT EXISTS price NUMERIC(15,2),
       ADD COLUMN IF NOT EXISTS condition VARCHAR(50) DEFAULT 'good',
       ADD COLUMN IF NOT EXISTS notes TEXT,
@@ -152,6 +152,20 @@ async function migrate() {
       ALTER TABLE procurement ADD COLUMN IF NOT EXISTS supplier VARCHAR(255);
     `);
 
+    // 10. Reusable product/SKU definitions for quickly registering assets.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS master_product (
+        id SERIAL PRIMARY KEY,
+        sku_code VARCHAR(100) NOT NULL UNIQUE,
+        product_name VARCHAR(255) NOT NULL,
+        id_category INTEGER REFERENCES asset_category(id) ON DELETE SET NULL,
+        default_price NUMERIC(15,2),
+        specifications JSONB DEFAULT '{}'::jsonb,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+    `);
+
     // Create indexes for performance
     await client.query(`CREATE INDEX IF NOT EXISTS idx_asset_category ON asset(id_category);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_asset_user ON asset(id_user);`);
@@ -166,6 +180,7 @@ async function migrate() {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_maintenance_asset ON maintenance(id_asset);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_maintenance_status ON maintenance(status);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_procurement_status ON procurement(status);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_master_product_category ON master_product(id_category);`);
 
     await client.query('COMMIT');
     console.log('Migration 006 applied: inventory tables created');
