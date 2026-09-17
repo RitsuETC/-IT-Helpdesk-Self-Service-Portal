@@ -10,9 +10,24 @@ function youtubeId(url) {
   return url?.match(/(?:youtu\.be\/|v=|embed\/)([^?&/]+)/)?.[1] || null
 }
 
+// Fungsi untuk memformat teks bernomor agar otomatis tersusun ke bawah secara rapi
+function formatNumberedSteps(text) {
+  if (!text) return null
+  // Jika teks sudah memiliki baris baru (\n), gunakan langsung
+  if (text.includes('\n')) {
+    return text.split('\n').map((line, idx) => <div key={idx}>{line}</div>)
+  }
+  // Jika teks digabung dalam satu baris (misal: "1. A 2. B 3. C"), pisahkan berdasarkan pola nomor (1., 2., dst)
+  const steps = text.split(/(?=\d+\.\s+)/).filter(Boolean)
+  if (steps.length > 1) {
+    return steps.map((step, idx) => <div key={idx} className="step-item">{step.trim()}</div>)
+  }
+  return text
+}
+
 function Knowledge({ articles = [], initialArticle }) {
   const [query, setQuery] = useState('')
-  const [selectedTags, setSelectedTags] = useState([]) // Diubah kembali menjadi array untuk multi-select
+  const [selectedTags, setSelectedTags] = useState([])
   const [selectedArticle, setSelectedArticle] = useState(null)
   
   useEffect(() => {
@@ -22,10 +37,8 @@ function Knowledge({ articles = [], initialArticle }) {
     else setSelectedArticle(null)
   }, [initialArticle, articles])
 
-  // Mengumpulkan seluruh tag unik dari semua artikel
   const tagsList = useMemo(() => {
     const allTagsSet = new Set()
-    
     articles.forEach((article) => {
       const rawTags = article.tags || article.nama_kategori || ''
       rawTags.split(',').forEach((t) => {
@@ -33,35 +46,28 @@ function Knowledge({ articles = [], initialArticle }) {
         if (trimmed) allTagsSet.add(trimmed)
       })
     })
-
     return Array.from(allTagsSet)
   }, [articles])
 
-  // Handler Toggle Tag (Multi-Select)
   const handleToggleTagFilter = (tag) => {
     if (tag === 'all') {
       setSelectedTags([])
       return
     }
-
     setSelectedTags((prev) => {
       if (prev.includes(tag)) {
-        // Jika sudah ada, hapus dari daftar pilihan
         return prev.filter((t) => t !== tag)
       } else {
-        // Jika belum ada, tambahkan ke daftar pilihan
         return [...prev, tag]
       }
     })
   }
 
-  // Filtering artikel: Harus mengandung SEMUA tag yang dipilih (Logika AND) DAN cocok dengan query teks
   const visibleArticles = useMemo(() => 
     articles.filter((article) => {
       const rawTags = article.tags || article.nama_kategori || ''
       const articleTags = rawTags.split(',').map((t) => t.trim().toLowerCase())
 
-      // Cek apakah artikel memiliki SELURUH tag yang dipilih di selectedTags
       const matchTags =
         selectedTags.length === 0 ||
         selectedTags.every((st) => articleTags.includes(st.toLowerCase()))
@@ -75,84 +81,45 @@ function Knowledge({ articles = [], initialArticle }) {
   )
 
   return (
-    <section className="knowledge-page" style={{ padding: '24px', maxWidth: '1000px', margin: '0 auto', color: '#1f2937' }}>
+    <section className="knowledge-page">
       
-      {/* Wrapper Judul Halaman */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-        <div style={{ 
-          background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', 
-          padding: '14px 32px', 
-          borderRadius: '12px', 
-          textAlign: 'center',
-          boxShadow: '0 8px 20px rgba(12, 74, 48, 0.25)',
-          border: '1px solid #064e3b',
-          display: 'inline-block'
-        }}>
-          <h2 className="knowledge-heading" style={{ fontSize: '22px', fontWeight: 'bold', color: '#ffffff', margin: 0 }}>
-            Knowledge Base & Solusi Mandiri
-          </h2>
-        </div>
+      {/* Header Halaman */}
+      <div className="knowledge-header-box">
+        <h2 className="knowledge-heading">Knowledge Base & Solusi Mandiri</h2>
+        <p className="knowledge-subheading">Temukan panduan, solusi cepat, dan video troubleshooting kendala IT Anda di sini.</p>
       </div>
       
       {/* Toolbar Pencarian & Filter Multi-Tag */}
-      <div className="knowledge-filter" style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px', background: '#ffffff', padding: '16px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)', border: '1px solid #e5e7eb' }}>
-        
-        {/* Input Teks Pencarian */}
-        <label style={{ display: 'flex', alignItems: 'center', background: '#f9fafb', border: '1px solid #d1d5db', borderRadius: '8px', padding: '0 12px', width: '100%', height: '40px', boxSizing: 'border-box' }}>
-          <img src={searchImage} alt="" style={{ width: '16px', height: '16px', marginRight: '8px', opacity: 0.6 }} />
+      <div className="knowledge-filter">
+        <div className="knowledge-search-wrapper">
+          <img src={searchImage} alt="Cari" />
           <input 
             value={query} 
             onChange={(event) => setQuery(event.target.value)} 
             aria-label="Cari artikel" 
-            placeholder="Cari masalah, keyword, atau panduan..."
-            style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '13px', color: '#1f2937' }}
+            placeholder="Cari kendala, keyword, atau solusi..."
           />
-        </label>
+        </div>
 
-        {/* Deretan Chips/Badges Filter Multi-Tag */}
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ fontSize: '12px', fontWeight: '700', color: '#6b7280', marginRight: '4px' }}>Filter Tag:</span>
+        <div className="knowledge-tags-container">
+          <span className="knowledge-tags-label">Filter Kategori:</span>
           
-          {/* Tombol 'Semua Tag' */}
           <button
+            type="button"
+            className={`knowledge-tag-btn ${selectedTags.length === 0 ? 'active' : ''}`}
             onClick={() => handleToggleTagFilter('all')}
-            style={{
-              padding: '5px 12px',
-              borderRadius: '20px',
-              border: '1px solid',
-              borderColor: selectedTags.length === 0 ? '#0c4a30' : '#d1d5db',
-              backgroundColor: selectedTags.length === 0 ? '#0c4a30' : '#ffffff',
-              color: selectedTags.length === 0 ? '#ffffff' : '#374151',
-              fontSize: '12px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: selectedTags.length === 0 ? '0 4px 10px rgba(12, 74, 48, 0.2)' : 'none'
-            }}
           >
-            Semua Tag
+            Semua Solusi
           </button>
 
-          {/* List Tag Interaktif */}
           {tagsList.map((tag) => {
             const isSelected = selectedTags.includes(tag)
             return (
               <button
                 key={tag}
+                type="button"
+                className={`knowledge-tag-btn ${isSelected ? 'active' : ''}`}
                 onClick={() => handleToggleTagFilter(tag)}
-                style={{
-                  padding: '5px 12px',
-                  borderRadius: '20px',
-                  border: '1px solid',
-                  borderColor: isSelected ? '#0c4a30' : '#d1d5db',
-                  backgroundColor: isSelected ? '#0c4a30' : '#ffffff',
-                  color: isSelected ? '#ffffff' : '#374151',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: isSelected ? '0 4px 10px rgba(12, 74, 48, 0.2)' : 'none'
-                }}
               >
                 {isSelected ? '✓ ' : ''}#{tag}
               </button>
@@ -162,144 +129,131 @@ function Knowledge({ articles = [], initialArticle }) {
       </div>
 
       {/* Grid Kartu Artikel */}
-      <div className="article-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+      <div className="article-grid">
         {visibleArticles.length === 0 ? (
-          <p style={{ color: '#6b7280', fontSize: '13px', gridColumn: '1 / -1', textAlign: 'center', padding: '30px' }}>
-            Tidak ada artikel yang memiliki kombinasi tag tersebut.
-          </p>
+          <div className="knowledge-empty-state">
+            <p>Tidak ada artikel panduan yang sesuai dengan pencarian atau filter Anda.</p>
+          </div>
         ) : (
           visibleArticles.map((article) => (
-            <button 
+            <div 
               className="knowledge-card" 
-              key={article.id} 
-              onClick={() => setSelectedArticle(article)}
-              style={{
-                background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)',
-                color: '#ffffff',
-                borderRadius: '12px',
-                padding: '18px',
-                textAlign: 'left',
-                border: '1px solid #064e3b',
-                cursor: 'pointer',
-                boxShadow: '0 8px 20px rgba(12, 74, 48, 0.25)',
-                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px'
-              }}
+              key={article.id}
             >
-              {/* Tampilan Seluruh Tag pada Kartu Artikel */}
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', width: '100%' }}>
-                {(article.tags || article.nama_kategori || 'Umum').split(',').map((t, idx) => {
-                  const trimmed = t.trim()
-                  if (!trimmed) return null
-                  return (
-                    <b key={idx} style={{ fontSize: '10px', color: '#e2f0ea', backgroundColor: 'rgba(255, 255, 255, 0.18)', padding: '2px 8px', borderRadius: '20px' }}>
-                      #{trimmed}
-                    </b>
-                  )
-                })}
+              <div className="knowledge-card-header">
+                <div className="knowledge-card-tags">
+                  {(article.tags || article.nama_kategori || 'Umum').split(',').map((t, idx) => {
+                    const trimmed = t.trim()
+                    if (!trimmed) return null
+                    return (
+                      <span key={idx} className="card-tag-badge">
+                        #{trimmed}
+                      </span>
+                    )
+                  })}
+                </div>
               </div>
 
-              <b style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff', lineHeight: '1.4' }}>{article.judul}</b>
-              <span style={{ fontSize: '12px', color: '#cbd5e1', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {article.content}
-              </span>
-            </button>
+              <div className="knowledge-card-body">
+                <h3 className="knowledge-card-title">{article.judul}</h3>
+                <div className="knowledge-card-snippet">
+                  {formatNumberedSteps(article.content)}
+                </div>
+              </div>
+
+              {/* Tombol Baca Solusi dihidupkan kembali sebagai interaksi pembuka modal */}
+              <div className="knowledge-card-footer">
+                <button 
+                  type="button" 
+                  className="read-more-btn"
+                  onClick={() => setSelectedArticle(article)}
+                >
+                  Baca Solusi &rarr;
+                </button>
+              </div>
+            </div>
           ))
         )}
       </div>
 
       {/* Modal Detail Artikel */}
       {selectedArticle && (
-        <div className="knowledge-modal-backdrop" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' }}>
-          <article className="knowledge-detail" style={{ backgroundColor: '#ffffff', color: '#1f2937', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '750px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 15px 35px rgba(0,0,0,0.2)', position: 'relative' }}>
+        <div className="knowledge-modal-backdrop">
+          <div className="knowledge-detail">
             <button 
               className="knowledge-close-btn" 
               onClick={() => setSelectedArticle(null)} 
               aria-label="Tutup"
-              style={{ position: 'absolute', top: '18px', right: '18px', background: '#f3f4f6', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', color: '#4b5563', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              type="button"
             >
               ✕
             </button>
 
-            {/* Badges Tag di Modal Detail */}
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
-              {(selectedArticle.tags || selectedArticle.nama_kategori || 'Umum').split(',').map((t, idx) => {
-                const trimmed = t.trim()
-                if (!trimmed) return null
-                return (
-                  <span key={idx} style={{ fontSize: '11px', fontWeight: '600', color: '#0c4a30', backgroundColor: '#e2f0ea', padding: '3px 10px', borderRadius: '20px' }}>
-                    #{trimmed}
-                  </span>
-                )
-              })}
-            </div>
-            
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-              <div style={{ 
-                background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', 
-                padding: '12px 24px', 
-                borderRadius: '10px', 
-                textAlign: 'center', 
-                boxShadow: '0 4px 12px rgba(12, 74, 48, 0.2)',
-                display: 'inline-block'
-              }}>
-                <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffffff', margin: 0 }}>
-                  {selectedArticle.judul}
-                </h2>
+            <div className="knowledge-detail-header">
+              <div className="knowledge-detail-tags">
+                {(selectedArticle.tags || selectedArticle.nama_kategori || 'Umum').split(',').map((t, idx) => {
+                  const trimmed = t.trim()
+                  if (!trimmed) return null
+                  return (
+                    <span key={idx} className="detail-tag-badge">
+                      #{trimmed}
+                    </span>
+                  )
+                })}
               </div>
+              <h2 className="knowledge-detail-title">{selectedArticle.judul}</h2>
             </div>
             
-            <div className="knowledge-detail-content" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'stretch' }}>
-              <div style={{ background: '#f5f8f6', border: '1px solid #dce5df', borderRadius: '10px', padding: '16px', height: '220px', overflowY: 'auto', boxSizing: 'border-box' }}>
-                <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.65', color: '#111827', fontWeight: '600', whiteSpace: 'pre-wrap', textAlign: 'left' }}>
-                  {selectedArticle.content}
-                </p>
+            <div className="knowledge-detail-content">
+              {/* Kotak Teks Langkah-langkah */}
+              <div className="knowledge-detail-text-box">
+                <h4 className="box-section-title">Langkah-Langkah Solusi</h4>
+                <div className="box-content-scroll">
+                  <div className="knowledge-detail-text">
+                    {formatNumberedSteps(selectedArticle.content)}
+                  </div>
+                </div>
               </div>
 
-              <div className="knowledge-media" style={{ display: 'flex', flexDirection: 'column', height: '220px' }}>
-                {selectedArticle.video_url ? (
-                  youtubeId(selectedArticle.video_url) ? (
-                    <a
-                      href={`https://www.youtube.com/watch?v=${youtubeId(selectedArticle.video_url)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="video-link"
-                      style={{ 
-                        display: 'grid', 
-                        placeItems: 'center',
-                        width: '100%',
-                        height: '220px', 
-                        backgroundSize: 'cover', 
-                        backgroundPosition: 'center', 
-                        borderRadius: '10px', 
-                        position: 'relative', 
-                        textDecoration: 'none',
-                        backgroundImage: `url(${youtubeThumbnail(selectedArticle.video_url)})`,
-                        boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                        overflow: 'hidden'
-                      }}
-                    >
-                      <div style={{ position: 'absolute', inset: '0', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', fontWeight: 'bold', gap: '8px', fontSize: '14px' }}>
-                        ▶ <span>Tonton Video Panduan</span>
-                      </div>
-                    </a>
+              {/* Kotak Media Video */}
+              <div className="knowledge-media-box">
+                <h4 className="box-section-title">Video Panduan Visual</h4>
+                <div className="box-content-scroll">
+                  {selectedArticle.video_url ? (
+                    youtubeId(selectedArticle.video_url) ? (
+                      <a
+                        href={`https://www.youtube.com/watch?v=${youtubeId(selectedArticle.video_url)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="video-link"
+                        style={{ backgroundImage: `url(${youtubeThumbnail(selectedArticle.video_url)})` }}
+                      >
+                        <div className="video-overlay">
+                          <span>▶ Putar Video Panduan</span>
+                        </div>
+                      </a>
+                    ) : (
+                      <a 
+                        href={selectedArticle.video_url} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="video-link" 
+                        style={{ backgroundImage: `url(${youtubeThumbnail(selectedArticle.video_url)})` }}
+                      >
+                        <div className="video-overlay">
+                          <span>▶ Putar Video Panduan</span>
+                        </div>
+                      </a>
+                    )
                   ) : (
-                    <a href={selectedArticle.video_url} target="_blank" rel="noreferrer" className="video-link" style={{ display: 'grid', placeItems: 'center', width: '100%', height: '220px', backgroundSize: 'cover', backgroundPosition: 'center', borderRadius: '10px', position: 'relative', textDecoration: 'none', backgroundImage: `url(${youtubeThumbnail(selectedArticle.video_url)})`, overflow: 'hidden' }}>
-                      <div style={{ position: 'absolute', inset: '0', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', fontWeight: 'bold', gap: '8px', fontSize: '14px' }}>
-                        ▶ <span>Tonton Video Panduan</span>
-                      </div>
-                    </a>
-                  )
-                ) : (
-                  <div className="video-empty" style={{ width: '100%', height: '220px', display: 'grid', placeItems: 'center', background: '#f3f4f6', textAlign: 'center', borderRadius: '10px', fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>
-                    Video belum ditambahkan
-                  </div>
-                )}
+                    <div className="video-empty">
+                      <span>Tidak ada lampiran video untuk panduan ini.</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </article>
+          </div>
         </div>
       )}
     </section>
