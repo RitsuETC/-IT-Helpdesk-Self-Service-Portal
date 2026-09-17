@@ -10,19 +10,34 @@ function youtubeId(url) {
   return url?.match(/(?:youtu\.be\/|v=|embed\/)([^?&/]+)/)?.[1] || null
 }
 
-// Fungsi untuk memformat teks bernomor agar otomatis tersusun ke bawah secara rapi
+// Fungsi inovatif untuk memecah teks bernomor menjadi list rapi berurutan ke bawah
 function formatNumberedSteps(text) {
   if (!text) return null
-  // Jika teks sudah memiliki baris baru (\n), gunakan langsung
   if (text.includes('\n')) {
-    return text.split('\n').map((line, idx) => <div key={idx}>{line}</div>)
+    return text.split('\n').map((line, idx) => {
+      const trimmed = line.trim()
+      if (!trimmed) return null
+      return (
+        <div key={idx} className="step-item">
+          <span className="step-bullet">{idx + 1}</span>
+          <span className="step-text">{trimmed.replace(/^\d+\.\s*/, '')}</span>
+        </div>
+      )
+    })
   }
-  // Jika teks digabung dalam satu baris (misal: "1. A 2. B 3. C"), pisahkan berdasarkan pola nomor (1., 2., dst)
   const steps = text.split(/(?=\d+\.\s+)/).filter(Boolean)
   if (steps.length > 1) {
-    return steps.map((step, idx) => <div key={idx} className="step-item">{step.trim()}</div>)
+    return steps.map((step, idx) => {
+      const cleanText = step.replace(/^\d+\.\s*/, '').trim()
+      return (
+        <div key={idx} className="step-item">
+          <span className="step-bullet">{idx + 1}</span>
+          <span className="step-text">{cleanText}</span>
+        </div>
+      )
+    })
   }
-  return text
+  return <div className="step-item"><span className="step-text">{text}</span></div>
 }
 
 function Knowledge({ articles = [], initialArticle }) {
@@ -139,6 +154,7 @@ function Knowledge({ articles = [], initialArticle }) {
             <div 
               className="knowledge-card" 
               key={article.id}
+              onClick={() => setSelectedArticle(article)}
             >
               <div className="knowledge-card-header">
                 <div className="knowledge-card-tags">
@@ -161,14 +177,17 @@ function Knowledge({ articles = [], initialArticle }) {
                 </div>
               </div>
 
-              {/* Tombol Baca Solusi dihidupkan kembali sebagai interaksi pembuka modal */}
+              {/* Tombol Baca Solusi Tetap Ada dan Berfungsi */}
               <div className="knowledge-card-footer">
                 <button 
                   type="button" 
                   className="read-more-btn"
-                  onClick={() => setSelectedArticle(article)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSelectedArticle(article)
+                  }}
                 >
-                  Baca Solusi &rarr;
+                  Baca Solusi Lengkap &rarr;
                 </button>
               </div>
             </div>
@@ -205,11 +224,11 @@ function Knowledge({ articles = [], initialArticle }) {
             </div>
             
             <div className="knowledge-detail-content">
-              {/* Kotak Teks Langkah-langkah */}
+              {/* Kotak Teks Langkah-langkah (Teks Diperbesar & Jelas) */}
               <div className="knowledge-detail-text-box">
                 <h4 className="box-section-title">Langkah-Langkah Solusi</h4>
                 <div className="box-content-scroll">
-                  <div className="knowledge-detail-text">
+                  <div className="knowledge-detail-text-list">
                     {formatNumberedSteps(selectedArticle.content)}
                   </div>
                 </div>
@@ -247,7 +266,9 @@ function Knowledge({ articles = [], initialArticle }) {
                     )
                   ) : (
                     <div className="video-empty">
-                      <span>Tidak ada lampiran video untuk panduan ini.</span>
+                      <div className="video-empty-content">
+                        <span className="empty-title">Belum Ada Lampiran Video</span>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -1107,7 +1107,7 @@ td {
   }
 }
 /* =========================================================
-   KNOWLEDGE BASE - FINAL REFINED UI SYSTEM
+   KNOWLEDGE BASE - FIXED HEIGHT & SYMMETRIC UI SYSTEM
    ========================================================= */
 
 :root {
@@ -1126,7 +1126,6 @@ td {
   font-family: Arial, sans-serif;
 }
 
-/* Header Halaman */
 .knowledge-header-box {
   text-align: center;
   margin-bottom: 28px;
@@ -1152,7 +1151,6 @@ td {
   font-weight: 600;
 }
 
-/* Toolbar Filter & Search */
 .knowledge-filter {
   display: flex;
   flex-direction: column;
@@ -1201,7 +1199,6 @@ td {
   width: 100%;
 }
 
-/* Kategori Tag Buttons */
 .knowledge-tags-container {
   display: flex;
   flex-wrap: wrap;
@@ -1241,24 +1238,28 @@ td {
   box-shadow: 0 4px 12px rgba(6, 78, 59, 0.25);
 }
 
-/* Grid Artikel */
 .article-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
 }
 
+/* Kunci tinggi kartu utama agar seragam dan tidak memanjang ke bawah */
 .knowledge-card {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 220px;
+  height: 240px;
+  max-height: 240px;
   background: var(--k-bg-card);
   border: 2px solid #cbd5e1;
   border-radius: 16px;
-  padding: 22px;
+  padding: 20px;
+  cursor: pointer;
   transition: all 0.25s ease;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .knowledge-card:hover {
@@ -1268,7 +1269,8 @@ td {
 }
 
 .knowledge-card-header {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
 }
 
 .knowledge-card-tags {
@@ -1278,8 +1280,8 @@ td {
 }
 
 .card-tag-badge {
-  padding: 5px 12px;
-  font-size: 12px;
+  padding: 4px 10px;
+  font-size: 11px;
   background: #e6f4ea;
   color: #065f46;
   border-radius: 6px;
@@ -1289,45 +1291,57 @@ td {
 
 .knowledge-card-body {
   flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .knowledge-card-title {
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
   color: var(--k-text-main);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 800;
-  line-height: 1.4;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Snippet Kartu dengan Susunan Angka ke Bawah & Terpotong Rapi */
 .knowledge-card-snippet {
   margin: 0;
   color: var(--k-text-muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  line-height: 1.5;
+  line-height: 1.4;
+  overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
+  -webkit-line-clamp: 4;
 }
 
 .knowledge-card-snippet .step-item {
-  margin-bottom: 4px;
+  display: flex;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.knowledge-card-snippet .step-bullet {
+  font-weight: 800;
+  color: var(--k-accent);
 }
 
 .knowledge-card-footer {
-  margin-top: 16px;
-  padding-top: 12px;
+  margin-top: auto;
+  padding-top: 10px;
   border-top: 1px solid #e2e8f0;
+  flex-shrink: 0;
 }
 
-/* Tombol Interaktif Baca Solusi */
 .read-more-btn {
   background: transparent;
   border: none;
   padding: 0;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   color: var(--k-accent);
   cursor: pointer;
@@ -1367,12 +1381,10 @@ td {
 
 .knowledge-detail {
   position: relative;
-  width: min(95%, 820px);
-  max-height: 90vh;
-  overflow-y: auto;
+  width: min(95%, 850px);
   background: #ffffff;
   border-radius: 20px;
-  padding: 36px;
+  padding: 32px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   box-sizing: border-box;
 }
@@ -1408,7 +1420,7 @@ td {
 .knowledge-detail-tags {
   display: flex;
   gap: 6px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .detail-tag-badge {
@@ -1428,7 +1440,6 @@ td {
   font-weight: 800;
 }
 
-/* Konten Grid di Modal */
 .knowledge-detail-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1443,46 +1454,65 @@ td {
   padding: 16px;
   display: flex;
   flex-direction: column;
-  height: 260px;
+  height: 270px;
   box-sizing: border-box;
 }
 
 .box-section-title {
-  margin: 0 0 12px 0;
+  margin: 0 0 10px 0;
   font-size: 13px;
   font-weight: 800;
   color: var(--k-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 2px solid #e2e8f0;
-  padding-bottom: 8px;
+  padding-bottom: 6px;
 }
 
 .box-content-scroll {
   flex: 1;
   overflow-y: auto;
+  padding-right: 4px;
 }
 
-/* Teks Langkah-langkah Tersusun Rapi ke Bawah */
-.knowledge-detail-text {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.6;
-  color: #1e293b;
+.knowledge-detail-text-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
-.knowledge-detail-text .step-item {
-  display: block;
+.knowledge-detail-text-list .step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.knowledge-detail-text-list .step-bullet {
+  background: var(--k-accent);
+  color: #ffffff;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.knowledge-detail-text-list .step-text {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #0f172a;
 }
 
 .video-link {
   width: 100%;
   height: 100%;
-  min-height: 185px;
+  min-height: 180px;
   border-radius: 10px;
   background-size: cover;
   background-position: center;
@@ -1515,28 +1545,46 @@ td {
 .video-empty {
   width: 100%;
   height: 100%;
-  min-height: 185px;
   background: #ffffff;
-  border: 2px dashed #cbd5e1;
+  border: 2px dashed #94a3b8;
   border-radius: 10px;
   display: grid;
   place-items: center;
   text-align: center;
   padding: 16px;
-  color: var(--k-text-muted);
-  font-size: 13px;
-  font-weight: 700;
   box-sizing: border-box;
 }
 
-/* Responsif untuk Layar Kecil / Mobile */
+.video-empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.empty-icon {
+  font-size: 22px;
+}
+
+.empty-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--k-text-main);
+}
+
+.empty-subtitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--k-text-muted);
+}
+
 @media (max-width: 768px) {
   .knowledge-detail-content {
     grid-template-columns: 1fr;
   }
   .knowledge-detail-text-box,
   .knowledge-media-box {
-    height: 220px;
+    height: 230px;
   }
 }
 /* =========================================================
