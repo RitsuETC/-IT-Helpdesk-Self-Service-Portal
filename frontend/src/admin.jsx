@@ -27,6 +27,10 @@ function Admin({ token, articles, onChanged, onError, user }) {
   })
   const [userQuery, setUserQuery] = useState('')
 
+  // State baru untuk Langkah Dinamis (Step-by-Step Generator)
+  const [stepsList, setStepsList] = useState([''])
+  const [showStepModal, setShowStepModal] = useState(false)
+
   const loadSetup = async () => {
     try {
       setSetup((await api('/admin/setup', { token })).data)
@@ -66,6 +70,25 @@ function Admin({ token, articles, onChanged, onError, user }) {
     setCustomTagInput('')
   }
 
+  // Fungsi untuk memasukkan hasil langkah dinamis ke dalam text content
+  const handleInsertStepsToContent = () => {
+    const validSteps = stepsList.filter(s => s.trim() !== '')
+    if (validSteps.length === 0) {
+      setShowStepModal(false)
+      return
+    }
+
+    const formattedStepsText = validSteps.map((step, idx) => `Langkah ${idx + 1}: ${step}`).join('\n')
+    
+    setKnowledge(prev => ({
+      ...prev,
+      content: prev.content ? `${prev.content}\n\n${formattedStepsText}` : formattedStepsText
+    }))
+
+    setStepsList([''])
+    setShowStepModal(false)
+  }
+
   const submitKnowledge = async (event) => {
     event.preventDefault()
 
@@ -94,6 +117,7 @@ function Admin({ token, articles, onChanged, onError, user }) {
 
       setKnowledge(emptyKnowledge)
       setEditingId(null)
+      setStepsList([''])
       await onChanged()
     } catch (error) {
       onError(error.message)
@@ -368,11 +392,11 @@ function Admin({ token, articles, onChanged, onError, user }) {
       `}</style>
 
       {/* HEADER */}
-      <header className="admin-header" style={{ background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', padding: '20px 24px', borderRadius: '16px', color: '#ffffff', marginBottom: '24px', boxShadow: '0 8px 20px rgba(12, 74, 48, 0.15)' }}>
+      <header className="admin-header" style={{ background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)', padding: '24px 28px', borderRadius: '16px', color: '#ffffff', marginBottom: '24px', boxShadow: '0 8px 20px rgba(12, 74, 48, 0.15)' }}>
         <div>
-          <p className="admin-eyebrow" style={{ margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.75rem', color: '#a7f3d0', fontWeight: '700' }}>Administration</p>
-          <h2 style={{ margin: '4px 0 0', fontSize: '1.5rem', fontWeight: '800' }}>Panel Admin</h2>
-          <p className="admin-description" style={{ margin: '4px 0 0', color: '#e2f0ea', fontSize: '0.875rem' }}>
+          <p className="admin-eyebrow" style={{ margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.75rem', color: '#6ee7b7', fontWeight: '700' }}>Administration</p>
+          <h2 style={{ margin: '6px 0 2px', fontSize: '1.6rem', fontWeight: '800', color: '#ffffff' }}>Panel Admin</h2>
+          <p className="admin-description" style={{ margin: 0, color: '#d1fae5', fontSize: '0.875rem' }}>
             Kelola knowledge base, kategori, ruangan, dan akun pengguna.
           </p>
         </div>
@@ -421,7 +445,6 @@ function Admin({ token, articles, onChanged, onError, user }) {
                 Pilih Multi-Tag / Kategori (Bisa Pilih Banyak)
               </label>
 
-              {/* Tag yang sudah tersedia, termasuk tag kustom dari artikel sebelumnya */}
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
                 {availableTags.map((tagName) => {
                   const isSelected = selectedTagsList.includes(tagName)
@@ -448,7 +471,6 @@ function Admin({ token, articles, onChanged, onError, user }) {
                 })}
               </div>
 
-              {/* Input Tambah Tag Kustom */}
               <div style={{ display: 'flex', gap: '6px' }}>
                 <input
                   type="text"
@@ -466,24 +488,95 @@ function Admin({ token, articles, onChanged, onError, user }) {
                 </button>
               </div>
 
-              {/* Preview Tag Terpilih */}
               <div style={{ marginTop: '8px', fontSize: '0.725rem', color: '#0c4a30', fontWeight: '600' }}>
                 Tag Terpilih: {selectedTagsList.length ? selectedTagsList.map(t => `#${t}`).join(', ') : '(Belum ada tag dipilih)'}
               </div>
             </div>
 
-            <label>
-              Isi Artikel
-              <textarea
-                value={knowledge.content}
-                onChange={(e) => setKnowledge({ ...knowledge, content: e.target.value })}
-                placeholder="Tuliskan solusi atau langkah troubleshooting..."
-                rows="4"
-                required
-              />
-            </label>
+            {/* ISI ARTIKEL & TOMBOL BUKA POP-UP LANGKAH DINAMIS */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ margin: 0 }}>Isi Artikel</label>
+              <button
+                type="button"
+                onClick={() => setShowStepModal(true)}
+                style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+              >
+                + Tambah Langkah Bernomor
+              </button>
+            </div>
 
-            <label>
+            <textarea
+              value={knowledge.content}
+              onChange={(e) => setKnowledge({ ...knowledge, content: e.target.value })}
+              placeholder="Tuliskan solusi atau langkah troubleshooting..."
+              rows="5"
+              required
+            />
+
+            {/* POP-UP / MODAL GENERATOR LANGKAH DINAMIS */}
+            {showStepModal && (
+              <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: '0', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' }}>
+                <div style={{ background: '#ffffff', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: '500px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+                  <h4 style={{ margin: '0 0 4px', color: '#0c4a30', fontSize: '1rem' }}>Buat Langkah Troubleshooting Berurutan</h4>
+                  <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: '0.775rem' }}>Tambah atau hapus baris langkah sesuai kebutuhan Anda.</p>
+
+                  <div style={{ overflowY: 'auto', maxHeight: '250px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px', paddingRight: '4px' }}>
+                    {stepsList.map((step, idx) => (
+                      <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#0c4a30', minWidth: '60px' }}>No. {idx + 1}</span>
+                        <input
+                          type="text"
+                          value={step}
+                          onChange={(e) => {
+                            const updated = [...stepsList]
+                            updated[idx] = e.target.value
+                            setStepsList(updated)
+                          }}
+                          placeholder={`Isi instruksi langkah ke-${idx + 1}...`}
+                          style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.825rem', outline: 'none' }}
+                        />
+                        {stepsList.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setStepsList(stepsList.filter((_, i) => i !== idx))}
+                            style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '6px 10px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}
+                          >
+                            X
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setStepsList([...stepsList, ''])}
+                    style={{ background: '#f1f5f9', color: '#334155', border: '1px dashed #cbd5e1', padding: '8px', borderRadius: '6px', fontSize: '0.775rem', fontWeight: 'bold', cursor: 'pointer', marginBottom: '16px' }}
+                  >
+                    + Tambah Baris Langkah Lagi
+                  </button>
+
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowStepModal(false)}
+                      style={{ background: '#e2e8f0', color: '#334155', border: 'none', padding: '8px 14px', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer' }}
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleInsertStepsToContent}
+                      style={{ background: '#0c4a30', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer' }}
+                    >
+                      Sisipkan ke Isi Artikel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <label style={{ marginTop: '12px' }}>
               Link YouTube
               <input
                 type="url"
@@ -504,6 +597,7 @@ function Admin({ token, articles, onChanged, onError, user }) {
                   onClick={() => {
                     setKnowledge(emptyKnowledge)
                     setEditingId(null)
+                    setStepsList([''])
                   }}
                   style={{ background: '#e2e8f0', color: '#334155' }}
                 >
