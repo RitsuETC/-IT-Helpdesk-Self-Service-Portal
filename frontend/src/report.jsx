@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { api } from './api.js'
 import TicketCharts from './chart.jsx'
 
@@ -14,6 +14,10 @@ export default function Report({ token, user, onBack, onError }) {
   const [selectedTicket, setSelectedTicket] = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState('')
+
+  // State untuk Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 15
 
   const isStaff = user?.role === 'admin' || user?.role === 'teknisi'
 
@@ -38,6 +42,7 @@ export default function Report({ token, user, onBack, onError }) {
 
       const res = await api(`/tickets/reports/finished-tickets?${params.toString()}`, token ? { token } : {})
       setTickets(res.data || [])
+      setCurrentPage(1) // Reset halaman ke 1 setiap kali filter/data berubah
     } catch (err) {
       console.error(err)
     } finally {
@@ -85,6 +90,19 @@ export default function Report({ token, user, onBack, onError }) {
 
   const resolvedCount = tickets.filter(t => t.status === 'RESOLVED').length
   const closedCount = tickets.filter(t => t.status === 'CLOSED').length
+
+  // Logika Pagination
+  const totalPages = Math.ceil(tickets.length / ITEMS_PER_PAGE) || 1
+  const paginatedTickets = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    return tickets.slice(start, start + ITEMS_PER_PAGE)
+  }, [tickets, currentPage])
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage)
+    }
+  }
 
   return (
     <div className="report-page" style={{ maxWidth: '1280px', margin: '0 auto', padding: '16px' }}>
@@ -206,7 +224,7 @@ export default function Report({ token, user, onBack, onError }) {
       </div>
 
       {/* Ringkasan Kartu Statistik */}
-      <div className="report-summary-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+      <div className="report-summary-cards no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' }}>
         <div style={{ background: '#ecfdf5', padding: '14px 18px', borderRadius: '12px', border: '1px solid #a7f3d0' }}>
           <small style={{ color: '#15803d', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.75rem' }}>RESOLVED</small>
           <strong style={{ display: 'block', fontSize: '1.6rem', color: '#166534', marginTop: '2px' }}>{resolvedCount}</strong>
@@ -221,7 +239,9 @@ export default function Report({ token, user, onBack, onError }) {
         </div>
       </div>
 
-      <TicketCharts token={token} onError={onError} />
+      <div className="no-print">
+        <TicketCharts token={token} onError={onError} />
+      </div>
 
       {/* Tabel Utama */}
       {loading ? (
@@ -246,14 +266,14 @@ export default function Report({ token, user, onBack, onError }) {
               </tr>
             </thead>
             <tbody>
-              {tickets.length === 0 ? (
+              {paginatedTickets.length === 0 ? (
                 <tr>
                   <td colSpan="12" style={{ padding: '28px', textAlign: 'center', color: '#64748b' }}>
                     Tidak ada tiket yang sesuai filter.
                   </td>
                 </tr>
               ) : (
-                tickets.map((ticket) => (
+                paginatedTickets.map((ticket) => (
                   <tr key={ticket.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.15s ease' }}>
                     <td style={{ padding: '9px 12px', fontWeight: '700', color: '#0c4a30', whiteSpace: 'nowrap' }}>HD-{ticket.id}</td>
                     <td style={{ padding: '9px 12px', color: '#1f2937', fontWeight: '600' }}>{ticket.judul}</td>
@@ -298,6 +318,48 @@ export default function Report({ token, user, onBack, onError }) {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Kontrol Pagination (Hidden saat Print) */}
+      {!loading && tickets.length > 0 && (
+        <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', padding: '12px 16px', background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+          <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+            Menampilkan {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, tickets.length)} dari total {tickets.length} laporan
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button 
+              onClick={() => handlePageChange(1)} 
+              disabled={currentPage === 1}
+              style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: currentPage === 1 ? '#f8fafc' : '#fff', color: currentPage === 1 ? '#94a3b8' : '#334155', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+            >
+              «
+            </button>
+            <button 
+              onClick={() => handlePageChange(currentPage - 1)} 
+              disabled={currentPage === 1}
+              style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: currentPage === 1 ? '#f8fafc' : '#fff', color: currentPage === 1 ? '#94a3b8' : '#334155', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+            >
+              ‹
+            </button>
+            <span style={{ fontSize: '0.85rem', fontWeight: '600', padding: '0 8px', color: '#0f172a' }}>
+              Hal {currentPage} / {totalPages}
+            </span>
+            <button 
+              onClick={() => handlePageChange(currentPage + 1)} 
+              disabled={currentPage === totalPages}
+              style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: currentPage === totalPages ? '#f8fafc' : '#fff', color: currentPage === totalPages ? '#94a3b8' : '#334155', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+            >
+              ›
+            </button>
+            <button 
+              onClick={() => handlePageChange(totalPages)} 
+              disabled={currentPage === totalPages}
+              style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: currentPage === totalPages ? '#f8fafc' : '#fff', color: currentPage === totalPages ? '#94a3b8' : '#334155', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+            >
+              »
+            </button>
+          </div>
         </div>
       )}
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { api } from './api.js'
 import { TicketDetail } from './tickets.jsx'
 
@@ -11,6 +11,10 @@ export default function HistoryCarousel({ token, user, onError }) {
   // State untuk modal halaman baru seluruh riwayat
   const [showAllModal, setShowAllModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+
+  // State untuk pagination di dalam modal
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 15
 
   const load = async () => {
     if (!token) {
@@ -53,12 +57,36 @@ export default function HistoryCarousel({ token, user, onError }) {
   }
 
   // Filter pencarian di modal seluruh tiket
-  const filteredAllTickets = tickets.filter((t) => {
-    const q = searchQuery.toLowerCase()
-    const code = (t.code || `HD-${t.id}`).toLowerCase()
-    const title = (t.judul || t.title || t.category || '').toLowerCase()
-    return code.includes(q) || title.includes(q)
-  })
+  const filteredAllTickets = useMemo(() => {
+    return tickets.filter((t) => {
+      const q = searchQuery.toLowerCase()
+      const code = (t.code || `HD-${t.id}`).toLowerCase()
+      const title = (t.judul || t.title || t.category || '').toLowerCase()
+      return code.includes(q) || title.includes(q)
+    })
+  }, [tickets, searchQuery])
+
+  // Logika Pagination untuk modal seluruh tiket
+  const totalPages = Math.ceil(filteredAllTickets.length / ITEMS_PER_PAGE) || 1
+  
+  // Reset currentPage ke 1 jika hasil pencarian berubah dan currentPage melebihi totalPages baru
+  useEffect(() => {
+      if(currentPage > totalPages) {
+          setCurrentPage(1)
+      }
+  }, [filteredAllTickets, totalPages])
+
+  const paginatedTickets = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    return filteredAllTickets.slice(start, start + ITEMS_PER_PAGE)
+  }, [filteredAllTickets, currentPage])
+
+  const handlePageChange = (newPage) => {
+      if (newPage >= 1 && newPage <= totalPages) {
+          setCurrentPage(newPage)
+      }
+  }
+
 
   if (loading) return <p style={{ color: '#64748b', fontSize: '13px' }}>Memuat riwayat...</p>
   if (tickets.length === 0) return <p style={{ color: '#64748b', fontSize: '13px' }}>Belum ada tiket yang selesai.</p>
@@ -199,7 +227,7 @@ export default function HistoryCarousel({ token, user, onError }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2ece5', paddingBottom: '14px', flexWrap: 'wrap', gap: '12px' }}>
               <div>
                 <h2 style={{ margin: 0, color: '#0c4a30', fontSize: '20px', fontWeight: '700' }}>Seluruh Riwayat Tiket Selesai</h2>
-                <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '12px' }}>Total {tickets.length} tiket dengan status RESOLVED dan CLOSED.</p>
+                <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '12px' }}>Total {filteredAllTickets.length} tiket dengan status RESOLVED dan CLOSED.</p>
               </div>
 
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -220,11 +248,11 @@ export default function HistoryCarousel({ token, user, onError }) {
             </div>
 
             {/* Grid Seluruh Tiket */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
-              {filteredAllTickets.length === 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px', flex: 1 }}>
+              {paginatedTickets.length === 0 ? (
                 <p style={{ color: '#64748b', fontSize: '13px', gridColumn: '1 / -1', textAlign: 'center', padding: '20px' }}>Tidak ada tiket yang cocok dengan pencarian.</p>
               ) : (
-                filteredAllTickets.map((t) => (
+                paginatedTickets.map((t) => (
                   <button 
                     key={t.id} 
                     onClick={() => setSelectedTicket(t)} 
@@ -261,6 +289,43 @@ export default function HistoryCarousel({ token, user, onError }) {
                 ))
               )}
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e2ece5' }}>
+                    <button 
+                        onClick={() => handlePageChange(1)} 
+                        disabled={currentPage === 1}
+                        style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: currentPage === 1 ? '#f1f5f9' : '#fff', color: currentPage === 1 ? '#94a3b8' : '#334155', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+                    >
+                        «
+                    </button>
+                    <button 
+                        onClick={() => handlePageChange(currentPage - 1)} 
+                        disabled={currentPage === 1}
+                        style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: currentPage === 1 ? '#f1f5f9' : '#fff', color: currentPage === 1 ? '#94a3b8' : '#334155', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+                    >
+                        ‹
+                    </button>
+                    <span style={{ fontSize: '13px', color: '#475569', fontWeight: '600', padding: '0 8px' }}>
+                        Halaman {currentPage} dari {totalPages}
+                    </span>
+                    <button 
+                        onClick={() => handlePageChange(currentPage + 1)} 
+                        disabled={currentPage === totalPages}
+                        style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: currentPage === totalPages ? '#f1f5f9' : '#fff', color: currentPage === totalPages ? '#94a3b8' : '#334155', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+                    >
+                        ›
+                    </button>
+                    <button 
+                        onClick={() => handlePageChange(totalPages)} 
+                        disabled={currentPage === totalPages}
+                        style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: currentPage === totalPages ? '#f1f5f9' : '#fff', color: currentPage === totalPages ? '#94a3b8' : '#334155', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+                    >
+                        »
+                    </button>
+                </div>
+            )}
           </div>
         </div>
       )}

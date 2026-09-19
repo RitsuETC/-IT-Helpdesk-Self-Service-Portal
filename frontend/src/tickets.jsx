@@ -432,6 +432,11 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
   const [rooms, setRooms] = useState([])
   const [ticketDraft, setTicketDraft] = useState({ judul: '', deskripsi: '' })
   const [suggestionDismissed, setSuggestionDismissed] = useState(false)
+  
+  // State untuk Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 15
+
   const now = useCurrentTime()
 
   const suggestions = useMemo(() => findRelevantArticles(articles, ticketDraft.judul, ticketDraft.deskripsi), [articles, ticketDraft])
@@ -451,6 +456,7 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
     try {
       const res = await api('/tickets', { token })
       setTickets(res.data || [])
+      setCurrentPage(1) // Reset halaman saat load ulang
     } catch (err) {
       onError(err.message)
     }
@@ -531,7 +537,7 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
     )
   }
 
-  const filteredTickets = tickets.filter(t => {
+  const filteredTickets = useMemo(() => tickets.filter(t => {
     if (priorityFilter === 'ALL') return true
     const ticketPriority = (t.prioritas || '').toLowerCase()
     const filterVal = priorityFilter.toLowerCase()
@@ -541,7 +547,28 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
     if (filterVal === 'high' || filterVal === 'critical') return ticketPriority.includes('high') || ticketPriority.includes('critical') || ticketPriority.includes('level_3')
 
     return ticketPriority === filterVal
-  })
+  }), [tickets, priorityFilter])
+
+  // Logika Pagination
+  const totalPages = Math.ceil(filteredTickets.length / ITEMS_PER_PAGE) || 1
+  
+  // Reset currentPage jika filter berubah dan melampaui totalPages
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1)
+    }
+  }, [filteredTickets, totalPages])
+
+  const paginatedTickets = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    return filteredTickets.slice(start, start + ITEMS_PER_PAGE)
+  }, [filteredTickets, currentPage])
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage)
+    }
+  }
 
   if (createOnly) {
     return showCreateForm ? (
@@ -621,10 +648,10 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
 
       {/* GRID KARTU TIKET */}
       <div className="ticket-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-        {filteredTickets.length === 0 ? (
+        {paginatedTickets.length === 0 ? (
           <p className="empty-tickets" style={{ gridColumn: '1 / -1', color: '#64748b', textAlign: 'center', padding: '30px' }}>Tidak ada tiket ditemukan.</p>
         ) : (
-          filteredTickets.map(t => {
+          paginatedTickets.map(t => {
             const kategoriNama = t.nama_kategori || t.kategori || t.category || ''
             return (
               <div 
@@ -710,6 +737,48 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
           })
         )}
       </div>
+
+      {/* Kontrol Pagination */}
+      {filteredTickets.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', padding: '12px 16px', background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+          <div style={{ fontSize: '12px', color: '#64748b' }}>
+            Menampilkan {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredTickets.length)} dari total {filteredTickets.length} tiket
+          </div>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <button 
+              onClick={() => handlePageChange(1)} 
+              disabled={currentPage === 1}
+              style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: currentPage === 1 ? '#f8fafc' : '#ffffff', color: currentPage === 1 ? '#94a3b8' : '#334155', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }}
+            >
+              «
+            </button>
+            <button 
+              onClick={() => handlePageChange(currentPage - 1)} 
+              disabled={currentPage === 1}
+              style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: currentPage === 1 ? '#f8fafc' : '#ffffff', color: currentPage === 1 ? '#94a3b8' : '#334155', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }}
+            >
+              ‹
+            </button>
+            <span style={{ fontSize: '12px', fontWeight: '700', padding: '0 10px', color: '#0f172a' }}>
+              Hal {currentPage} / {totalPages}
+            </span>
+            <button 
+              onClick={() => handlePageChange(currentPage + 1)} 
+              disabled={currentPage === totalPages}
+              style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: currentPage === totalPages ? '#f8fafc' : '#ffffff', color: currentPage === totalPages ? '#94a3b8' : '#334155', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }}
+            >
+              ›
+            </button>
+            <button 
+              onClick={() => handlePageChange(totalPages)} 
+              disabled={currentPage === totalPages}
+              style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: currentPage === totalPages ? '#f8fafc' : '#ffffff', color: currentPage === totalPages ? '#94a3b8' : '#334155', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }}
+            >
+              »
+            </button>
+          </div>
+        </div>
+      )}
 
       {showCreateForm && (
         <div 

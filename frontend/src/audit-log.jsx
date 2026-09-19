@@ -16,6 +16,8 @@ export default function AuditLog({ token, onBack, onError }) {
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 15
 
   const load = async () => {
     setLoading(true)
@@ -31,6 +33,20 @@ export default function AuditLog({ token, onBack, onError }) {
     if (!term) return logs
     return logs.filter((item) => [item.actor_name, item.action, item.detail].some((value) => String(value || '').toLowerCase().includes(term)))
   }, [logs, search])
+
+  const totalPages = Math.ceil(visible.length / ITEMS_PER_PAGE) || 1
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages)
+  }, [currentPage, totalPages])
+
+  const paginatedLogs = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    return visible.slice(start, start + ITEMS_PER_PAGE)
+  }, [visible, currentPage])
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) setCurrentPage(newPage)
+  }
 
   return (
     /* Menggunakan padding horizontal dan maxWidth agar tersusun rapi di tengah seperti halaman Laporan */
@@ -104,7 +120,10 @@ export default function AuditLog({ token, onBack, onError }) {
       <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', alignItems: 'center' }}>
         <input 
           value={search} 
-          onChange={(event) => setSearch(event.target.value)} 
+          onChange={(event) => {
+            setSearch(event.target.value)
+            setCurrentPage(1)
+          }} 
           placeholder="Cari ID, pengguna, aksi, atau detail..." 
           style={{
             flex: 1,
@@ -154,7 +173,7 @@ export default function AuditLog({ token, onBack, onError }) {
               ) : visible.length === 0 ? (
                 <tr><td colSpan="4" style={{ padding: '28px', textAlign: 'center', color: '#64748b' }}>Belum ada aktivitas yang cocok.</td></tr>
               ) : (
-                visible.map((item) => (
+                paginatedLogs.map((item) => (
                   <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }}>
                     <td style={{ padding: '14px 16px', color: '#0f172a' }}>
                       <strong style={{ fontWeight: '700', color: '#064e3b' }}>{item.actor_name}</strong>
@@ -171,6 +190,41 @@ export default function AuditLog({ token, onBack, onError }) {
             </tbody>
           </table>
         </div>
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '16px', borderTop: '1px solid #f1f5f9' }}>
+            <button
+              onClick={() => handlePageChange(1)}
+              disabled={currentPage === 1}
+              style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: currentPage === 1 ? '#f1f5f9' : '#fff', color: currentPage === 1 ? '#94a3b8' : '#334155', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+            >
+              «
+            </button>
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: currentPage === 1 ? '#f1f5f9' : '#fff', color: currentPage === 1 ? '#94a3b8' : '#334155', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+            >
+              ‹
+            </button>
+            <span style={{ fontSize: '13px', color: '#475569', fontWeight: '600', padding: '0 8px' }}>
+              Halaman {currentPage} dari {totalPages}
+            </span>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: currentPage === totalPages ? '#f1f5f9' : '#fff', color: currentPage === totalPages ? '#94a3b8' : '#334155', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+            >
+              ›
+            </button>
+            <button
+              onClick={() => handlePageChange(totalPages)}
+              disabled={currentPage === totalPages}
+              style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: currentPage === totalPages ? '#f1f5f9' : '#fff', color: currentPage === totalPages ? '#94a3b8' : '#334155', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+            >
+              »
+            </button>
+          </div>
+        )}
       </div>
 
     </div>

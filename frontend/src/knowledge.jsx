@@ -45,6 +45,10 @@ function Knowledge({ articles = [], initialArticle }) {
   const [selectedTags, setSelectedTags] = useState([])
   const [selectedArticle, setSelectedArticle] = useState(null)
   
+  // State untuk Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 15
+
   useEffect(() => {
     if (!initialArticle) return
     const found = articles.find((a) => Number(a.id) === Number(initialArticle.id))
@@ -94,6 +98,24 @@ function Knowledge({ articles = [], initialArticle }) {
       return matchTags && matchQuery
     }), [query, selectedTags, articles]
   )
+
+  // Reset pagination ke halaman 1 setiap kali filter atau pencarian berubah
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [query, selectedTags])
+
+  // Logika Pagination
+  const totalPages = Math.ceil(visibleArticles.length / ITEMS_PER_PAGE) || 1
+  const paginatedArticles = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    return visibleArticles.slice(start, start + ITEMS_PER_PAGE)
+  }, [visibleArticles, currentPage])
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage)
+    }
+  }
 
   return (
     <section className="knowledge-page">
@@ -145,12 +167,12 @@ function Knowledge({ articles = [], initialArticle }) {
 
       {/* Grid Kartu Artikel */}
       <div className="article-grid">
-        {visibleArticles.length === 0 ? (
+        {paginatedArticles.length === 0 ? (
           <div className="knowledge-empty-state">
             <p>Tidak ada artikel panduan yang sesuai dengan pencarian atau filter Anda.</p>
           </div>
         ) : (
-          visibleArticles.map((article) => (
+          paginatedArticles.map((article) => (
             <div 
               className="knowledge-card" 
               key={article.id}
@@ -194,6 +216,48 @@ function Knowledge({ articles = [], initialArticle }) {
           ))
         )}
       </div>
+
+      {/* Kontrol Pagination */}
+      {visibleArticles.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', padding: '12px 16px', background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+          <div style={{ fontSize: '12px', color: '#64748b' }}>
+            Menampilkan {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, visibleArticles.length)} dari total {visibleArticles.length} artikel
+          </div>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <button 
+              onClick={() => handlePageChange(1)} 
+              disabled={currentPage === 1}
+              style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: currentPage === 1 ? '#f8fafc' : '#ffffff', color: currentPage === 1 ? '#94a3b8' : '#334155', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }}
+            >
+              «
+            </button>
+            <button 
+              onClick={() => handlePageChange(currentPage - 1)} 
+              disabled={currentPage === 1}
+              style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: currentPage === 1 ? '#f8fafc' : '#ffffff', color: currentPage === 1 ? '#94a3b8' : '#334155', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }}
+            >
+              ‹
+            </button>
+            <span style={{ fontSize: '12px', fontWeight: '700', padding: '0 10px', color: '#0f172a' }}>
+              Hal {currentPage} / {totalPages}
+            </span>
+            <button 
+              onClick={() => handlePageChange(currentPage + 1)} 
+              disabled={currentPage === totalPages}
+              style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: currentPage === totalPages ? '#f8fafc' : '#ffffff', color: currentPage === totalPages ? '#94a3b8' : '#334155', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }}
+            >
+              ›
+            </button>
+            <button 
+              onClick={() => handlePageChange(totalPages)} 
+              disabled={currentPage === totalPages}
+              style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: currentPage === totalPages ? '#f8fafc' : '#ffffff', color: currentPage === totalPages ? '#94a3b8' : '#334155', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }}
+            >
+              »
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Modal Detail Artikel */}
       {selectedArticle && (
