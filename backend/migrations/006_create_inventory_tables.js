@@ -165,6 +165,20 @@ async function migrate() {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
     `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS master_sparepart (
+        id SERIAL PRIMARY KEY,
+        sku_code VARCHAR(100) NOT NULL UNIQUE,
+        sparepart_name VARCHAR(255) NOT NULL,
+        id_category INTEGER REFERENCES sparepart_category(id) ON DELETE SET NULL,
+        default_price NUMERIC(15,2),
+        unit VARCHAR(50) DEFAULT 'pcs',
+        min_stock INTEGER DEFAULT 0,
+        specifications JSONB DEFAULT '{}'::jsonb,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+    `);
 
     // Create indexes for performance
     await client.query(`CREATE INDEX IF NOT EXISTS idx_asset_category ON asset(id_category);`);
@@ -181,6 +195,7 @@ async function migrate() {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_maintenance_status ON maintenance(status);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_procurement_status ON procurement(status);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_master_product_category ON master_product(id_category);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_master_sparepart_category ON master_sparepart(id_category);`);
 
     await client.query('COMMIT');
     console.log('Migration 006 applied: inventory tables created');

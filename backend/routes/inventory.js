@@ -15,13 +15,14 @@ const dateValue = (value) => value || null;
 
 router.get('/setup', async (_req, res) => {
   try {
-    const [categories, sparepartCategories, rooms, users, tickets, masterProducts] = await Promise.all([
+    const [categories, sparepartCategories, rooms, users, tickets, masterProducts, masterSpareparts] = await Promise.all([
       db.query('SELECT id, name FROM asset_category ORDER BY name'),
       db.query('SELECT id, name FROM sparepart_category ORDER BY name'),
       db.query('SELECT id, ruangan FROM unit ORDER BY ruangan'),
       db.query('SELECT id, "Nama" AS name, email, role FROM login ORDER BY "Nama"'),
       db.query('SELECT id, judul FROM tiket ORDER BY id DESC LIMIT 100'),
-      db.query('SELECT * FROM master_product ORDER BY product_name')
+      db.query('SELECT * FROM master_product ORDER BY product_name'),
+      db.query('SELECT * FROM master_sparepart ORDER BY sparepart_name')
     ]);
     
     res.json({ 
@@ -31,7 +32,8 @@ router.get('/setup', async (_req, res) => {
         rooms: rooms.rows, 
         users: users.rows, 
         tickets: tickets.rows,
-        masterProducts: masterProducts.rows
+        masterProducts: masterProducts.rows,
+        masterSpareparts: masterSpareparts.rows
       } 
     });
   } catch (error) { 
@@ -88,6 +90,29 @@ router.delete('/master-products/:id', adminOnly, async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Gagal menghapus master produk', error: error.message }); }
 });
 
+router.post('/master-spareparts', adminOnly, async (req, res) => {
+  try {
+    const { sku_code, sparepart_name, id_category, default_price, unit, min_stock, specifications } = req.body;
+    if (!sku_code?.trim() || !sparepart_name?.trim()) return res.status(400).json({ message: 'SKU dan nama sparepart wajib diisi' });
+    const { rows } = await db.query(
+      `INSERT INTO master_sparepart (sku_code, sparepart_name, id_category, default_price, unit, min_stock, specifications)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [sku_code.trim(), sparepart_name.trim(), id_category || null, default_price || null, unit || 'pcs', min_stock || 0, specifications && typeof specifications === 'object' ? specifications : {}]
+    );
+    await logAudit(db, req, { action: 'CREATE_MASTER_SPAREPART', detail: `Menambahkan master sparepart ${rows[0].sku_code}`, entityType: 'master_sparepart', entityId: rows[0].id });
+    res.status(201).json({ data: rows[0] });
+  } catch (error) { res.status(error.code === '23505' ? 409 : 500).json({ message: error.code === '23505' ? 'SKU sudah digunakan' : 'Gagal menambah master sparepart', error: error.message }); }
+});
+
+router.delete('/master-spareparts/:id', adminOnly, async (req, res) => {
+  try {
+    const result = await db.query('DELETE FROM master_sparepart WHERE id = $1 RETURNING id, sku_code', [req.params.id]);
+    if (!result.rowCount) return res.status(404).json({ message: 'Master sparepart tidak ditemukan' });
+    await logAudit(db, req, { action: 'DELETE_MASTER_SPAREPART', detail: `Menghapus master sparepart ${result.rows[0].sku_code}`, entityType: 'master_sparepart', entityId: result.rows[0].id });
+    res.json({ message: 'Master sparepart berhasil dihapus' });
+  } catch (error) { res.status(500).json({ message: 'Gagal menghapus master sparepart', error: error.message }); }
+});
+
 router.get('/assets', async (req, res) => {
   try {
     const values = [];
@@ -104,18 +129,17 @@ router.get('/assets', async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Gagal mengambil aset', error: error.message }); }
 });
 
-const assetFields = ['asset_code', 'id_ruangan', 'id_category', 'id_user', 'brand_model', 'serial_number', 'purchase_year', 'price', 'status', 'condition', 'notes', 'specifications', 'master_sku'];
+const assetFields = ['asset_code', 'id_ruangan', 'id_category', 'id_user', 'brand_model', 'serial_number', 'purchase_year', 'price', 'status', 'condition', 'notes', 'specifications'];
 router.post('/assets', adminOnly, async (req, res) => {
   try {
-    const { asset_code, id_ruangan, master_sku } = req.body;
+    const { asset_code, id_ruangan } = req.body;
     if (!asset_code?.trim() || !positiveInt(id_ruangan)) return res.status(400).json({ message: 'Kode aset dan lokasi wajib diisi' });
     
-    // Jika ada master_sku yang dipilih dan beberapa field kosong, kita bisa ambil default dari master_product jika perlu
     const values = assetFields.map((field) => {
       const value = req.body[field];
       if (field === 'status') return value || 'available';
       if (field === 'condition') return value || 'good';
-      if (['id_category', 'id_user', 'serial_number', 'purchase_year', 'price', 'brand_model', 'notes', 'master_sku'].includes(field)) return value || null;
+      if (['id_category', 'id_user', 'serial_number', 'purchase_year', 'price', 'brand_model', 'notes'].includes(field)) return value || null;
       return value ?? null;
     });
 
@@ -156,10 +180,18 @@ router.get('/spareparts', async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Gagal mengambil sparepart', error: error.message }); }
 });
 
-const sparepartFields = ['name', 'id_category', 'stock', 'min_stock', 'unit', 'price', 'supplier', 'notes', 'master_sku'];
+const sparepartFields = ['name', 'id_category', 'stock', 'min_stock', 'unit', 'price', 'supplier', 'notes'];
 router.post('/spareparts', adminOnly, async (req, res) => {
   try { 
-    const values = sparepartFields.map((field) => req.body[field] ?? null); 
+    if (!req.body.name?.trim()) return res.status(400).json({ message: 'Nama sparepart wajib diisi' });
+    const values = sparepartFields.map((field) => {
+      const value = req.body[field];
+      if (field === 'name') return value.trim();
+      if (field === 'unit') return value || 'pcs';
+      if (field === 'stock' || field === 'min_stock') return value === '' || value == null ? 0 : Number(value);
+      if (['id_category', 'price', 'supplier', 'notes'].includes(field)) return value || null;
+      return value ?? null;
+    });
     const { rows } = await db.query(`INSERT INTO sparepart (${sparepartFields.join(', ')}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`, values); 
     await logAudit(db, req, { action: 'CREATE_SPAREPART', detail: `Menambahkan sparepart ${rows[0].name}`, entityType: 'sparepart', entityId: rows[0].id }); 
     res.status(201).json({ data: rows[0] }); 
@@ -169,7 +201,13 @@ router.post('/spareparts', adminOnly, async (req, res) => {
 
 router.put('/spareparts/:id', adminOnly, async (req, res) => {
   try { 
-    const values = sparepartFields.map((field) => req.body[field] ?? null); 
+    const values = sparepartFields.map((field) => {
+      const value = req.body[field];
+      if (field === 'unit') return value || 'pcs';
+      if (field === 'stock' || field === 'min_stock') return value === '' || value == null ? 0 : Number(value);
+      if (['id_category', 'price', 'supplier', 'notes'].includes(field)) return value || null;
+      return value ?? null;
+    });
     values.push(req.params.id); 
     const { rows } = await db.query(`UPDATE sparepart SET ${sparepartFields.map((field, i) => `${field} =$${i + 1}`).join(', ')}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`, values); 
     if (!rows.length) return res.status(404).json({ message: 'Sparepart tidak ditemukan' }); 

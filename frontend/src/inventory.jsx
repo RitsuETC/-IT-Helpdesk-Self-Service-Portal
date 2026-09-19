@@ -4,7 +4,7 @@ import { api } from './api.js'
 const tabs = [
   ['dashboard', 'Dashboard'], ['assets', 'Data Aset'], ['spareparts', 'Sparepart'],
   ['movements', 'Pergerakan Aset'], ['transactions', 'Transaksi Sparepart'],
-  ['maintenance', 'Maintenance'], ['procurement', 'Pengadaan'], ['master-products', 'Master Produk']
+  ['maintenance', 'Maintenance'], ['procurement', 'Pengadaan'], ['master-products', 'Master Aset'], ['master-spareparts', 'Master Sparepart']
 ]
 const blankAsset = { asset_code: '', id_category: '', id_ruangan: '', id_user: '', brand_model: '', serial_number: '', purchase_year: '', price: '', status: 'available', condition: 'good', notes: '', specifications: '' }
 const blankTechnicalSpecs = { processor: '', ram: '', storage: '', operating_system: '', gpu: '', display: '' }
@@ -14,6 +14,8 @@ const blankTransaction = { id_sparepart: '', transaction_type: 'MASUK', quantity
 const blankMaintenance = { id_asset: '', maintenance_type: 'Preventive', start_date: '', end_date: '', complaint: '', action: '', result: '', cost: 0, status: 'scheduled', vendor: '', notes: '' }
 const blankProcurement = { po_number: '', request_date: '', approval_date: '', received_date: '', supplier: '', status: 'draft', notes: '', details: [{ item_name: '', quantity: 1, unit_price: 0 }] }
 const blankMasterProduct = { sku_code: '', product_name: '', id_category: '', default_price: '', processor: '', ram: '', storage: '', operating_system: '', notes: '' }
+const blankMasterSparepart = { sku_code: '', sparepart_name: '', id_category: '', default_price: '', unit: 'pcs', min_stock: 0, specifications: '' }
+const toDateTimeLocal = (value) => value ? new Date(value).toISOString().slice(0, 16) : ''
 
 function Field({ label, children }) { return <label className="inventory-field"><span>{label}</span>{children}</label> }
 function Input({ name, value, onChange, type = 'text', required = false, placeholder }) { return <input name={name} value={value ?? ''} onChange={onChange} type={type} required={required} placeholder={placeholder} /> }
@@ -23,7 +25,7 @@ function FormActions({ onCancel, label = 'Simpan' }) { return <div className="in
 
 function Inventory({ token, user, onBack, onError }) {
   const [tab, setTab] = useState('dashboard')
-  const [data, setData] = useState({ assets: [], spareparts: [], movements: [], transactions: [], maintenance: [], procurement: [], setup: { categories: [], sparepartCategories: [], rooms: [], users: [], tickets: [], masterProducts: [] }, dashboard: {} })
+  const [data, setData] = useState({ assets: [], spareparts: [], movements: [], transactions: [], maintenance: [], procurement: [], setup: { categories: [], sparepartCategories: [], rooms: [], users: [], tickets: [], masterProducts: [], masterSpareparts: [] }, dashboard: {} })
   const [asset, setAsset] = useState(blankAsset)
   const [assetEditingId, setAssetEditingId] = useState(null)
   const [selectedAsset, setSelectedAsset] = useState(null)
@@ -33,8 +35,10 @@ function Inventory({ token, user, onBack, onError }) {
   const [movement, setMovement] = useState(blankMovement)
   const [transaction, setTransaction] = useState(blankTransaction)
   const [maintenance, setMaintenance] = useState(blankMaintenance)
+  const [maintenanceEditingId, setMaintenanceEditingId] = useState(null)
   const [procurement, setProcurement] = useState(blankProcurement)
   const [masterProduct, setMasterProduct] = useState(blankMasterProduct)
+  const [masterSparepart, setMasterSparepart] = useState(blankMasterSparepart)
   const [search, setSearch] = useState('')
   const [assetFilters, setAssetFilters] = useState({ category: '', location: '', status: '', condition: '' })
   
@@ -119,6 +123,11 @@ function Inventory({ token, user, onBack, onError }) {
     setShowAssetModal(true);
   }
 
+  const handleEditMaintenance = (item) => {
+    setMaintenance({ ...blankMaintenance, ...item, start_date: toDateTimeLocal(item.start_date), end_date: toDateTimeLocal(item.end_date) })
+    setMaintenanceEditingId(item.id)
+  }
+
   return <section className="inventory-page">
     <div className="inventory-heading">
       <div>
@@ -180,6 +189,7 @@ function Inventory({ token, user, onBack, onError }) {
         <SectionTitle title="Sparepart" count={parts.length} search={search} setSearch={setSearch} />
         {isAdmin && (
           <form className="inventory-form" onSubmit={(event) => submit(event, '/inventory/spareparts', 'POST', { ...part, id_category: part.id_category || null }, () => setPart(blankPart))}>
+            <div style={{ gridColumn: '1 / -1' }}><Field label="Isi dari Master Sparepart (opsional)"><Select value="" onChange={(event) => { const master = (setup.masterSpareparts || []).find((item) => String(item.id) === event.target.value); if (master) setPart((current) => ({ ...current, name: master.sparepart_name, id_category: master.id_category || '', price: master.default_price || '', unit: master.unit || 'pcs', min_stock: master.min_stock || 0, notes: master.specifications?.notes || current.notes })) }}><option value="">Pilih SKU untuk isi otomatis</option>{(setup.masterSpareparts || []).map((item) => <option key={item.id} value={item.id}>[{item.sku_code}] - {item.sparepart_name}</option>)}</Select></Field></div>
             <Field label="Nama sparepart *"><Input name="name" value={part.name} onChange={update(setPart)} required /></Field>
             <Field label="Kategori"><Select name="id_category" value={part.id_category} onChange={update(setPart)}><option value="">Pilih kategori</option>{setup.sparepartCategories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select></Field>
             <Field label="Stok"><Input name="stock" value={part.stock} onChange={update(setPart)} type="number" /></Field>
@@ -248,8 +258,8 @@ function Inventory({ token, user, onBack, onError }) {
     )}
     
     {tab === 'maintenance' && (
-      <WorkSection title="Maintenance" items={data.maintenance} itemsPerPage={ITEMS_PER_PAGE} columns={['asset_code', 'maintenance_type', 'start_date', 'end_date', 'status', 'pic_name']} labels={['Aset', 'Jenis', 'Mulai', 'Selesai', 'Status', 'PIC']}>
-        <form className="inventory-form" onSubmit={(event) => submit(event, '/inventory/maintenance', 'POST', { ...maintenance, id_asset: Number(maintenance.id_asset), cost: Number(maintenance.cost || 0) }, () => setMaintenance(blankMaintenance))}>
+      <WorkSection title="Maintenance" items={data.maintenance} itemsPerPage={ITEMS_PER_PAGE} columns={['asset_code', 'maintenance_type', 'start_date', 'end_date', 'status', 'pic_name']} labels={['Aset', 'Jenis', 'Mulai', 'Selesai', 'Status', 'PIC']} renderActions={isAdmin ? (item) => <button type="button" className="secondary-button" onClick={() => handleEditMaintenance(item)}>Edit</button> : null}>
+        <form className="inventory-form" onSubmit={(event) => submit(event, maintenanceEditingId ? `/inventory/maintenance/${maintenanceEditingId}` : '/inventory/maintenance', maintenanceEditingId ? 'PUT' : 'POST', { ...maintenance, id_asset: Number(maintenance.id_asset), end_date: maintenance.end_date || null, cost: Number(maintenance.cost || 0) }, () => { setMaintenance(blankMaintenance); setMaintenanceEditingId(null) })}>
           <Field label="Aset *"><Select name="id_asset" value={maintenance.id_asset} onChange={update(setMaintenance)} required><option value="">Pilih aset</option>{assetOptions}</Select></Field>
           <Field label="Jenis maintenance *"><Input name="maintenance_type" value={maintenance.maintenance_type} onChange={update(setMaintenance)} required /></Field>
           <Field label="Tanggal mulai *"><Input name="start_date" value={maintenance.start_date} onChange={update(setMaintenance)} type="datetime-local" required /></Field>
@@ -260,7 +270,7 @@ function Inventory({ token, user, onBack, onError }) {
           <div style={{ gridColumn: '1 / -1' }}><Field label="Keluhan"><Textarea name="complaint" value={maintenance.complaint} onChange={update(setMaintenance)} rows={2} /></Field></div>
           <div style={{ gridColumn: '1 / -1' }}><Field label="Tindakan / Hasil"><Textarea name="result" value={maintenance.result} onChange={update(setMaintenance)} rows={2} /></Field></div>
           <div style={{ gridColumn: '1 / -1' }}><Field label="Catatan Tambahan"><Textarea name="notes" value={maintenance.notes} onChange={update(setMaintenance)} rows={2} /></Field></div>
-          <div style={{ gridColumn: '1 / -1' }}><FormActions label="Catat maintenance" /></div>
+          <div style={{ gridColumn: '1 / -1' }}><FormActions label={maintenanceEditingId ? 'Simpan perubahan' : 'Catat maintenance'} onCancel={maintenanceEditingId ? () => { setMaintenance(blankMaintenance); setMaintenanceEditingId(null) } : undefined} /></div>
         </form>
       </WorkSection>
     )}
@@ -324,6 +334,23 @@ function Inventory({ token, user, onBack, onError }) {
           </tbody>
         </table>
         <PaginationControls currentPage={masterPage} totalItems={masterProductsList.length} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setMasterPage} />
+      </section>
+    )}
+
+    {tab === 'master-spareparts' && (
+      <section className="inventory-section">
+        <SectionTitle title="Master Sparepart / SKU" count={(setup.masterSpareparts || []).length} search="" />
+        {isAdmin && <form className="inventory-form" onSubmit={(event) => { const { sku_code, sparepart_name, id_category, default_price, unit, min_stock, specifications } = masterSparepart; submit(event, '/inventory/master-spareparts', 'POST', { sku_code, sparepart_name, id_category: id_category || null, default_price: default_price || null, unit, min_stock: Number(min_stock || 0), specifications: specifications ? { notes: specifications } : {} }, () => setMasterSparepart(blankMasterSparepart)) }}>
+          <Field label="Kode SKU *"><Input name="sku_code" value={masterSparepart.sku_code} onChange={update(setMasterSparepart)} placeholder="Contoh: RAM-DDR4-8GB" required /></Field>
+          <Field label="Nama sparepart *"><Input name="sparepart_name" value={masterSparepart.sparepart_name} onChange={update(setMasterSparepart)} required /></Field>
+          <Field label="Kategori"><Select name="id_category" value={masterSparepart.id_category} onChange={update(setMasterSparepart)}><option value="">Pilih kategori</option>{setup.sparepartCategories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select></Field>
+          <Field label="Harga default"><Input name="default_price" value={masterSparepart.default_price} onChange={update(setMasterSparepart)} type="number" /></Field>
+          <Field label="Satuan"><Input name="unit" value={masterSparepart.unit} onChange={update(setMasterSparepart)} /></Field>
+          <Field label="Stok minimum"><Input name="min_stock" value={masterSparepart.min_stock} onChange={update(setMasterSparepart)} type="number" /></Field>
+          <div style={{ gridColumn: '1 / -1' }}><Field label="Spesifikasi / catatan"><Textarea name="specifications" value={masterSparepart.specifications} onChange={update(setMasterSparepart)} /></Field></div>
+          <div style={{ gridColumn: '1 / -1' }}><FormActions label="Simpan master sparepart" /></div>
+        </form>}
+        <table className="inventory-table"><thead><tr><th>SKU</th><th>Sparepart</th><th>Kategori</th><th>Satuan</th><th>Harga default</th>{isAdmin && <th>Aksi</th>}</tr></thead><tbody>{(setup.masterSpareparts || []).map((item) => <tr key={item.id}><td>{item.sku_code}</td><td>{item.sparepart_name}</td><td>{setup.sparepartCategories.find((category) => String(category.id) === String(item.id_category))?.name || '-'}</td><td>{item.unit || '-'}</td><td>{item.default_price ? `Rp ${Number(item.default_price).toLocaleString('id-ID')}` : '-'}</td>{isAdmin && <td><button className="danger-button" type="button" onClick={() => remove(`/inventory/master-spareparts/${item.id}`)}>Hapus</button></td>}</tr>)}{!(setup.masterSpareparts || []).length && <tr><td colSpan={isAdmin ? 6 : 5} style={{ textAlign: 'center', color: '#64748b' }}>Belum ada master sparepart.</td></tr>}</tbody></table>
       </section>
     )}
     
@@ -420,7 +447,7 @@ function PaginationControls({ currentPage, totalItems, itemsPerPage, onPageChang
   )
 }
 
-function WorkSection({ title, items, columns, labels, itemsPerPage = 10, children }) { 
+function WorkSection({ title, items, columns, labels, itemsPerPage = 10, children, renderActions }) {
   const [currentPage, setCurrentPage] = useState(1)
   useEffect(() => { setCurrentPage(1) }, [items])
   const paginatedItems = useMemo(() => items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), [items, currentPage, itemsPerPage])
@@ -438,12 +465,14 @@ function WorkSection({ title, items, columns, labels, itemsPerPage = 10, childre
         <thead>
           <tr>
             {labels.map((label) => <th key={label}>{label}</th>)}
+            {renderActions && <th>Aksi</th>}
           </tr>
         </thead>
         <tbody>
           {paginatedItems.map((item) => (
             <tr key={item.id || `${item.asset_code}-${item.movement_date}`}>
               {columns.map((column) => <td key={column}>{item[column] ?? '-'}</td>)}
+              {renderActions && <td>{renderActions(item)}</td>}
             </tr>
           ))}
         </tbody>
