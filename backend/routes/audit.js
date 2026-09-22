@@ -5,6 +5,23 @@ const authorizeRole = require('../middleware/roleMiddleware');
 
 const router = express.Router();
 
+async function currentInventoryData(entityType, entityId) {
+  const sources = {
+    asset: ['asset', 'id_asset'],
+    sparepart: ['sparepart', 'id'],
+    master_product: ['master_product', 'id'],
+    master_sparepart: ['master_sparepart', 'id'],
+    maintenance: ['maintenance', 'id'],
+    procurement: ['procurement', 'id'],
+    inventory_movement: ['asset_movement', 'id'],
+  };
+  const source = sources[entityType];
+  if (!source || !entityId) return null;
+  const [table, key] = source;
+  const { rows } = await db.query(`SELECT * FROM ${table} WHERE ${key} = $1`, [entityId]);
+  return rows[0] || null;
+}
+
 // Audit records are intentionally read-only and only visible to administrators.
 router.get('/', verifyToken, authorizeRole('admin'), async (req, res) => {
   try {
@@ -28,7 +45,11 @@ router.get('/', verifyToken, authorizeRole('admin'), async (req, res) => {
        ORDER BY created_at DESC, id DESC LIMIT $${values.length}`,
       values
     );
-    res.json({ data: rows });
+    const data = await Promise.all(rows.map(async (row) => ({
+      ...row,
+      current_data: await currentInventoryData(row.entity_type, row.entity_id),
+    })));
+    res.json({ data });
   } catch (error) {
     res.status(500).json({ message: 'Gagal mengambil log aktivitas', error: error.message });
   }

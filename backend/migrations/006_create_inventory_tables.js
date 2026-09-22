@@ -25,6 +25,7 @@ async function migrate() {
       ADD COLUMN IF NOT EXISTS serial_number VARCHAR(255) UNIQUE,
       ADD COLUMN IF NOT EXISTS purchase_year DATE,
       ADD COLUMN IF NOT EXISTS price NUMERIC(15,2),
+      ADD COLUMN IF NOT EXISTS stock INTEGER NOT NULL DEFAULT 0,
       ADD COLUMN IF NOT EXISTS condition VARCHAR(50) DEFAULT 'good',
       ADD COLUMN IF NOT EXISTS notes TEXT,
       ADD COLUMN IF NOT EXISTS specifications JSONB,
@@ -69,7 +70,9 @@ async function migrate() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS asset_movement (
         id SERIAL PRIMARY KEY,
-        id_asset INTEGER NOT NULL REFERENCES asset(id_asset),
+        id_asset INTEGER REFERENCES asset(id_asset),
+        id_sparepart INTEGER REFERENCES sparepart(id),
+        quantity INTEGER NOT NULL DEFAULT 1,
         id_user INTEGER REFERENCES login(id),
         from_location INTEGER REFERENCES unit(id),
         to_location INTEGER REFERENCES unit(id),
@@ -151,6 +154,13 @@ async function migrate() {
     await client.query(`
       ALTER TABLE procurement ADD COLUMN IF NOT EXISTS supplier VARCHAR(255);
     `);
+    await client.query(`ALTER TABLE asset_movement ALTER COLUMN id_asset DROP NOT NULL;`);
+    await client.query(`ALTER TABLE asset_movement ADD COLUMN IF NOT EXISTS id_sparepart INTEGER REFERENCES sparepart(id);`);
+    await client.query(`ALTER TABLE asset_movement ADD COLUMN IF NOT EXISTS quantity INTEGER NOT NULL DEFAULT 1;`);
+    await client.query(`ALTER TABLE asset_movement ADD COLUMN IF NOT EXISTS asset_quantity INTEGER NOT NULL DEFAULT 0;`);
+    await client.query(`ALTER TABLE asset_movement ADD COLUMN IF NOT EXISTS sparepart_quantity INTEGER NOT NULL DEFAULT 0;`);
+    await client.query(`ALTER TABLE procurement_detail ADD COLUMN IF NOT EXISTS id_sparepart INTEGER REFERENCES sparepart(id);`);
+    await client.query(`ALTER TABLE procurement_detail ADD COLUMN IF NOT EXISTS id_asset INTEGER REFERENCES asset(id_asset);`);
 
     // 10. Reusable product/SKU definitions for quickly registering assets.
     await client.query(`
@@ -179,6 +189,8 @@ async function migrate() {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
     `);
+    await client.query(`ALTER TABLE master_product ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();`);
+    await client.query(`ALTER TABLE master_sparepart ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();`);
 
     // Create indexes for performance
     await client.query(`CREATE INDEX IF NOT EXISTS idx_asset_category ON asset(id_category);`);
