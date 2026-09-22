@@ -23,6 +23,7 @@ function App() {
   const [showSidebar, setShowSidebar] = useState(false)
   const [articles, setArticles] = useState([])
   const [notice, setNotice] = useState('')
+  const [loginError, setLoginError] = useState('') // State khusus error login di dalam modal
   const [selectedArticle, setSelectedArticle] = useState(null)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
 
@@ -83,7 +84,7 @@ function App() {
 
   const handleLogin = async (event) => {
     event.preventDefault()
-    setNotice('')
+    setLoginError('') // Reset error modal sebelumnya
     const form = new FormData(event.currentTarget)
     try {
       const result = await api('/auth/login', { 
@@ -95,7 +96,7 @@ function App() {
       setSession(nextSession)
       setShowLoginModal(false)
     } catch (error) { 
-      setNotice(error.message) 
+      setLoginError(error.message) // Tampilkan pesan error di dalam modal login
     }
   }
 
@@ -266,7 +267,7 @@ function App() {
           ) : (
             <button 
               className="login-nav-btn" 
-              onClick={() => setShowLoginModal(true)}
+              onClick={() => { setLoginError(''); setShowLoginModal(true); }}
               style={{
                 background: '#047857',
                 color: '#ffffff',
@@ -348,6 +349,7 @@ function App() {
                 }}
                 onClick={() => {
                   if (!session) {
+                    setLoginError('')
                     setShowLoginModal(true)
                   } else {
                     if (session.user.role === 'user') {
@@ -381,7 +383,7 @@ function App() {
                 onTroubleshooting={() => scrollToSection('sec-knowledge')} 
                 onTickets={() => setPage('tickets')} 
                 onKnowledge={() => scrollToSection('sec-knowledge')} 
-                onRequireLogin={() => setShowLoginModal(true)}
+                onRequireLogin={() => { setLoginError(''); setShowLoginModal(true); }}
                 showHistory={false}
               />
             </div>
@@ -414,7 +416,7 @@ function App() {
           user={session?.user} 
           articles={articles}
           onError={setNotice} 
-          onRequireLogin={() => setShowLoginModal(true)}
+          onRequireLogin={() => { setLoginError(''); setShowLoginModal(true); }}
           onOpenArticle={(article) => { setSelectedArticle(article); setPage('knowledge') }}
         />
       )}
@@ -430,6 +432,7 @@ function App() {
           onOpenArticle={(article) => { setSelectedArticle(article); setPage('knowledge') }}
           onRequireLogin={() => {
             setShowCreateTicketModal(false)
+            setLoginError('')
             setShowLoginModal(true)
           }}
         />
@@ -474,7 +477,7 @@ function App() {
         <AuditLog token={session.token} onBack={() => setPage('landing')} onError={setNotice} />
       )}
 
-      {/* Popup Login Modal dengan Tombol Login yang Disamakan Persis Tombol Buat Tiket */}
+      {/* Popup Login Modal dengan Notifikasi Error di Bawah Password */}
       {showLoginModal && (
         <div className="modal-backdrop" onClick={() => setShowLoginModal(false)} style={{
           position: 'fixed',
@@ -521,7 +524,7 @@ function App() {
               justifyContent: 'center'
             }}>×</button>
 
-            <div className="login-brand" style={{ textAlign: 'center', marginBottom: '24px', marginTop: '8px' }}>
+            <div className="login-brand" style={{ textAlign: 'center', marginBottom: '20px', marginTop: '8px' }}>
               <img src={ummuhaniLogo} alt="Ummuhani" style={{ width: '48px', height: 'auto', marginBottom: '12px' }} />
               <h2 style={{ fontSize: '1.4rem', color: '#064e3b', margin: '0 0 4px 0', fontWeight: '800' }}>IT Helpdesk</h2>
               <p style={{ fontSize: '0.9rem', color: '#64748b', margin: 0 }}>Self-Service Portal</p>
@@ -550,6 +553,22 @@ function App() {
                   style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none' }}
                 />
               </label>
+
+              {/* Notifikasi Error diposisikan di bawah kotak password */}
+              {loginError && (
+                <div style={{ 
+                  padding: '10px 14px', 
+                  backgroundColor: '#fee2e2', 
+                  color: '#991b1b', 
+                  borderRadius: '8px', 
+                  fontSize: '0.85rem', 
+                  fontWeight: '500', 
+                  textAlign: 'center',
+                  border: '1px solid #fca5a5'
+                }}>
+                  {loginError}
+                </div>
+              )}
 
               <button 
                 className="login" 
