@@ -24,6 +24,7 @@ function App() {
   const [articles, setArticles] = useState([])
   const [notice, setNotice] = useState('')
   const [loginError, setLoginError] = useState('') // State khusus error login di dalam modal
+  const [errorPopup, setErrorPopup] = useState(null)
   const [selectedArticle, setSelectedArticle] = useState(null)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
 
@@ -40,6 +41,23 @@ function App() {
     window.addEventListener('helpdesk:session-expired', handleExpiredSession)
     return () => window.removeEventListener('helpdesk:session-expired', handleExpiredSession)
   }, [])
+
+  useEffect(() => {
+    const showApiError = (event) => {
+      setErrorPopup({
+        id: Date.now(),
+        message: event.detail?.message || 'Terjadi kesalahan saat menghubungi server.',
+      })
+    }
+    window.addEventListener('helpdesk:api-error', showApiError)
+    return () => window.removeEventListener('helpdesk:api-error', showApiError)
+  }, [])
+
+  useEffect(() => {
+    if (!errorPopup) return undefined
+    const timer = window.setTimeout(() => setErrorPopup(null), 7000)
+    return () => window.clearTimeout(timer)
+  }, [errorPopup?.id])
 
   const loadArticles = async () => {
     try {
@@ -292,6 +310,19 @@ function App() {
       </header>
 
       {notice && <p className="app-notice" role="alert">{notice}</p>}
+
+      {errorPopup && (
+        <div className="api-error-popup" role="alertdialog" aria-modal="true" aria-labelledby="api-error-title">
+          <section className="api-error-popup-card">
+            <div>
+              <p className="api-error-popup-label">Terjadi kendala</p>
+              <h2 id="api-error-title">Permintaan gagal</h2>
+              <p>{errorPopup.message}</p>
+            </div>
+            <button type="button" onClick={() => setErrorPopup(null)} autoFocus>Tutup</button>
+          </section>
+        </div>
+      )}
 
       {/* Landing Page Tampilan Bento Grid Layout */}
       {page === 'landing' && (

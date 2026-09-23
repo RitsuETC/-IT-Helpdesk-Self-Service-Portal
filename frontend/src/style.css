@@ -198,6 +198,67 @@ button.account:hover {
   box-shadow: 0 5px 15px rgb(180 30 40 / .05);
 }
 
+.api-error-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: start center;
+  padding: 24px 16px;
+  pointer-events: none;
+}
+
+.api-error-popup-card {
+  width: min(100%, 480px);
+  display: flex;
+  gap: 20px;
+  align-items: start;
+  padding: 18px 20px;
+  border: 1px solid #fca5a5;
+  border-radius: 14px;
+  background: #fff7f7;
+  color: #7f1d1d;
+  box-shadow: 0 16px 38px rgb(127 29 29 / 24%);
+  pointer-events: auto;
+  animation: api-error-popup-enter .2s ease-out;
+}
+
+.api-error-popup-label {
+  margin: 0 0 4px;
+  color: #dc2626;
+  font-size: .75rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.api-error-popup-card h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.api-error-popup-card p:not(.api-error-popup-label) {
+  margin: 8px 0 0;
+  color: #991b1b;
+  line-height: 1.45;
+}
+
+.api-error-popup-card button {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #b91c1c;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@keyframes api-error-popup-enter {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* =========================================================
    LOGIN
    ========================================================= */
