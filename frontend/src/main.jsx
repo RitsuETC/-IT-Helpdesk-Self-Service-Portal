@@ -309,8 +309,6 @@ function App() {
         </div>
       </header>
 
-      {notice && <p className="app-notice" role="alert">{notice}</p>}
-
       {errorPopup && (
         <div className="api-error-popup" role="alertdialog" aria-modal="true" aria-labelledby="api-error-title">
           <section className="api-error-popup-card">
