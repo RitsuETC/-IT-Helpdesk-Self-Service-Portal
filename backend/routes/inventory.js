@@ -11,6 +11,12 @@ const workRoles = authorizeRole('admin', 'teknisi');
 const adminOnly = workRoles;
 
 const positiveInt = (value) => Number.isInteger(Number(value)) && Number(value) > 0;
+const nonNegativeNumber = (value) => value === '' || value == null || (Number.isFinite(Number(value)) && Number(value) >= 0);
+const validateNonNegative = (res, values, label = 'Harga') => {
+  if (values.every(nonNegativeNumber)) return true;
+  res.status(400).json({ message: `${label} tidak boleh bernilai negatif atau tidak valid` });
+  return false;
+};
 const dateValue = (value) => value || null;
 const changedValues = (before, after, fields) => Object.fromEntries(fields.filter((field) => JSON.stringify(before[field] ?? null) !== JSON.stringify(after[field] ?? null)).map((field) => [field, { before: before[field] ?? null, after: after[field] ?? null }]));
 
@@ -66,6 +72,7 @@ router.post('/master-products', adminOnly, async (req, res) => {
     if (!sku_code?.trim() || !product_name?.trim()) {
       return res.status(400).json({ message: 'SKU dan nama produk wajib diisi' });
     }
+    if (!validateNonNegative(res, [default_price], 'Harga default')) return;
     const values = [
       sku_code.trim(), product_name.trim(), id_category || null, default_price || null,
       specifications && typeof specifications === 'object' ? specifications : {}
@@ -86,6 +93,7 @@ router.put('/master-products/:id', adminOnly, async (req, res) => {
   try {
     const { sku_code, product_name, id_category, default_price, specifications } = req.body;
     if (!sku_code?.trim() || !product_name?.trim()) return res.status(400).json({ message: 'SKU dan nama produk wajib diisi' });
+    if (!validateNonNegative(res, [default_price], 'Harga default')) return;
     const previous = await db.query('SELECT * FROM master_product WHERE id = $1', [req.params.id]);
     if (!previous.rowCount) return res.status(404).json({ message: 'Master produk tidak ditemukan' });
     const { rows } = await db.query(
@@ -112,6 +120,7 @@ router.post('/master-spareparts', adminOnly, async (req, res) => {
   try {
     const { sku_code, sparepart_name, id_category, default_price, unit, min_stock, specifications } = req.body;
     if (!sku_code?.trim() || !sparepart_name?.trim()) return res.status(400).json({ message: 'SKU dan nama sparepart wajib diisi' });
+    if (!validateNonNegative(res, [default_price, min_stock], 'Harga default atau stok minimum')) return;
     const { rows } = await db.query(
       `INSERT INTO master_sparepart (sku_code, sparepart_name, id_category, default_price, unit, min_stock, specifications)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
@@ -126,6 +135,7 @@ router.put('/master-spareparts/:id', adminOnly, async (req, res) => {
   try {
     const { sku_code, sparepart_name, id_category, default_price, unit, min_stock, specifications } = req.body;
     if (!sku_code?.trim() || !sparepart_name?.trim()) return res.status(400).json({ message: 'SKU dan nama sparepart wajib diisi' });
+    if (!validateNonNegative(res, [default_price, min_stock], 'Harga default atau stok minimum')) return;
     const previous = await db.query('SELECT * FROM master_sparepart WHERE id = $1', [req.params.id]);
     if (!previous.rowCount) return res.status(404).json({ message: 'Master sparepart tidak ditemukan' });
     const { rows } = await db.query(
@@ -169,6 +179,7 @@ router.post('/assets', adminOnly, async (req, res) => {
   try {
     const { asset_code, id_ruangan } = req.body;
     if (!asset_code?.trim() || !positiveInt(id_ruangan)) return res.status(400).json({ message: 'Kode aset dan lokasi wajib diisi' });
+    if (!validateNonNegative(res, [req.body.price, req.body.stock], 'Harga atau stok')) return;
     
     const values = assetFields.map((field) => {
       const value = req.body[field];
@@ -187,6 +198,7 @@ router.post('/assets', adminOnly, async (req, res) => {
 
 router.put('/assets/:id', adminOnly, async (req, res) => {
   try {
+    if (!validateNonNegative(res, [req.body.price, req.body.stock], 'Harga atau stok')) return;
     const values = assetFields.map((field) => req.body[field] ?? null);
     values.push(req.params.id);
     const { rows } = await db.query(`UPDATE asset SET ${assetFields.map((field, i) => `${field} =$${i + 1}`).join(', ')}, updated_at = NOW() WHERE id_asset = $${values.length} RETURNING *`, values);
@@ -221,6 +233,7 @@ router.post('/spareparts', adminOnly, async (req, res) => {
   const client = await db.connect();
   try { 
     if (!req.body.name?.trim()) return res.status(400).json({ message: 'Nama sparepart wajib diisi' });
+    if (!validateNonNegative(res, [req.body.price, req.body.stock, req.body.min_stock], 'Harga atau stok')) return;
     const values = sparepartFields.map((field) => {
       const value = req.body[field];
       if (field === 'name') return value.trim();
@@ -255,6 +268,7 @@ router.post('/spareparts', adminOnly, async (req, res) => {
 
 router.put('/spareparts/:id', adminOnly, async (req, res) => {
   try { 
+    if (!validateNonNegative(res, [req.body.price, req.body.stock, req.body.min_stock], 'Harga atau stok')) return;
     const values = sparepartFields.map((field) => {
       const value = req.body[field];
       if (field === 'unit') return value || 'pcs';
@@ -321,14 +335,14 @@ router.post('/transactions', workRoles, async (req, res) => {
 
 const maintenanceFields = ['id_asset', 'maintenance_type', 'start_date', 'end_date', 'complaint', 'action', 'result', 'cost', 'status', 'vendor', 'id_pic', 'notes'];
 router.get('/maintenance', async (_req, res) => { try { const { rows } = await db.query(`SELECT m.*, a.asset_code, l."Nama" AS pic_name FROM maintenance m JOIN asset a ON a.id_asset = m.id_asset LEFT JOIN login l ON l.id = m.id_pic ORDER BY m.start_date DESC`); res.json({ data: rows }); } catch (error) { res.status(500).json({ message: 'Gagal mengambil maintenance', error: error.message }); } });
-router.post('/maintenance', workRoles, async (req, res) => { try { const values = maintenanceFields.map((field) => req.body[field] ?? (field === 'id_pic' ? req.user.id : field === 'status' ? 'scheduled' : field === 'cost' ? 0 : null)); const { rows } = await db.query(`INSERT INTO maintenance (${maintenanceFields.join(', ')}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`, values); await logAudit(db, req, { action: 'CREATE_MAINTENANCE', detail: `Mencatat maintenance aset #${rows[0].id_asset}`, entityType: 'maintenance', entityId: rows[0].id }); res.status(201).json({ data: rows[0] }); } catch (error) { res.status(500).json({ message: 'Gagal mencatat maintenance', error: error.message }); } });
-router.put('/maintenance/:id', workRoles, async (req, res) => { try { const values = maintenanceFields.map((field) => req.body[field] ?? null); values.push(req.params.id); const { rows } = await db.query(`UPDATE maintenance SET ${maintenanceFields.map((field, i) => `${field} =$${i + 1}`).join(', ')}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`, values); if (!rows.length) return res.status(404).json({ message: 'Maintenance tidak ditemukan' }); await logAudit(db, req, { action: 'UPDATE_MAINTENANCE', detail: `Memperbarui maintenance aset #${rows[0].id_asset}`, entityType: 'maintenance', entityId: rows[0].id }); res.json({ data: rows[0] }); } catch (error) { res.status(500).json({ message: 'Gagal mengubah maintenance', error: error.message }); } });
+router.post('/maintenance', workRoles, async (req, res) => { try { if (!validateNonNegative(res, [req.body.cost], 'Biaya')) return; const values = maintenanceFields.map((field) => req.body[field] ?? (field === 'id_pic' ? req.user.id : field === 'status' ? 'scheduled' : field === 'cost' ? 0 : null)); const { rows } = await db.query(`INSERT INTO maintenance (${maintenanceFields.join(', ')}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`, values); await logAudit(db, req, { action: 'CREATE_MAINTENANCE', detail: `Mencatat maintenance aset #${rows[0].id_asset}`, entityType: 'maintenance', entityId: rows[0].id }); res.status(201).json({ data: rows[0] }); } catch (error) { res.status(500).json({ message: 'Gagal mencatat maintenance', error: error.message }); } });
+router.put('/maintenance/:id', workRoles, async (req, res) => { try { if (!validateNonNegative(res, [req.body.cost], 'Biaya')) return; const values = maintenanceFields.map((field) => req.body[field] ?? null); values.push(req.params.id); const { rows } = await db.query(`UPDATE maintenance SET ${maintenanceFields.map((field, i) => `${field} =$${i + 1}`).join(', ')}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`, values); if (!rows.length) return res.status(404).json({ message: 'Maintenance tidak ditemukan' }); await logAudit(db, req, { action: 'UPDATE_MAINTENANCE', detail: `Memperbarui maintenance aset #${rows[0].id_asset}`, entityType: 'maintenance', entityId: rows[0].id }); res.json({ data: rows[0] }); } catch (error) { res.status(500).json({ message: 'Gagal mengubah maintenance', error: error.message }); } });
 router.delete('/maintenance/:id', workRoles, async (req, res) => { try { const result = await db.query('DELETE FROM maintenance WHERE id = $1 RETURNING id, id_asset', [req.params.id]); if (!result.rowCount) return res.status(404).json({ message: 'Maintenance tidak ditemukan' }); await logAudit(db, req, { action: 'DELETE_MAINTENANCE', detail: `Menghapus maintenance aset #${result.rows[0].id_asset}`, entityType: 'maintenance', entityId: result.rows[0].id }); res.json({ message: 'Maintenance berhasil dihapus' }); } catch (error) { res.status(500).json({ message: 'Gagal menghapus maintenance', error: error.message }); } });
 
 const procurementFields = ['po_number', 'request_date', 'approval_date', 'received_date', 'supplier', 'status', 'total_cost', 'notes'];
 router.get('/procurement', async (_req, res) => { try { const procurements = await db.query('SELECT * FROM procurement ORDER BY request_date DESC'); const details = await db.query('SELECT * FROM procurement_detail ORDER BY id'); res.json({ data: procurements.rows.map((item) => ({ ...item, details: details.rows.filter((detail) => detail.id_procurement === item.id) })) }); } catch (error) { res.status(500).json({ message: 'Gagal mengambil pengadaan', error: error.message }); } });
-router.post('/procurement', adminOnly, async (req, res) => { const client = await db.connect(); try { const { details = [] } = req.body; const values = procurementFields.map((field) => req.body[field] ?? (field === 'status' ? 'draft' : field === 'total_cost' ? details.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unit_price || 0), 0) : null)); await client.query('BEGIN'); const procurement = await client.query(`INSERT INTO procurement (${procurementFields.join(', ')}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`, values); for (const detail of details) { await client.query('INSERT INTO procurement_detail (id_procurement, id_asset, id_sparepart, item_name, quantity, unit_price, notes) VALUES ($1,$2,$3,$4,$5,$6,$7)', [procurement.rows[0].id, detail.id_asset || null, detail.id_sparepart || null, detail.item_name, detail.quantity, detail.unit_price, detail.notes || null]); if (procurement.rows[0].status === 'received' && positiveInt(detail.id_sparepart)) await client.query('UPDATE sparepart SET stock = stock + $1, updated_at = NOW() WHERE id = $2', [Number(detail.quantity), detail.id_sparepart]); if (procurement.rows[0].status === 'received' && positiveInt(detail.id_asset)) await client.query('UPDATE asset SET stock = stock + $1, updated_at = NOW() WHERE id_asset = $2', [Number(detail.quantity), detail.id_asset]); } await logAudit(client, req, { action: 'CREATE_PROCUREMENT', detail: `Membuat pengadaan ${procurement.rows[0].po_number}`, entityType: 'procurement', entityId: procurement.rows[0].id }); await client.query('COMMIT'); res.status(201).json({ data: procurement.rows[0] }); } catch (error) { await client.query('ROLLBACK'); res.status(500).json({ message: 'Gagal mencatat pengadaan', error: error.message }); } finally { client.release(); } });
-router.put('/procurement/:id', adminOnly, async (req, res) => { try { const values = procurementFields.map((field) => req.body[field] ?? null); values.push(req.params.id); const { rows } = await db.query(`UPDATE procurement SET ${procurementFields.map((field, i) => `${field} =$${i + 1}`).join(', ')}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`, values); if (!rows.length) return res.status(404).json({ message: 'Pengadaan tidak ditemukan' }); await logAudit(db, req, { action: 'UPDATE_PROCUREMENT', detail: `Memperbarui pengadaan ${rows[0].po_number}`, entityType: 'procurement', entityId: rows[0].id }); res.json({ data: rows[0] }); } catch (error) { res.status(500).json({ message: 'Gagal mengubah pengadaan', error: error.message }); } });
+router.post('/procurement', adminOnly, async (req, res) => { const client = await db.connect(); try { const { details = [] } = req.body; if (!validateNonNegative(res, [req.body.total_cost, ...details.flatMap((item) => [item.quantity, item.unit_price])], 'Jumlah atau harga')) return; const values = procurementFields.map((field) => req.body[field] ?? (field === 'status' ? 'draft' : field === 'total_cost' ? details.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unit_price || 0), 0) : null)); await client.query('BEGIN'); const procurement = await client.query(`INSERT INTO procurement (${procurementFields.join(', ')}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`, values); for (const detail of details) { await client.query('INSERT INTO procurement_detail (id_procurement, id_asset, id_sparepart, item_name, quantity, unit_price, notes) VALUES ($1,$2,$3,$4,$5,$6,$7)', [procurement.rows[0].id, detail.id_asset || null, detail.id_sparepart || null, detail.item_name, detail.quantity, detail.unit_price, detail.notes || null]); if (procurement.rows[0].status === 'received' && positiveInt(detail.id_sparepart)) await client.query('UPDATE sparepart SET stock = stock + $1, updated_at = NOW() WHERE id = $2', [Number(detail.quantity), detail.id_sparepart]); if (procurement.rows[0].status === 'received' && positiveInt(detail.id_asset)) await client.query('UPDATE asset SET stock = stock + $1, updated_at = NOW() WHERE id_asset = $2', [Number(detail.quantity), detail.id_asset]); } await logAudit(client, req, { action: 'CREATE_PROCUREMENT', detail: `Membuat pengadaan ${procurement.rows[0].po_number}`, entityType: 'procurement', entityId: procurement.rows[0].id }); await client.query('COMMIT'); res.status(201).json({ data: procurement.rows[0] }); } catch (error) { await client.query('ROLLBACK'); res.status(500).json({ message: 'Gagal mencatat pengadaan', error: error.message }); } finally { client.release(); } });
+router.put('/procurement/:id', adminOnly, async (req, res) => { try { if (!validateNonNegative(res, [req.body.total_cost], 'Total biaya')) return; const values = procurementFields.map((field) => req.body[field] ?? null); values.push(req.params.id); const { rows } = await db.query(`UPDATE procurement SET ${procurementFields.map((field, i) => `${field} =$${i + 1}`).join(', ')}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`, values); if (!rows.length) return res.status(404).json({ message: 'Pengadaan tidak ditemukan' }); await logAudit(db, req, { action: 'UPDATE_PROCUREMENT', detail: `Memperbarui pengadaan ${rows[0].po_number}`, entityType: 'procurement', entityId: rows[0].id }); res.json({ data: rows[0] }); } catch (error) { res.status(500).json({ message: 'Gagal mengubah pengadaan', error: error.message }); } });
 router.delete('/procurement/:id', adminOnly, async (req, res) => { try { const result = await db.query('DELETE FROM procurement WHERE id = $1 RETURNING id, po_number', [req.params.id]); if (!result.rowCount) return res.status(404).json({ message: 'Pengadaan tidak ditemukan' }); await logAudit(db, req, { action: 'DELETE_PROCUREMENT', detail: `Menghapus pengadaan ${result.rows[0].po_number}`, entityType: 'procurement', entityId: result.rows[0].id }); res.json({ message: 'Pengadaan berhasil dihapus' }); } catch (error) { res.status(500).json({ message: 'Gagal menghapus pengadaan', error: error.message }); } });
 
 module.exports = router;
