@@ -1,3 +1,4 @@
+<<<<<<< ours
 import { useEffect, useMemo, useState } from 'react'
 import QRCode from 'qrcode'
 import { api } from './api.js'
@@ -212,29 +213,186 @@ export default function Inventory({ token, user, onBack, onError }) {
   const handleOpenEditAsset = (item) => {
     setAsset({ ...blankAsset, ...item, purchase_year: toDateOnly(item.purchase_year) });
     setTechnicalSpecs(item.specifications && typeof item.specifications === 'object' ? item.specifications : blankTechnicalSpecs);
-    setAssetEditingId(item.id_asset);
-    setShowAssetModal(true);
-  }
+=======
+import React, { useState, useEffect, useMemo } from 'react';
 
+// ======================= KOMPONEN UTAMA INVENTORY =======================
+
+export default function InventoryManagement({
+  tab,
+  setTab,
+  setup,
+  isAdmin,
+  submit,
+  remove,
+  update,
+  formatTableDate,
+  Field,
+  Input,
+  Select,
+  Textarea,
+  FormActions,
+  userOptions
+}) {
+  // State untuk Master Produk & Master Sparepart
+  const blankMasterProduct = { sku_code: '', product_name: '', id_category: '', default_price: '', specifications: '' };
+  const blankMasterSparepart = { sku_code: '', sparepart_name: '', id_category: '', default_price: '', unit: 'pcs', min_stock: 0, specifications: '' };
+  
+  const [masterProduct, setMasterProduct] = useState(blankMasterProduct);
+  const [masterProductEditingId, setMasterProductEditingId] = useState(null);
+  const [masterSparepart, setMasterSparepart] = useState(blankMasterSparepart);
+  const [masterSparepartEditingId, setMasterSparepartEditingId] = useState(null);
+
+  // State untuk Data Aset & Sparepart
+  const blankAsset = { asset_code: '', id_category: '', id_ruangan: '', id_user: '', brand_model: '', serial_number: '', purchase_year: '', price: '', stock: 1, status: 'available', condition: 'good', notes: '' };
+  const blankPart = { name: '', id_category: '', stock: 0, min_stock: 0, unit: 'pcs', price: '', supplier: '', notes: '' };
+  
+  const [asset, setAsset] = useState(blankAsset);
+  const [assetEditingId, setAssetEditingId] = useState(null);
+  const [part, setPart] = useState(blankPart);
+  const [partEditingId, setPartEditingId] = useState(null);
+
+  // State Modal & Detail
+  const [showAssetModal, setShowAssetModal] = useState(false);
+  const [showPartModal, setShowPartModal] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState(null);
+  const [selectedPart, setSelectedPart] = useState(null);
+
+  // State Update Stok Langsung
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [stockUpdateItem, setStockUpdateItem] = useState(null);
+  const [stockUpdateType, setStockUpdateType] = useState('asset');
+
+  // State Pencarian
+  const [assetSearch, setAssetSearch] = useState('');
+  const [partSearch, setPartSearch] = useState('');
+
+  // State Transaksi & Mutasi
+  const [assetMovement, setAssetMovement] = useState({ id_asset: '', id_ruangan_asal: '', id_ruangan_tujuan: '', movement_date: '', notes: '' });
+  const [partTransaction, setPartTransaction] = useState({ id_sparepart: '', transaction_type: 'out', quantity: 1, id_asset: '', notes: '' });
+  const [technicalSpecs, setTechnicalSpecs] = useState({ processor: '', ram: '', storage: '', operating_system: '', gpu: '', display: '' });
+
+  // Filter Data
+  const filteredAssets = useMemo(() => {
+    return (setup.assets || []).filter((item) =>
+      `${item.asset_code} ${item.brand_model} ${item.category_name || ''} ${item.ruangan || ''} ${item.user_name || ''}`
+        .toLowerCase()
+        .includes(assetSearch.toLowerCase())
+    );
+  }, [setup.assets, assetSearch]);
+
+  const filteredParts = useMemo(() => {
+    return (setup.spareparts || []).filter((item) =>
+      `${item.name} ${item.category_name || ''} ${item.supplier || ''}`
+        .toLowerCase()
+        .includes(partSearch.toLowerCase())
+    );
+  }, [setup.spareparts, partSearch]);
+
+  const selectedCategory = useMemo(() => {
+    return (setup.categories || []).find((cat) => String(cat.id) === String(asset.id_category));
+  }, [setup.categories, asset.id_category]);
+
+  const needsTechnicalSpecs = useMemo(() => {
+    if (!selectedCategory) return false;
+    const name = selectedCategory.name.toLowerCase();
+    return name.includes('laptop') || name.includes('pc') || name.includes('komputer') || name.includes('server');
+  }, [selectedCategory]);
+
+  // Handler Edit & Update
+  const handleEditAsset = (item) => {
+>>>>>>> theirs
+    setAssetEditingId(item.id_asset);
+    setAsset({
+      asset_code: item.asset_code || '',
+      id_category: item.id_category || '',
+      id_ruangan: item.id_ruangan || '',
+      id_user: item.id_user || '',
+      brand_model: item.brand_model || '',
+      serial_number: item.serial_number || '',
+      purchase_year: item.purchase_year ? item.purchase_year.split('T')[0] : '',
+      price: item.price || '',
+      stock: item.stock ?? 1,
+      status: item.status || 'available',
+      condition: item.condition || 'good',
+      notes: item.notes || ''
+    });
+    if (item.specifications && typeof item.specifications === 'object') {
+      setTechnicalSpecs({
+        processor: item.specifications.processor || '',
+        ram: item.specifications.ram || '',
+        storage: item.specifications.storage || '',
+        operating_system: item.specifications.operating_system || '',
+        gpu: item.specifications.gpu || '',
+        display: item.specifications.display || ''
+      });
+    } else {
+      setTechnicalSpecs({ processor: '', ram: '', storage: '', operating_system: '', gpu: '', display: '' });
+    }
+    setShowAssetModal(true);
+  };
+
+  const handleEditPart = (item) => {
+    setPartEditingId(item.id);
+    setPart({
+      name: item.name || '',
+      id_category: item.id_category || '',
+      stock: item.stock || 0,
+      min_stock: item.min_stock || 0,
+      unit: item.unit || 'pcs',
+      price: item.price || '',
+      supplier: item.supplier || '',
+      notes: item.notes || ''
+    });
+    setShowPartModal(true);
+  };
+
+<<<<<<< ours
   const handleOpenAddPart = () => { setPart(blankPart); setPartEditingId(null); setShowPartModal(true); }
   const handleOpenEditPart = (item) => { setPart({ ...blankPart, ...item }); setPartEditingId(item.id); setShowPartModal(true); }
 
   const handleSaveStock = async (e) => {
-    e.preventDefault();
-    try {
-      if (stockUpdateType === 'asset') {
-        const payload = { ...stockUpdateItem, id_category: stockUpdateItem.id_category || null, id_ruangan: Number(stockUpdateItem.id_ruangan), id_user: stockUpdateItem.id_user || null, serial_number: stockUpdateItem.serial_number?.trim() || null, purchase_year: stockUpdateItem.purchase_year || null, price: stockUpdateItem.price || null, stock: Number(stockUpdateItem.stock), specifications: stockUpdateItem.specifications ? { detail: stockUpdateItem.specifications } : null };
-        await api(`/inventory/assets/${stockUpdateItem.id_asset}`, { token, method: 'PUT', body: payload });
-      } else {
-        const payload = { ...stockUpdateItem, id_category: stockUpdateItem.id_category || null, stock: Number(stockUpdateItem.stock), min_stock: Number(stockUpdateItem.min_stock) };
-        await api(`/inventory/spareparts/${stockUpdateItem.id}`, { token, method: 'PUT', body: payload });
-      }
-      setShowStockModal(false);
-      setStockUpdateItem(null);
-      await load();
-    } catch (error) { onError(error.message); }
-  }
+=======
+  const handleEditMasterProduct = (item) => {
+    setMasterProductEditingId(item.id);
+    let specsString = '';
+    if (item.specifications) {
+      specsString = typeof item.specifications === 'string' ? item.specifications : JSON.stringify(item.specifications);
+    }
+    setMasterProduct({
+      sku_code: item.sku_code || '',
+      product_name: item.product_name || '',
+      id_category: item.id_category || '',
+      default_price: item.default_price || '',
+      specifications: specsString
+    });
+  };
 
+  const handleEditMasterSparepart = (item) => {
+    setMasterSparepartEditingId(item.id);
+    setMasterSparepart({
+      sku_code: item.sku_code || '',
+      sparepart_name: item.sparepart_name || '',
+      id_category: item.id_category || '',
+      default_price: item.default_price || '',
+      unit: item.unit || 'pcs',
+      min_stock: item.min_stock || 0,
+      specifications: item.specifications?.notes || ''
+    });
+  };
+
+  const handleOpenStockModal = (item, type) => {
+    setStockUpdateItem({ ...item });
+    setStockUpdateType(type);
+    setShowStockModal(true);
+  };
+
+  const handleSaveStock = (e) => {
+>>>>>>> theirs
+    e.preventDefault();
+    if (!stockUpdateItem) return;
+
+<<<<<<< ours
   const handleEditMaintenance = (item) => { 
       setMaintenance({ ...blankMaintenance, ...item, start_date: toDateTimeLocal(item.start_date), end_date: toDateTimeLocal(item.end_date) }); 
       setMaintenanceEditingId(item.id); 
@@ -262,13 +420,30 @@ export default function Inventory({ token, user, onBack, onError }) {
       </div>
       <span className="role-chip">{user.role}</span>
     </div>
+=======
+    const endpoint = stockUpdateType === 'asset'
+      ? `/inventory/assets/${stockUpdateItem.id_asset}`
+      : `/inventory/spareparts/${stockUpdateItem.id}`;
 
-    <div className="inventory-tabs">
-      {tabs.map(([id, label]) => (
-        <button key={id} className={tab === id ? 'active' : ''} onClick={() => { setTab(id); setSearch('') }}>{label}</button>
-      ))}
-    </div>
+    const payload = stockUpdateType === 'asset'
+      ? { ...stockUpdateItem, stock: Number(stockUpdateItem.stock) }
+      : { ...stockUpdateItem, stock: Number(stockUpdateItem.stock) };
 
+    submit(e, endpoint, 'PUT', payload, () => {
+      setShowStockModal(false);
+      setStockUpdateItem(null);
+    });
+  };
+>>>>>>> theirs
+
+  // Helper agar tidak terjadi eksekusi form ganda/double submit
+  const handleFormSubmit = (e, endpoint, method, payload, onSuccess) => {
+    e.preventDefault();
+    e.stopPropagation();
+    submit(e, endpoint, method, payload, onSuccess);
+  };
+
+<<<<<<< ours
     {/* ===================== DASHBOARD ===================== */}
     {tab === 'dashboard' && (
       <div className="inventory-dashboard">
@@ -291,23 +466,21 @@ export default function Inventory({ token, user, onBack, onError }) {
             </article>
           ))}
         </div>
+=======
+  return (
+    <section className="inventory-container">
+      {/* NAV TAB */}
+      <div className="inventory-tabs" style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', overflowX: 'auto' }}>
+        <button className={`tab-button ${tab === 'assets' ? 'active' : ''}`} onClick={() => setTab('assets')}>Data Aset</button>
+        <button className={`tab-button ${tab === 'spareparts' ? 'active' : ''}`} onClick={() => setTab('spareparts')}>Data Sparepart</button>
+        <button className={`tab-button ${tab === 'movements' ? 'active' : ''}`} onClick={() => setTab('movements')}>Mutasi Lokasi</button>
+        <button className={`tab-button ${tab === 'transactions' ? 'active' : ''}`} onClick={() => setTab('transactions')}>Transaksi Sparepart</button>
+        <button className={`tab-button ${tab === 'master-products' ? 'active' : ''}`} onClick={() => setTab('master-products')}>Master Produk (SKU)</button>
+        <button className={`tab-button ${tab === 'master-spareparts' ? 'active' : ''}`} onClick={() => setTab('master-spareparts')}>Master Sparepart</button>
+>>>>>>> theirs
       </div>
-    )}
 
-    {/* ===================== TAB: DATA ASET ===================== */}
-    {tab === 'assets' && (
-      <section className="inventory-section">
-        <div className="inventory-section-title">
-          <div>
-            <h3>Data Aset</h3>
-            <span>{assets.length} data tercatat</span>
-          </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari..." />
-            {isAdmin && <button onClick={handleOpenAddAsset} className="primary-button">+ Tambah Aset</button>}
-          </div>
-        </div>
-
+<<<<<<< ours
         <div className="inventory-filters">
           <Select value={assetFilters.category} onChange={(event) => setAssetFilters({ ...assetFilters, category: event.target.value })}><option value="">Semua kategori</option>{setup.categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select>
           <Select value={assetFilters.location} onChange={(event) => setAssetFilters({ ...assetFilters, location: event.target.value })}><option value="">Semua lokasi</option>{setup.rooms.map((item) => <option key={item.id} value={item.id}>{item.ruangan}</option>)}</Select>
@@ -327,11 +500,42 @@ export default function Inventory({ token, user, onBack, onError }) {
           <div>
             <h3>Data Sparepart</h3>
             <span>{parts.length} data tercatat</span>
+=======
+      {/* TAB: DATA ASET */}
+      {tab === 'assets' && (
+        <section className="inventory-section">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <SectionTitle title="Daftar Aset" count={filteredAssets.length} search={assetSearch} setSearch={setAssetSearch} />
+            {isAdmin && (
+              <button className="primary-button" onClick={() => { setAsset(blankAsset); setAssetEditingId(null); setShowAssetModal(true); }}>
+                + Tambah Aset
+              </button>
+            )}
+>>>>>>> theirs
           </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari..." />
-            {isAdmin && <button onClick={handleOpenAddPart} className="primary-button">+ Tambah Sparepart</button>}
+          <AssetTable
+            items={filteredAssets}
+            isAdmin={isAdmin}
+            remove={remove}
+            onEdit={handleEditAsset}
+            onView={(item) => setSelectedAsset(item)}
+            onUpdateStock={(item) => handleOpenStockModal(item, 'asset')}
+          />
+        </section>
+      )}
+
+      {/* TAB: DATA SPAREPART */}
+      {tab === 'spareparts' && (
+        <section className="inventory-section">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <SectionTitle title="Daftar Sparepart" count={filteredParts.length} search={partSearch} setSearch={setPartSearch} />
+            {isAdmin && (
+              <button className="primary-button" onClick={() => { setPart(blankPart); setPartEditingId(null); setShowPartModal(true); }}>
+                + Tambah Sparepart
+              </button>
+            )}
           </div>
+<<<<<<< ours
         </div>
         
         <div className="inventory-filters" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
@@ -416,10 +620,252 @@ export default function Inventory({ token, user, onBack, onError }) {
             <Field label="Total Stok Saat Ini"><Input type="number" min="0" value={stockUpdateItem.stock} onChange={(e) => setStockUpdateItem({ ...stockUpdateItem, stock: e.target.value })} required /></Field>
             <div style={{ marginTop: '20px' }}><FormActions label="Simpan Stok" onCancel={() => setShowStockModal(false)} /></div>
           </form>
-        </div>
-      </div>
-    )}
+=======
+          <PartTable
+            items={filteredParts}
+            isAdmin={isAdmin}
+            remove={remove}
+            onEdit={handleEditPart}
+            onView={(item) => setSelectedPart(item)}
+            onUpdateStock={(item) => handleOpenStockModal(item, 'part')}
+          />
+        </section>
+      )}
 
+      {/* TAB: MUTASI LOKASI */}
+      {tab === 'movements' && (
+        <WorkSection
+          title="Riwayat & Form Mutasi Lokasi"
+          items={setup.assetMovements || []}
+          columns={['asset_code', 'brand_model', 'ruangan_asal', 'ruangan_tujuan', 'movement_date', 'notes']}
+          labels={['Kode Aset', 'Merek/Model', 'Ruangan Asal', 'Ruangan Tujuan', 'Tanggal', 'Catatan']}
+        >
+          {isAdmin && (
+            <form className="inventory-form" style={{ marginBottom: '24px' }} onSubmit={(e) => handleFormSubmit(e, '/inventory/asset-movements', 'POST', assetMovement, () => setAssetMovement({ id_asset: '', id_ruangan_asal: '', id_ruangan_tujuan: '', movement_date: '', notes: '' }))}>
+              <Field label="Pilih Aset *">
+                <Select name="id_asset" value={assetMovement.id_asset} onChange={(e) => {
+                  const selected = (setup.assets || []).find((a) => String(a.id_asset) === e.target.value);
+                  setAssetMovement((prev) => ({ ...prev, id_asset: e.target.value, id_ruangan_asal: selected ? selected.id_ruangan : '' }));
+                }} required>
+                  <option value="">-- Pilih Aset --</option>
+                  {(setup.assets || []).map((item) => (
+                    <option key={item.id_asset} value={item.id_asset}>[{item.asset_code}] {item.brand_model}</option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Ruangan Asal">
+                <RoomSelect name="id_ruangan_asal" value={assetMovement.id_ruangan_asal} onChange={update(setAssetMovement)} rooms={setup.rooms || []} />
+              </Field>
+              <Field label="Ruangan Tujuan *">
+                <Select name="id_ruangan_tujuan" value={assetMovement.id_ruangan_tujuan} onChange={update(setAssetMovement)} required>
+                  <option value="">-- Pilih Tujuan --</option>
+                  {(setup.rooms || []).map((item) => (
+                    <option key={item.id} value={item.id}>{item.ruangan}</option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Tanggal Mutasi *">
+                <Input name="movement_date" type="date" value={assetMovement.movement_date} onChange={update(setAssetMovement)} required />
+              </Field>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <Field label="Catatan / Alasan Mutasi">
+                  <Textarea name="notes" value={assetMovement.notes} onChange={update(setAssetMovement)} />
+                </Field>
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <FormActions label="Simpan Mutasi" />
+              </div>
+            </form>
+          )}
+        </WorkSection>
+      )}
+
+      {/* TAB: TRANSAKSI SPAREPART */}
+      {tab === 'transactions' && (
+        <WorkSection
+          title="Riwayat & Transaksi Sparepart"
+          items={setup.partTransactions || []}
+          columns={['sparepart_name', 'transaction_type', 'quantity', 'asset_code', 'created_at', 'notes']}
+          labels={['Sparepart', 'Tipe', 'Jumlah', 'Aset Terkait', 'Tanggal', 'Catatan']}
+        >
+          {isAdmin && (
+            <form className="inventory-form" style={{ marginBottom: '24px' }} onSubmit={(e) => handleFormSubmit(e, '/inventory/part-transactions', 'POST', partTransaction, () => setPartTransaction({ id_sparepart: '', transaction_type: 'out', quantity: 1, id_asset: '', notes: '' }))}>
+              <Field label="Pilih Sparepart *">
+                <Select name="id_sparepart" value={partTransaction.id_sparepart} onChange={update(setPartTransaction)} required>
+                  <option value="">-- Pilih Sparepart --</option>
+                  {(setup.spareparts || []).map((item) => (
+                    <option key={item.id} value={item.id}>{item.name} (Stok: {item.stock})</option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Tipe Transaksi *">
+                <Select name="transaction_type" value={partTransaction.transaction_type} onChange={update(setPartTransaction)} required>
+                  <option value="in">Masuk (Stok bertambah)</option>
+                  <option value="out">Keluar (Stok berkurang)</option>
+                </Select>
+              </Field>
+              <Field label="Jumlah *">
+                <Input name="quantity" type="number" min="1" value={partTransaction.quantity} onChange={update(setPartTransaction)} required />
+              </Field>
+              <Field label="Aset Terkait (Opsional)">
+                <Select name="id_asset" value={partTransaction.id_asset} onChange={update(setPartTransaction)}>
+                  <option value="">-- Tidak ada --</option>
+                  {(setup.assets || []).map((item) => (
+                    <option key={item.id_asset} value={item.id_asset}>[{item.asset_code}] {item.brand_model}</option>
+                  ))}
+                </Select>
+              </Field>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <Field label="Keterangan / Catatan">
+                  <Textarea name="notes" value={partTransaction.notes} onChange={update(setPartTransaction)} />
+                </Field>
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <FormActions label="Simpan Transaksi" />
+              </div>
+            </form>
+          )}
+        </WorkSection>
+      )}
+
+      {/* TAB: MASTER PRODUK */}
+      {tab === 'master-products' && (
+        <section className="inventory-section">
+          <SectionTitle title="Master Produk / SKU" count={(setup.masterProducts || []).length} search="" />
+          {isAdmin && (
+            <form className="inventory-form" onSubmit={(event) => {
+              const { sku_code, product_name, id_category, default_price, specifications } = masterProduct;
+              handleFormSubmit(
+                event,
+                masterProductEditingId ? `/inventory/master-products/${masterProductEditingId}` : '/inventory/master-products',
+                masterProductEditingId ? 'PUT' : 'POST',
+                { sku_code, product_name, id_category: id_category || null, default_price: default_price || null, specifications: specifications ? { details: specifications } : {} },
+                () => { setMasterProduct(blankMasterProduct); setMasterProductEditingId(null); }
+              );
+            }}>
+              <Field label="Kode SKU *"><Input name="sku_code" value={masterProduct.sku_code} onChange={update(setMasterProduct)} placeholder="Contoh: LAP-DELL-5420" required /></Field>
+              <Field label="Nama Produk *"><Input name="product_name" value={masterProduct.product_name} onChange={update(setMasterProduct)} required /></Field>
+              <Field label="Kategori"><Select name="id_category" value={masterProduct.id_category} onChange={update(setMasterProduct)}><option value="">Pilih kategori</option>{setup.categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select></Field>
+              <Field label="Harga Default"><Input name="default_price" value={masterProduct.default_price} onChange={update(setMasterProduct)} type="number" /></Field>
+              <div style={{ gridColumn: '1 / -1' }}><Field label="Spesifikasi Standard"><Textarea name="specifications" value={masterProduct.specifications} onChange={update(setMasterProduct)} placeholder="Ketik rincian spesifikasi default produk ini..." /></Field></div>
+              <div style={{ gridColumn: '1 / -1' }}><FormActions label={masterProductEditingId ? 'Simpan Perubahan' : 'Simpan Master Produk'} onCancel={masterProductEditingId ? () => { setMasterProduct(blankMasterProduct); setMasterProductEditingId(null); } : undefined} /></div>
+            </form>
+          )}
+          <table className="inventory-table">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Nama Produk</th>
+                <th>Kategori</th>
+                <th>Harga Default</th>
+                {isAdmin && <th>Aksi</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {(setup.masterProducts || []).map((item) => (
+                <tr key={item.id}>
+                  <td>{item.sku_code}</td>
+                  <td>{item.product_name}</td>
+                  <td>{setup.categories.find((cat) => String(cat.id) === String(item.id_category))?.name || '-'}</td>
+                  <td>{item.default_price ? `Rp ${Number(item.default_price).toLocaleString('id-ID')}` : '-'}</td>
+                  {isAdmin && (
+                    <td>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button className="secondary-button" type="button" onClick={() => handleEditMasterProduct(item)}>Edit</button>
+                        <button className="danger-button" type="button" onClick={() => remove(`/inventory/master-products/${item.id}`)}>Hapus</button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))}
+              {!(setup.masterProducts || []).length && <tr><td colSpan={isAdmin ? 5 : 4} style={{ textAlign: 'center', color: '#64748b' }}>Belum ada master produk.</td></tr>}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {/* TAB: MASTER SPAREPART */}
+      {tab === 'master-spareparts' && (
+        <section className="inventory-section">
+          <SectionTitle title="Master Sparepart / SKU" count={(setup.masterSpareparts || []).length} search="" />
+          {isAdmin && (
+            <form className="inventory-form" onSubmit={(event) => {
+              const { sku_code, sparepart_name, id_category, default_price, unit, min_stock, specifications } = masterSparepart;
+              handleFormSubmit(
+                event,
+                masterSparepartEditingId ? `/inventory/master-spareparts/${masterSparepartEditingId}` : '/inventory/master-spareparts',
+                masterSparepartEditingId ? 'PUT' : 'POST',
+                { sku_code, sparepart_name, id_category: id_category || null, default_price: default_price || null, unit, min_stock: Number(min_stock || 0), specifications: specifications ? { notes: specifications } : {} },
+                () => { setMasterSparepart(blankMasterSparepart); setMasterSparepartEditingId(null); }
+              );
+            }}>
+              <Field label="Kode SKU *"><Input name="sku_code" value={masterSparepart.sku_code} onChange={update(setMasterSparepart)} placeholder="Contoh: RAM-DDR4-8GB" required /></Field>
+              <Field label="Nama sparepart *"><Input name="sparepart_name" value={masterSparepart.sparepart_name} onChange={update(setMasterSparepart)} required /></Field>
+              <Field label="Kategori"><Select name="id_category" value={masterSparepart.id_category} onChange={update(setMasterSparepart)}><option value="">Pilih kategori</option>{setup.sparepartCategories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select></Field>
+              <Field label="Harga default"><Input name="default_price" value={masterSparepart.default_price} onChange={update(setMasterSparepart)} type="number" /></Field>
+              <Field label="Satuan"><Input name="unit" value={masterSparepart.unit} onChange={update(setMasterSparepart)} /></Field>
+              <Field label="Stok minimum"><Input name="min_stock" value={masterSparepart.min_stock} onChange={update(setMasterSparepart)} type="number" /></Field>
+              <div style={{ gridColumn: '1 / -1' }}><Field label="Spesifikasi / catatan"><Textarea name="specifications" value={masterSparepart.specifications} onChange={update(setMasterSparepart)} /></Field></div>
+              <div style={{ gridColumn: '1 / -1' }}><FormActions label={masterSparepartEditingId ? 'Simpan perubahan' : 'Simpan master sparepart'} onCancel={masterSparepartEditingId ? () => { setMasterSparepart(blankMasterSparepart); setMasterSparepartEditingId(null); } : undefined} /></div>
+            </form>
+          )}
+          <table className="inventory-table">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Sparepart</th>
+                <th>Kategori</th>
+                <th>Satuan</th>
+                <th>Harga default</th>
+                {isAdmin && <th>Aksi</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {(setup.masterSpareparts || []).map((item) => (
+                <tr key={item.id}>
+                  <td>{item.sku_code}</td>
+                  <td>{item.sparepart_name}</td>
+                  <td>{setup.sparepartCategories.find((category) => String(category.id) === String(item.id_category))?.name || '-'}</td>
+                  <td>{item.unit || '-'}</td>
+                  <td>{item.default_price ? `Rp ${Number(item.default_price).toLocaleString('id-ID')}` : '-'}</td>
+                  {isAdmin && (
+                    <td>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button className="secondary-button" type="button" onClick={() => handleEditMasterSparepart(item)}>Edit</button>
+                        <button className="danger-button" type="button" onClick={() => remove(`/inventory/master-spareparts/${item.id}`)}>Hapus</button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))}
+              {!(setup.masterSpareparts || []).length && <tr><td colSpan={isAdmin ? 6 : 5} style={{ textAlign: 'center', color: '#64748b' }}>Belum ada master sparepart.</td></tr>}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {/* MODAL UPDATE STOK LANGSUNG */}
+      {showStockModal && stockUpdateItem && (
+        <div className="modal-backdrop" onClick={() => setShowStockModal(false)}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: '12px', padding: '24px', width: '90%', maxWidth: '400px', position: 'relative' }}>
+            <button type="button" onClick={() => setShowStockModal(false)} aria-label="Tutup detail" style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', color: '#64748b' }}>×</button>
+            <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#0f172a' }}>
+              Update Stok: {stockUpdateItem.asset_code || stockUpdateItem.name}
+            </h3>
+            <form onSubmit={handleSaveStock}>
+              <Field label="Total Stok Saat Ini">
+                <Input type="number" value={stockUpdateItem.stock} onChange={(e) => setStockUpdateItem({ ...stockUpdateItem, stock: e.target.value })} required />
+              </Field>
+              <div style={{ marginTop: '20px' }}>
+                <FormActions label="Simpan Stok" onCancel={() => setShowStockModal(false)} />
+              </div>
+            </form>
+          </div>
+>>>>>>> theirs
+        </div>
+      )}
+
+<<<<<<< ours
     {/* Modal Aset */}
     {showAssetModal && (
         <div className="modal-backdrop" onClick={() => setShowAssetModal(false)}>
@@ -452,8 +898,76 @@ export default function Inventory({ token, user, onBack, onError }) {
                     {needsTechnicalSpecs && <div style={{ gridColumn: '1 / -1', marginTop: '10px' }}><TechnicalSpecsForm categoryName={selectedCategory?.name} values={technicalSpecs} onChange={(event) => setTechnicalSpecs((current) => ({ ...current, [event.target.name]: event.target.value }))} /></div>}
                     <div style={{ gridColumn: '1 / -1', borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginTop: '8px' }}><FormActions label={assetEditingId ? 'Simpan perubahan' : 'Simpan Aset Baru'} onCancel={() => setShowAssetModal(false)} /></div>
                 </form>
+=======
+      {/* MODAL DATA ASET */}
+      {showAssetModal && (
+        <div className="modal-backdrop" onClick={() => setShowAssetModal(false)}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: '12px', padding: '24px', width: '90%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+              <h2 style={{ margin: '0', color: '#0f172a' }}>{assetEditingId ? 'Edit Data Aset' : 'Tambah Aset Baru'}</h2>
+              <button onClick={() => setShowAssetModal(false)} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', color: '#64748b' }}>&times;</button>
+>>>>>>> theirs
             </div>
+
+            <form className="inventory-form" onSubmit={(event) => handleFormSubmit(event, assetEditingId ? `/inventory/assets/${assetEditingId}` : '/inventory/assets', assetEditingId ? 'PUT' : 'POST', { ...asset, id_category: asset.id_category || null, id_ruangan: Number(asset.id_ruangan), id_user: asset.id_user || null, serial_number: asset.serial_number?.trim() || null, purchase_year: asset.purchase_year || null, price: asset.price || null, stock: Number(asset.stock), specifications: needsTechnicalSpecs ? technicalSpecs : (asset.notes ? { detail: asset.notes } : null) }, () => { setAsset(blankAsset); setAssetEditingId(null); setShowAssetModal(false); })}>
+              <div style={{ gridColumn: '1 / -1', background: '#e0f2fe', padding: '16px', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                <Field label="💡 Isi Otomatis dari Master Produk / SKU (Opsional)">
+                  <Select
+                    name="master_sku"
+                    onChange={(e) => {
+                      const selectedId = e.target.value;
+                      if (!selectedId) return;
+                      const master = setup.masterProducts?.find(m => String(m.id) === String(selectedId));
+                      if (master) {
+                        setAsset(prev => ({
+                          ...prev,
+                          id_category: master.id_category || prev.id_category,
+                          brand_model: master.product_name || prev.brand_model,
+                          price: master.default_price || prev.price
+                        }));
+                        if (master.specifications) {
+                          const specs = typeof master.specifications === 'string' ? JSON.parse(master.specifications) : master.specifications;
+                          setTechnicalSpecs(specs);
+                        }
+                      }
+                    }}
+                  >
+                    <option value="">-- Ketik manual atau pilih SKU dari Master Data --</option>
+                    {setup.masterProducts?.map(master => (
+                      <option key={master.id} value={master.id}>
+                        [{master.sku_code}] - {master.product_name}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              </div>
+
+              <Field label="Kode Aset *"><Input name="asset_code" value={asset.asset_code} onChange={update(setAsset)} required /></Field>
+              <Field label="Kategori"><Select name="id_category" value={asset.id_category} onChange={update(setAsset)}><option value="">Pilih kategori</option>{setup.categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select></Field>
+              <Field label="Lokasi/Ruangan *"><Select name="id_ruangan" value={asset.id_ruangan} onChange={update(setAsset)} required><option value="">Pilih ruangan</option>{setup.rooms.map((item) => <option key={item.id} value={item.id}>{item.ruangan}</option>)}</Select></Field>
+              <Field label="Pengguna"><Select name="id_user" value={asset.id_user} onChange={update(setAsset)}><option value="">Tidak ada</option>{userOptions}</Select></Field>
+              <Field label="Merek/Model"><Input name="brand_model" value={asset.brand_model} onChange={update(setAsset)} /></Field>
+              <Field label="Serial Number"><Input name="serial_number" value={asset.serial_number} onChange={update(setAsset)} /></Field>
+              <Field label="Tanggal Pembelian"><Input name="purchase_year" value={asset.purchase_year} onChange={update(setAsset)} type="date" /></Field>
+              <Field label="Harga"><Input name="price" value={asset.price} onChange={update(setAsset)} type="number" /></Field>
+              <Field label="Stok"><Input name="stock" value={asset.stock} onChange={update(setAsset)} type="number" /></Field>
+              <Field label="Status"><Select name="status" value={asset.status} onChange={update(setAsset)}><option value="available">Tersedia</option><option value="in_use">Digunakan</option><option value="repair">Perbaikan</option><option value="retired">Tidak digunakan</option></Select></Field>
+              <Field label="Kondisi"><Select name="condition" value={asset.condition} onChange={update(setAsset)}><option value="good">Baik</option><option value="fair">Cukup</option><option value="broken">Rusak</option></Select></Field>
+
+              <div style={{ gridColumn: '1 / -1' }}><Field label="Catatan Tambahan"><Textarea name="notes" value={asset.notes} onChange={update(setAsset)} placeholder="Tambahkan deskripsi atau catatan mengenai aset ini..." /></Field></div>
+
+              {needsTechnicalSpecs && (
+                <div style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
+                  <TechnicalSpecsForm categoryName={selectedCategory?.name} values={technicalSpecs} onChange={(event) => setTechnicalSpecs((current) => ({ ...current, [event.target.name]: event.target.value }))} />
+                </div>
+              )}
+              <div style={{ gridColumn: '1 / -1', borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginTop: '8px' }}>
+                <FormActions label={assetEditingId ? 'Simpan perubahan' : 'Simpan Aset Baru'} onCancel={() => setShowAssetModal(false)} />
+              </div>
+            </form>
+          </div>
         </div>
+<<<<<<< ours
     )}
     
     {/* Modal Sparepart */}
@@ -483,10 +997,48 @@ export default function Inventory({ token, user, onBack, onError }) {
                     <div style={{ gridColumn: '1 / -1' }}><Field label="Keterangan"><Textarea name="notes" value={part.notes} onChange={update(setPart)} /></Field></div>
                     <div style={{ gridColumn: '1 / -1', borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginTop: '8px' }}><FormActions label={partEditingId ? 'Simpan perubahan' : 'Simpan Sparepart Baru'} onCancel={() => setShowPartModal(false)} /></div>
                 </form>
-            </div>
-        </div>
-    )}
+=======
+      )}
 
+      {/* MODAL DATA SPAREPART */}
+      {showPartModal && (
+        <div className="modal-backdrop" onClick={() => setShowPartModal(false)}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: '12px', padding: '24px', width: '90%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+              <h2 style={{ margin: '0', color: '#0f172a' }}>{partEditingId ? 'Edit Data Sparepart' : 'Tambah Sparepart Baru'}</h2>
+              <button onClick={() => setShowPartModal(false)} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', color: '#64748b' }}>&times;</button>
+>>>>>>> theirs
+            </div>
+
+            <form className="inventory-form" onSubmit={(event) => handleFormSubmit(event, partEditingId ? `/inventory/spareparts/${partEditingId}` : '/inventory/spareparts', partEditingId ? 'PUT' : 'POST', { ...part, id_category: part.id_category || null, stock: Number(part.stock), min_stock: Number(part.min_stock) }, () => { setPart(blankPart); setPartEditingId(null); setShowPartModal(false); })}>
+              <div style={{ gridColumn: '1 / -1', background: '#e0f2fe', padding: '16px', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                <Field label="💡 Isi dari Master Sparepart (opsional)">
+                  <Select value="" onChange={(event) => { const master = (setup.masterSpareparts || []).find((item) => String(item.id) === event.target.value); if (master) setPart((current) => ({ ...current, name: master.sparepart_name, id_category: master.id_category || '', price: master.default_price || '', unit: master.unit || 'pcs', min_stock: master.min_stock || 0, notes: master.specifications?.notes || current.notes })); }}>
+                    <option value="">-- Pilih SKU untuk isi otomatis --</option>
+                    {(setup.masterSpareparts || []).map((item) => <option key={item.id} value={item.id}>[{item.sku_code}] - {item.sparepart_name}</option>)}
+                  </Select>
+                </Field>
+              </div>
+
+              <Field label="Nama sparepart *"><Input name="name" value={part.name} onChange={update(setPart)} required /></Field>
+              <Field label="Kategori"><Select name="id_category" value={part.id_category} onChange={update(setPart)}><option value="">Pilih kategori</option>{setup.sparepartCategories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select></Field>
+              <Field label="Stok"><Input name="stock" value={part.stock} onChange={update(setPart)} type="number" /></Field>
+              <Field label="Stok minimum"><Input name="min_stock" value={part.min_stock} onChange={update(setPart)} type="number" /></Field>
+              <Field label="Satuan"><Input name="unit" value={part.unit} onChange={update(setPart)} /></Field>
+              <Field label="Harga"><Input name="price" value={part.price} onChange={update(setPart)} type="number" /></Field>
+              <Field label="Supplier"><Input name="supplier" value={part.supplier} onChange={update(setPart)} /></Field>
+
+              <div style={{ gridColumn: '1 / -1' }}><Field label="Keterangan"><Textarea name="notes" value={part.notes} onChange={update(setPart)} /></Field></div>
+
+              <div style={{ gridColumn: '1 / -1', borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginTop: '8px' }}>
+                <FormActions label={partEditingId ? 'Simpan perubahan' : 'Simpan Sparepart Baru'} onCancel={() => setShowPartModal(false)} />
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+<<<<<<< ours
     {/* Modal Movement */}
     {showMovementModal && (
       <div className="modal-backdrop" onClick={() => setShowMovementModal(false)}>
@@ -618,13 +1170,19 @@ export default function Inventory({ token, user, onBack, onError }) {
     {selectedPart && <PartDetailModal part={selectedPart} onClose={() => setSelectedPart(null)} />}
     {qrAsset && <AssetQrModal asset={qrAsset} onClose={() => setQrAsset(null)} />}
   </section>
+=======
+      {selectedAsset && <AssetDetailModal asset={selectedAsset} onClose={() => setSelectedAsset(null)} />}
+      {selectedPart && <PartDetailModal part={selectedPart} onClose={() => setSelectedPart(null)} />}
+    </section>
+  );
+>>>>>>> theirs
 }
 
 // ======================= KOMPONEN PELENGKAP =======================
 
 function PaginationControls({ currentPage, totalItems, itemsPerPage, onPageChange }) {
-  if (totalItems === 0) return null
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1
+  if (totalItems === 0) return null;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', padding: '12px 16px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
       <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
@@ -638,13 +1196,20 @@ function PaginationControls({ currentPage, totalItems, itemsPerPage, onPageChang
         <button onClick={() => onPageChange(totalPages)} disabled={currentPage === totalPages} className="secondary-button">»</button>
       </div>
     </div>
-  )
+  );
 }
 
+<<<<<<< ours
 function WorkSection({ title, items, columns, labels, itemsPerPage = 10, children, renderActions, onAdd, addLabel }) {
   const [currentPage, setCurrentPage] = useState(1)
   useEffect(() => { setCurrentPage(1) }, [items])
   const paginatedItems = useMemo(() => items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), [items, currentPage, itemsPerPage])
+=======
+function WorkSection({ title, items, columns, labels, itemsPerPage = 10, children, renderActions }) {
+  const [currentPage, setCurrentPage] = useState(1);
+  useEffect(() => { setCurrentPage(1); }, [items]);
+  const paginatedItems = useMemo(() => items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), [items, currentPage, itemsPerPage]);
+>>>>>>> theirs
 
   return (
     <section className="inventory-section" style={{ marginTop: '20px' }}>
@@ -660,7 +1225,7 @@ function WorkSection({ title, items, columns, labels, itemsPerPage = 10, childre
             {paginatedItems.map((item) => (
               <tr key={item.id || `${item.asset_code}-${item.movement_date}`}>
                 {columns.map((column) => (
-                  <td key={column}>{column.includes('date') ? formatTableDate(item[column]) : (item[column] ?? '-')}</td>
+                  <td key={column}>{column.includes('date') || column.includes('created_at') ? formatTableDate(item[column]) : (item[column] ?? '-')}</td>
                 ))}
                 {renderActions && <td>{renderActions(item)}</td>}
               </tr>
@@ -670,10 +1235,14 @@ function WorkSection({ title, items, columns, labels, itemsPerPage = 10, childre
       </div>
       <PaginationControls currentPage={currentPage} totalItems={items.length} itemsPerPage={itemsPerPage} onPageChange={setCurrentPage} />
     </section>
-  ) 
+  );
 }
 
+<<<<<<< ours
 function SectionTitle({ title, count, search, setSearch, onAdd, addLabel }) { 
+=======
+function SectionTitle({ title, count, search, setSearch }) {
+>>>>>>> theirs
   return (
     <div className="inventory-section-title">
       <div><h3>{title}</h3><span>{count} data tercatat</span></div>
@@ -682,14 +1251,43 @@ function SectionTitle({ title, count, search, setSearch, onAdd, addLabel }) {
         {onAdd && <button onClick={onAdd} className="primary-button">{addLabel}</button>}
       </div>
     </div>
-  ) 
+  );
 }
 
+<<<<<<< ours
 function RoomSelect({ name, value, onChange, rooms }) { return <Select name={name} value={value} onChange={onChange}><option value="">Tidak berubah</option>{rooms.map((item) => <option key={item.id} value={item.id}>{item.ruangan}</option>)}</Select> }
 
 function TechnicalSpecsForm({ categoryName, values, onChange }) { return <section className="inventory-section" style={{ border: '1px solid #a7f3d0', background: '#f0fdf4', padding: '16px', borderRadius: '8px' }}><h3 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: '#047857' }}>Spesifikasi Teknis: {categoryName}</h3><div className="inventory-form" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}><Field label="Processor"><Input name="processor" value={values.processor} onChange={onChange} placeholder="Contoh: Intel Core i5-1235U" /></Field><Field label="RAM"><Input name="ram" value={values.ram} onChange={onChange} placeholder="Contoh: 16 GB DDR4" /></Field><Field label="Penyimpanan (SSD/HDD)"><Input name="storage" value={values.storage} onChange={onChange} placeholder="Contoh: 512 GB NVMe SSD" /></Field><Field label="Sistem Operasi"><Input name="operating_system" value={values.operating_system} onChange={onChange} placeholder="Contoh: Windows 11 Pro" /></Field><Field label="GPU / VGA"><Input name="gpu" value={values.gpu} onChange={onChange} placeholder="Contoh: Intel Iris Xe" /></Field><Field label="Layar"><Input name="display" value={values.display} onChange={onChange} placeholder="Contoh: 14 inci FHD" /></Field></div></section> }
 
 function AssetTable({ items, isAdmin, remove, onEdit, onView, onPrintQr, onUpdateStock }) {
+=======
+function RoomSelect({ name, value, onChange, rooms }) {
+  return (
+    <Select name={name} value={value} onChange={onChange}>
+      <option value="">Tidak berubah</option>
+      {rooms.map((item) => <option key={item.id} value={item.id}>{item.ruangan}</option>)}
+    </Select>
+  );
+}
+
+function TechnicalSpecsForm({ categoryName, values, onChange }) {
+  return (
+    <section className="inventory-section" style={{ border: '1px solid #a7f3d0', background: '#f0fdf4', padding: '16px', borderRadius: '8px' }}>
+      <h3 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: '#047857' }}>Spesifikasi Teknis: {categoryName}</h3>
+      <div className="inventory-form" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <Field label="Processor"><Input name="processor" value={values.processor} onChange={onChange} placeholder="Contoh: Intel Core i5-1235U" /></Field>
+        <Field label="RAM"><Input name="ram" value={values.ram} onChange={onChange} placeholder="Contoh: 16 GB DDR4" /></Field>
+        <Field label="Penyimpanan (SSD/HDD)"><Input name="storage" value={values.storage} onChange={onChange} placeholder="Contoh: 512 GB NVMe SSD" /></Field>
+        <Field label="Sistem Operasi"><Input name="operating_system" value={values.operating_system} onChange={onChange} placeholder="Contoh: Windows 11 Pro" /></Field>
+        <Field label="GPU / VGA"><Input name="gpu" value={values.gpu} onChange={onChange} placeholder="Contoh: Intel Iris Xe" /></Field>
+        <Field label="Layar"><Input name="display" value={values.display} onChange={onChange} placeholder="Contoh: 14 inci FHD" /></Field>
+      </div>
+    </section>
+  );
+}
+
+function AssetTable({ items, isAdmin, remove, onEdit, onView, onUpdateStock }) {
+>>>>>>> theirs
   return (
     <table className="inventory-table">
       <thead><tr><th>Kode</th><th>Kategori</th><th>Lokasi</th><th>Pengguna</th><th>Merek/Model</th><th>Stok</th><th>Status</th><th>Kondisi</th><th>Aksi</th></tr></thead>
@@ -721,9 +1319,10 @@ function AssetTable({ items, isAdmin, remove, onEdit, onView, onPrintQr, onUpdat
         ))}
       </tbody>
     </table>
-  ) 
+  );
 }
 
+<<<<<<< ours
 function AssetQrModal({ asset, onClose }) {
   const [qrImage, setQrImage] = useState('')
   const assetUrl = `${window.location.origin}${window.location.pathname}?asset=${encodeURIComponent(asset.asset_code)}`
@@ -751,6 +1350,9 @@ function AssetQrModal({ asset, onClose }) {
 }
 
 function PartTable({ items, isAdmin, remove, onEdit, onView, onUpdateStock }) { 
+=======
+function PartTable({ items, isAdmin, remove, onEdit, onView, onUpdateStock }) {
+>>>>>>> theirs
   return (
     <table className="inventory-table">
       <thead><tr><th>Nama</th><th>Kategori</th><th>Stok</th><th>Stok Min.</th><th>Satuan</th><th>Supplier</th><th>Aksi</th></tr></thead>
@@ -779,12 +1381,32 @@ function PartTable({ items, isAdmin, remove, onEdit, onView, onUpdateStock }) {
         ))}
       </tbody>
     </table>
-  ) 
+  );
 }
 
+<<<<<<< ours
 function AssetDetailModal({ asset, maintenance, movements, onClose }) {
   const specs = asset.specifications && typeof asset.specifications === 'object' ? asset.specifications : {}; 
   const fields = [['Kode Aset', asset.asset_code], ['Kategori', asset.category_name], ['Lokasi', asset.ruangan], ['Pengguna', asset.user_name], ['Merek/Model', asset.brand_model], ['Serial Number', asset.serial_number], ['Tanggal Pembelian', asset.purchase_year], ['Harga', asset.price ? `Rp ${Number(asset.price).toLocaleString('id-ID')}` : '-'], ['Stok Saat Ini', asset.stock], ['Status', asset.status], ['Kondisi', asset.condition], ['Catatan', asset.notes]]; 
+=======
+function AssetDetailModal({ asset, onClose }) {
+  const specs = asset.specifications && typeof asset.specifications === 'object' ? asset.specifications : {};
+  const fields = [
+    ['Kode Aset', asset.asset_code],
+    ['Kategori', asset.category_name],
+    ['Lokasi', asset.ruangan],
+    ['Pengguna', asset.user_name],
+    ['Merek/Model', asset.brand_model],
+    ['Serial Number', asset.serial_number],
+    ['Tanggal Pembelian', asset.purchase_year],
+    ['Harga', asset.price ? `Rp ${Number(asset.price).toLocaleString('id-ID')}` : '-'],
+    ['Stok Saat Ini', asset.stock],
+    ['Status', asset.status],
+    ['Kondisi', asset.condition],
+    ['Catatan', asset.notes]
+  ];
+
+>>>>>>> theirs
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <section onClick={(event) => event.stopPropagation()} style={{ background: '#fff', width: 'min(620px, calc(100vw - 32px))', maxHeight: '85vh', overflowY: 'auto', borderRadius: '14px', padding: '24px', position: 'relative' }}>
@@ -822,11 +1444,20 @@ function AssetDetailModal({ asset, maintenance, movements, onClose }) {
         </section>
       </section>
     </div>
-  ) 
+  );
 }
 
-function PartDetailModal({ part, onClose }) { 
-  const fields = [['Nama Sparepart', part.name], ['Kategori', part.category_name], ['Stok Saat Ini', `${part.stock} ${part.unit}`], ['Stok Minimum', part.min_stock], ['Harga', part.price ? `Rp ${Number(part.price).toLocaleString('id-ID')}` : '-'], ['Supplier', part.supplier], ['Catatan', part.notes]]; 
+function PartDetailModal({ part, onClose }) {
+  const fields = [
+    ['Nama Sparepart', part.name],
+    ['Kategori', part.category_name],
+    ['Stok Saat Ini', `${part.stock} ${part.unit}`],
+    ['Stok Minimum', part.min_stock],
+    ['Harga', part.price ? `Rp ${Number(part.price).toLocaleString('id-ID')}` : '-'],
+    ['Supplier', part.supplier],
+    ['Catatan', part.notes]
+  ];
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <section onClick={(event) => event.stopPropagation()} style={{ background: '#fff', width: 'min(620px, calc(100vw - 32px))', maxHeight: '85vh', overflowY: 'auto', borderRadius: '14px', padding: '24px', position: 'relative' }}>
@@ -843,5 +1474,10 @@ function PartDetailModal({ part, onClose }) {
         </div>
       </section>
     </div>
+<<<<<<< ours
   ) 
 }
+=======
+  );
+}0    
+>>>>>>> theirs

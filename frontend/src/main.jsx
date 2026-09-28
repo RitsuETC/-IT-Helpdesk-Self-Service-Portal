@@ -16,17 +16,20 @@ import AuditLog from './audit-log.jsx'
 const savedSession = JSON.parse(localStorage.getItem('helpdesk-session') || 'null')
 
 function App() {
-  const [page, setPage] = useState(() => new URLSearchParams(window.location.search).has('asset') ? 'inventory' : 'landing')
+  const [page, setPage] = useState('landing')
   const [session, setSession] = useState(savedSession)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showCreateTicketModal, setShowCreateTicketModal] = useState(false)
   const [showSidebar, setShowSidebar] = useState(false)
   const [articles, setArticles] = useState([])
   const [notice, setNotice] = useState('')
-  const [loginError, setLoginError] = useState('') // State khusus error login di dalam modal
+  const [loginError, setLoginError] = useState('')
   const [errorPopup, setErrorPopup] = useState(null)
   const [selectedArticle, setSelectedArticle] = useState(null)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
+
+  // State untuk fitur lihat/sembunyikan password
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     const handleExpiredSession = () => {
@@ -38,24 +41,40 @@ function App() {
       setNotice('Sesi Anda sudah berakhir. Silakan login kembali.')
       setShowLoginModal(true)
     }
+
     window.addEventListener('helpdesk:session-expired', handleExpiredSession)
-    return () => window.removeEventListener('helpdesk:session-expired', handleExpiredSession)
+
+    return () =>
+      window.removeEventListener(
+        'helpdesk:session-expired',
+        handleExpiredSession
+      )
   }, [])
 
   useEffect(() => {
     const showApiError = (event) => {
       setErrorPopup({
         id: Date.now(),
-        message: event.detail?.message || 'Terjadi kesalahan saat menghubungi server.',
+        message:
+          event.detail?.message ||
+          'Terjadi kesalahan saat menghubungi server.',
       })
     }
+
     window.addEventListener('helpdesk:api-error', showApiError)
-    return () => window.removeEventListener('helpdesk:api-error', showApiError)
+
+    return () =>
+      window.removeEventListener('helpdesk:api-error', showApiError)
   }, [])
 
   useEffect(() => {
     if (!errorPopup) return undefined
-    const timer = window.setTimeout(() => setErrorPopup(null), 7000)
+
+    const timer = window.setTimeout(
+      () => setErrorPopup(null),
+      7000
+    )
+
     return () => window.clearTimeout(timer)
   }, [errorPopup?.id])
 
@@ -70,6 +89,7 @@ function App() {
         setArticles([])
         return
       }
+
       if (!session) {
         setArticles([])
       } else {
@@ -78,15 +98,25 @@ function App() {
     }
   }
 
-  useEffect(() => { loadArticles() }, [session])
+  useEffect(() => {
+    loadArticles()
+  }, [session])
 
   useEffect(() => {
     let timer
+
     async function loadUnread() {
       if (!session) return setUnreadNotifications(0)
+
       try {
-        if (session.user.role === 'admin' || session.user.role === 'teknisi') {
-          const res = await api('/notifications/unread/count', { token: session.token })
+        if (
+          session.user.role === 'admin' ||
+          session.user.role === 'teknisi'
+        ) {
+          const res = await api('/notifications/unread/count', {
+            token: session.token,
+          })
+
           setUnreadNotifications(res.data.unread || 0)
         } else {
           setUnreadNotifications(0)
@@ -95,26 +125,43 @@ function App() {
         // ignore
       }
     }
+
     loadUnread()
     timer = setInterval(loadUnread, 3000)
+
     return () => clearInterval(timer)
   }, [session])
 
   const handleLogin = async (event) => {
     event.preventDefault()
-    setLoginError('') // Reset error modal sebelumnya
+    setLoginError('')
+
     const form = new FormData(event.currentTarget)
+
     try {
-      const result = await api('/auth/login', { 
-        method: 'POST', 
-        body: { username: form.get('username'), password: form.get('password') } 
+      const result = await api('/auth/login', {
+        method: 'POST',
+        body: {
+          username: form.get('username'),
+          password: form.get('password'),
+        },
       })
-      const nextSession = { token: result.token, user: result.user }
-      localStorage.setItem('helpdesk-session', JSON.stringify(nextSession))
+
+      const nextSession = {
+        token: result.token,
+        user: result.user,
+      }
+
+      localStorage.setItem(
+        'helpdesk-session',
+        JSON.stringify(nextSession)
+      )
+
       setSession(nextSession)
       setShowLoginModal(false)
-    } catch (error) { 
-      setLoginError(error.message) // Tampilkan pesan error di dalam modal login
+      setShowPassword(false)
+    } catch (error) {
+      setLoginError(error.message)
     }
   }
 
@@ -128,126 +175,357 @@ function App() {
   const scrollToSection = (id) => {
     if (page !== 'landing') {
       setPage('landing')
+
       setTimeout(() => {
         const el = document.getElementById(id)
-        if (el) el.scrollIntoView({ behavior: 'smooth' })
+
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' })
+        }
       }, 100)
     } else {
       const el = document.getElementById(id)
-      if (el) el.scrollIntoView({ behavior: 'smooth' })
+
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' })
+      }
     }
   }
 
   return (
     <main className="app">
-      {/* Header dengan Nuansa Hijau Tua Gradasi & Navigasi Interaktif */}
-      <header className="header" style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between', 
-        padding: '12px 32px',
-        background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)',
-        color: '#ffffff',
-        boxShadow: '0 4px 20px rgba(12, 74, 48, 0.2)'
-      }}>
-        <button className="logo-button" onClick={() => setPage('landing')} aria-label="Ke Beranda" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', cursor: 'pointer' }}>
-          <img className="logo" src={ummuhaniLogo} alt="Ummuhani" style={{ height: '36px', width: 'auto' }} />
-          <h1 className="header-title" style={{ fontSize: '1.2rem', margin: 0, fontWeight: 'bold', color: '#ffffff' }}>IT Helpdesk</h1>
+
+      {/* HEADER */}
+      <header
+        className="header"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 32px',
+          background:
+            'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)',
+          color: '#ffffff',
+          boxShadow:
+            '0 4px 20px rgba(12, 74, 48, 0.2)',
+        }}
+      >
+        <button
+          className="logo-button"
+          onClick={() => setPage('landing')}
+          aria-label="Ke Beranda"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          <img
+            className="logo"
+            src={ummuhaniLogo}
+            alt="Ummuhani"
+            style={{
+              height: '36px',
+              width: 'auto',
+            }}
+          />
+
+          <h1
+            className="header-title"
+            style={{
+              fontSize: '1.2rem',
+              margin: 0,
+              fontWeight: 'bold',
+              color: '#ffffff',
+            }}
+          >
+            IT Helpdesk
+          </h1>
         </button>
 
-        {/* Navigasi Rata Tengah dengan Pill Wrapper & Efek Klik Halus */}
-        <nav aria-label="Navigasi utama" style={{ 
-          display: 'flex', 
-          gap: '6px', 
-          alignItems: 'center', 
-          margin: '0 auto',
-          background: 'rgba(255, 255, 255, 0.08)',
-          padding: '6px 10px',
-          borderRadius: '30px',
-          backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(255, 255, 255, 0.12)'
-        }}>
-          <button 
+        {/* NAVIGASI */}
+        <nav
+          aria-label="Navigasi utama"
+          style={{
+            display: 'flex',
+            gap: '6px',
+            alignItems: 'center',
+            margin: '0 auto',
+            background: 'rgba(255, 255, 255, 0.08)',
+            padding: '6px 10px',
+            borderRadius: '30px',
+            backdropFilter: 'blur(8px)',
+            border:
+              '1px solid rgba(255, 255, 255, 0.12)',
+          }}
+        >
+          <button
             onClick={() => setPage('landing')}
-            style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
-            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
-            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#e2f0ea',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '500',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#ffffff'
+              e.currentTarget.style.background =
+                'rgba(255, 255, 255, 0.1)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#e2f0ea'
+              e.currentTarget.style.background = 'transparent'
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = 'scale(0.94)'
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+            }}
           >
             Beranda
           </button>
-          <button 
+
+          <button
             onClick={() => scrollToSection('sec-pesan')}
-            style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
-            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
-            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#e2f0ea',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '500',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#ffffff'
+              e.currentTarget.style.background =
+                'rgba(255, 255, 255, 0.1)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#e2f0ea'
+              e.currentTarget.style.background = 'transparent'
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = 'scale(0.94)'
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+            }}
           >
             Pesan Tiket
           </button>
-          <button 
+
+          <button
             onClick={() => {
               if (!session) {
+                setLoginError('')
                 setShowLoginModal(true)
               } else {
                 scrollToSection('sec-status')
               }
-            }} 
-            style={{ position: 'relative', background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
-            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
-            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+            }}
+            style={{
+              position: 'relative',
+              background: 'transparent',
+              border: 'none',
+              color: '#e2f0ea',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '500',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#ffffff'
+              e.currentTarget.style.background =
+                'rgba(255, 255, 255, 0.1)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#e2f0ea'
+              e.currentTarget.style.background = 'transparent'
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = 'scale(0.94)'
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+            }}
           >
             Status Tiket
-            {session && (session.user.role === 'admin' || session.user.role === 'teknisi') && unreadNotifications > 0 && (
-              <span className="nav-badge" style={{ position: 'absolute', top: '2px', right: '4px', background: '#dc2626', color: '#fff', fontSize: '10px', padding: '1px 5px', borderRadius: '10px', fontWeight: 'bold' }}>{unreadNotifications}</span>
-            )}
+
+            {session &&
+              (session.user.role === 'admin' ||
+                session.user.role === 'teknisi') &&
+              unreadNotifications > 0 && (
+                <span
+                  className="nav-badge"
+                  style={{
+                    position: 'absolute',
+                    top: '2px',
+                    right: '4px',
+                    background: '#dc2626',
+                    color: '#fff',
+                    fontSize: '10px',
+                    padding: '1px 5px',
+                    borderRadius: '10px',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {unreadNotifications}
+                </span>
+              )}
           </button>
-          <button 
+
+          <button
             onClick={() => scrollToSection('sec-knowledge')}
-            style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
-            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
-            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#e2f0ea',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '500',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#ffffff'
+              e.currentTarget.style.background =
+                'rgba(255, 255, 255, 0.1)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#e2f0ea'
+              e.currentTarget.style.background = 'transparent'
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = 'scale(0.94)'
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+            }}
           >
             Knowledge Base
           </button>
-          {(session?.user.role === 'admin' || session?.user.role === 'teknisi') && (
-            <button 
-              onClick={() => { if (!session) { setShowLoginModal(true) } else { setPage('report') } }}
-              style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
-              onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
-              onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+
+          {(session?.user.role === 'admin' ||
+            session?.user.role === 'teknisi') && (
+            <button
+              onClick={() => {
+                if (!session) {
+                  setLoginError('')
+                  setShowLoginModal(true)
+                } else {
+                  setPage('report')
+                }
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#e2f0ea',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '500',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#ffffff'
+                e.currentTarget.style.background =
+                  'rgba(255, 255, 255, 0.1)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#e2f0ea'
+                e.currentTarget.style.background = 'transparent'
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.transform = 'scale(0.94)'
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.transform = 'scale(1)'
+              }}
             >
               Laporan
             </button>
           )}
+
           {session?.user.role === 'admin' && (
-            <button 
-              onClick={() => setPage('audit-log')} 
-              style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
-              onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
-              onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+            <button
+              onClick={() => setPage('audit-log')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#e2f0ea',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '500',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#ffffff'
+                e.currentTarget.style.background =
+                  'rgba(255, 255, 255, 0.1)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#e2f0ea'
+                e.currentTarget.style.background = 'transparent'
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.transform = 'scale(0.94)'
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.transform = 'scale(1)'
+              }}
             >
               Log Aktivitas
             </button>
           )}
-          {(session?.user.role === 'admin' || session?.user.role === 'teknisi') && (
-            <button 
+
+          {(session?.user.role === 'admin' ||
+            session?.user.role === 'teknisi') && (
+            <button
               onClick={() => setPage('inventory')}
-              style={{ background: 'transparent', border: 'none', color: '#e2f0ea', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.15s ease' }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = '#e2f0ea'; e.currentTarget.style.background = 'transparent'; }}
-              onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
-              onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#e2f0ea',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '500',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#ffffff'
+                e.currentTarget.style.background =
+                  'rgba(255, 255, 255, 0.1)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#e2f0ea'
+                e.currentTarget.style.background = 'transparent'
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.transform = 'scale(0.94)'
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.transform = 'scale(1)'
+              }}
             >
               Inventaris
             </button>
@@ -256,8 +534,8 @@ function App() {
 
         <div className="account-action">
           {session ? (
-            <button 
-              className="account" 
+            <button
+              className="account"
               onClick={() => setShowSidebar(true)}
               style={{
                 background: '#047857',
@@ -271,21 +549,38 @@ function App() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                transition: 'all 0.15s ease'
+                boxShadow:
+                  '0 2px 8px rgba(0,0,0,0.15)',
+                transition: 'all 0.15s ease',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#065f46'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#047857'; e.currentTarget.style.transform = 'translateY(0)'; }}
-              onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.96)'; }}
-              onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#065f46'
+                e.currentTarget.style.transform =
+                  'translateY(-1px)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#047857'
+                e.currentTarget.style.transform = 'translateY(0)'
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.transform = 'scale(0.96)'
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.transform =
+                  'translateY(-1px)'
+              }}
             >
               <span>👤</span>
               <span>Akun</span>
             </button>
           ) : (
-            <button 
-              className="login-nav-btn" 
-              onClick={() => { setLoginError(''); setShowLoginModal(true); }}
+            <button
+              className="login-nav-btn"
+              onClick={() => {
+                setLoginError('')
+                setShowPassword(false)
+                setShowLoginModal(true)
+              }}
               style={{
                 background: '#047857',
                 color: '#ffffff',
@@ -295,13 +590,26 @@ function App() {
                 fontWeight: '600',
                 fontSize: '13px',
                 cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                transition: 'all 0.15s ease'
+                boxShadow:
+                  '0 2px 8px rgba(0,0,0,0.15)',
+                transition: 'all 0.15s ease',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#065f46'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#047857'; e.currentTarget.style.transform = 'translateY(0)'; }}
-              onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.96)'; }}
-              onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#065f46'
+                e.currentTarget.style.transform =
+                  'translateY(-1px)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#047857'
+                e.currentTarget.style.transform = 'translateY(0)'
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.transform = 'scale(0.96)'
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.transform =
+                  'translateY(-1px)'
+              }}
             >
               Login
             </button>
@@ -309,50 +617,118 @@ function App() {
         </div>
       </header>
 
+      {notice && (
+        <p className="app-notice" role="alert">
+          {notice}
+        </p>
+      )}
+
       {errorPopup && (
-        <div className="api-error-popup" role="alertdialog" aria-modal="true" aria-labelledby="api-error-title">
+        <div
+          className="api-error-popup"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="api-error-title"
+        >
           <section className="api-error-popup-card">
             <div>
-              <p className="api-error-popup-label">Terjadi kendala</p>
-              <h2 id="api-error-title">Permintaan gagal</h2>
+              <p className="api-error-popup-label">
+                Terjadi kendala
+              </p>
+
+              <h2 id="api-error-title">
+                Permintaan gagal
+              </h2>
+
               <p>{errorPopup.message}</p>
             </div>
-            <button type="button" onClick={() => setErrorPopup(null)} autoFocus>Tutup</button>
+
+            <button
+              type="button"
+              onClick={() => setErrorPopup(null)}
+              autoFocus
+            >
+              Tutup
+            </button>
           </section>
         </div>
       )}
 
-      {/* Landing Page Tampilan Bento Grid Layout */}
+      {/* LANDING PAGE */}
       {page === 'landing' && (
-        <section className="bento-container" style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 2fr',
-          gap: '20px',
-          padding: '24px',
-          maxWidth: '1280px',
-          margin: '0 auto',
-          alignItems: 'start'
-        }}>
-          {/* Kolom Kiri: Layanan Mandiri & Riwayat Tiket */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Bento Box 1: Quick Action Pesan Tiket */}
-            <div id="sec-pesan" className="bento-box" style={{ 
-              background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)', 
-              padding: '24px', 
-              borderRadius: '16px', 
-              border: '1px solid #a7f3d0', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              justifyContent: 'flex-start',
-              color: '#064e3b',
-              boxShadow: '0 4px 16px rgba(16, 185, 129, 0.08)'
-            }}>
+        <section
+          className="bento-container"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 2fr',
+            gap: '20px',
+            padding: '24px',
+            maxWidth: '1280px',
+            margin: '0 auto',
+            alignItems: 'start',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+            }}
+          >
+            <div
+              id="sec-pesan"
+              className="bento-box"
+              style={{
+                background:
+                  'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+                padding: '24px',
+                borderRadius: '16px',
+                border: '1px solid #a7f3d0',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-start',
+                color: '#064e3b',
+                boxShadow:
+                  '0 4px 16px rgba(16, 185, 129, 0.08)',
+              }}
+            >
               <div>
-                <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: '#047857', fontWeight: 'bold', letterSpacing: '0.05em' }}>Layanan Mandiri</span>
-                <h2 style={{ fontSize: '1.5rem', margin: '10px 0', color: '#064e3b' }}>Ada Masalah IT?</h2>
-                <p style={{ color: '#047857', fontSize: '0.95rem', lineHeight: '1.5', marginBottom: '24px' }}>Laporkan gangguan atau permintaan layanan baru secara langsung ke tim teknisi.</p>
+                <span
+                  style={{
+                    fontSize: '0.8rem',
+                    textTransform: 'uppercase',
+                    color: '#047857',
+                    fontWeight: 'bold',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  Layanan Mandiri
+                </span>
+
+                <h2
+                  style={{
+                    fontSize: '1.5rem',
+                    margin: '10px 0',
+                    color: '#064e3b',
+                  }}
+                >
+                  Ada Masalah IT?
+                </h2>
+
+                <p
+                  style={{
+                    color: '#047857',
+                    fontSize: '0.95rem',
+                    lineHeight: '1.5',
+                    marginBottom: '24px',
+                  }}
+                >
+                  Laporkan gangguan atau permintaan layanan
+                  baru secara langsung ke tim teknisi.
+                </p>
               </div>
-              <button 
+
+              <button
                 style={{
                   width: '100%',
                   padding: '14px',
@@ -363,22 +739,30 @@ function App() {
                   fontWeight: 'bold',
                   cursor: 'pointer',
                   fontSize: '1rem',
-                  boxShadow: '0 4px 12px rgba(4, 120, 87, 0.3)',
-                  transition: 'all 0.15s ease'
+                  boxShadow:
+                    '0 4px 12px rgba(4, 120, 87, 0.3)',
+                  transition: 'all 0.15s ease',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#065f46';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(4, 120, 87, 0.4)';
+                  e.currentTarget.style.backgroundColor =
+                    '#065f46'
+                  e.currentTarget.style.transform =
+                    'translateY(-2px)'
+                  e.currentTarget.style.boxShadow =
+                    '0 6px 16px rgba(4, 120, 87, 0.4)'
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#047857';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(4, 120, 87, 0.3)';
+                  e.currentTarget.style.backgroundColor =
+                    '#047857'
+                  e.currentTarget.style.transform =
+                    'translateY(0)'
+                  e.currentTarget.style.boxShadow =
+                    '0 4px 12px rgba(4, 120, 87, 0.3)'
                 }}
                 onClick={() => {
                   if (!session) {
                     setLoginError('')
+                    setShowPassword(false)
                     setShowLoginModal(true)
                   } else {
                     if (session.user.role === 'user') {
@@ -393,215 +777,565 @@ function App() {
               </button>
             </div>
 
-            {/* Bento Box 4: Riwayat Tiket */}
-            <div id="sec-riwayat" className="bento-box" style={{ background: '#ffffff', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-              <h3 style={{ margin: '0 0 12px 0', fontSize: '1.2rem' }}>Riwayat Tiket</h3>
-              <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '16px' }}>Daftar penanganan tiket yang telah selesai.</p>
-              <HistoryCarousel token={session?.token} user={session?.user} onError={setNotice} />
+            <div
+              id="sec-riwayat"
+              className="bento-box"
+              style={{
+                background: '#ffffff',
+                padding: '24px',
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <h3
+                style={{
+                  margin: '0 0 12px 0',
+                  fontSize: '1.2rem',
+                }}
+              >
+                Riwayat Tiket
+              </h3>
+
+              <p
+                style={{
+                  fontSize: '0.9rem',
+                  color: '#64748b',
+                  marginBottom: '16px',
+                }}
+              >
+                Daftar penanganan tiket yang telah selesai.
+              </p>
+
+              <HistoryCarousel
+                token={session?.token}
+                user={session?.user}
+                onError={setNotice}
+              />
             </div>
           </div>
 
-          {/* Kolom Kanan: Status Tiket Aktif & Knowledge Base */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Bento Box 2: Status Tiket Aktif & Ringkasan */}
-            <div id="sec-status" className="bento-box" style={{ background: '#ffffff', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-              <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem' }}>Status Tiket Aktif</h3>
-              <Dashboard 
-                token={session?.token} 
-                user={session?.user} 
-                onTroubleshooting={() => scrollToSection('sec-knowledge')} 
-                onTickets={() => setPage('tickets')} 
-                onKnowledge={() => scrollToSection('sec-knowledge')} 
-                onRequireLogin={() => { setLoginError(''); setShowLoginModal(true); }}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+            }}
+          >
+            <div
+              id="sec-status"
+              className="bento-box"
+              style={{
+                background: '#ffffff',
+                padding: '24px',
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <h3
+                style={{
+                  margin: '0 0 16px 0',
+                  fontSize: '1.2rem',
+                }}
+              >
+                Status Tiket Aktif
+              </h3>
+
+              <Dashboard
+                token={session?.token}
+                user={session?.user}
+                onTroubleshooting={() =>
+                  scrollToSection('sec-knowledge')
+                }
+                onTickets={() => setPage('tickets')}
+                onKnowledge={() =>
+                  scrollToSection('sec-knowledge')
+                }
+                onRequireLogin={() => {
+                  setLoginError('')
+                  setShowPassword(false)
+                  setShowLoginModal(true)
+                }}
                 showHistory={false}
               />
             </div>
 
-            {/* Bento Box 3: Knowledge Base & Troubleshooting */}
-            <div id="sec-knowledge" className="bento-box" style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Knowledge Base & Solusi Mandiri</h3>
+            <div
+              id="sec-knowledge"
+              className="bento-box"
+              style={{
+                background: '#f8fafc',
+                padding: '24px',
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '12px',
+                  marginBottom: '12px',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: '1.2rem',
+                  }}
+                >
+                  Knowledge Base & Solusi Mandiri
+                </h3>
+
                 <button
                   type="button"
-                  onClick={() => { setSelectedArticle(null); setPage('knowledge') }}
-                  style={{ background: '#047857', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}
+                  onClick={() => {
+                    setSelectedArticle(null)
+                    setPage('knowledge')
+                  }}
+                  style={{
+                    background: '#047857',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                  }}
                 >
                   Buka Knowledge Base →
                 </button>
               </div>
-              <Troubleshooting 
-                articles={articles} 
-                onOpenArticle={(article) => { setSelectedArticle(article); setPage('knowledge') }} 
+
+              <Troubleshooting
+                articles={articles}
+                onOpenArticle={(article) => {
+                  setSelectedArticle(article)
+                  setPage('knowledge')
+                }}
               />
             </div>
           </div>
         </section>
       )}
 
-      {/* Halaman khusus jika membuka tiket/knowledge secara full */}
+      {/* TICKETS */}
       {page === 'tickets' && (
-        <Tickets 
-          token={session?.token} 
-          user={session?.user} 
-          articles={articles}
-          onError={setNotice} 
-          onRequireLogin={() => { setLoginError(''); setShowLoginModal(true); }}
-          onOpenArticle={(article) => { setSelectedArticle(article); setPage('knowledge') }}
-        />
-      )}
-
-      {showCreateTicketModal && session?.user.role === 'user' && (
         <Tickets
-          token={session.token}
-          user={session.user}
+          token={session?.token}
+          user={session?.user}
           articles={articles}
-          createOnly
-          onCloseCreate={() => setShowCreateTicketModal(false)}
           onError={setNotice}
-          onOpenArticle={(article) => { setSelectedArticle(article); setPage('knowledge') }}
           onRequireLogin={() => {
-            setShowCreateTicketModal(false)
             setLoginError('')
+            setShowPassword(false)
             setShowLoginModal(true)
+          }}
+          onOpenArticle={(article) => {
+            setSelectedArticle(article)
+            setPage('knowledge')
           }}
         />
       )}
 
+      {/* CREATE TICKET MODAL */}
+      {showCreateTicketModal &&
+        session?.user.role === 'user' && (
+          <Tickets
+            token={session.token}
+            user={session.user}
+            articles={articles}
+            createOnly
+            onCloseCreate={() =>
+              setShowCreateTicketModal(false)
+            }
+            onError={setNotice}
+            onOpenArticle={(article) => {
+              setSelectedArticle(article)
+              setPage('knowledge')
+            }}
+            onRequireLogin={() => {
+              setShowCreateTicketModal(false)
+              setLoginError('')
+              setShowPassword(false)
+              setShowLoginModal(true)
+            }}
+          />
+        )}
+
+      {/* KNOWLEDGE */}
       {page === 'knowledge' && (
-        <Knowledge 
-          articles={articles} 
-          initialArticle={selectedArticle} 
+        <Knowledge
+          articles={articles}
+          initialArticle={selectedArticle}
         />
       )}
 
-      {(session?.user.role === 'admin' || session?.user.role === 'teknisi') && page === 'admin' && (
-        <Admin 
-          token={session.token} 
-          user={session.user} 
-          articles={articles} 
-          onChanged={loadArticles} 
-          onError={setNotice} 
-        />
-      )}
+      {/* ADMIN */}
+      {(session?.user.role === 'admin' ||
+        session?.user.role === 'teknisi') &&
+        page === 'admin' && (
+          <Admin
+            token={session.token}
+            user={session.user}
+            articles={articles}
+            onChanged={loadArticles}
+            onError={setNotice}
+          />
+        )}
 
-      {(session?.user.role === 'admin' || session?.user.role === 'teknisi') && page === 'report' && (
-        <Report 
-          token={session.token} 
-          user={session.user} 
-          onBack={() => setPage('landing')} 
-          onError={setNotice} 
-        />
-      )}
+      {/* REPORT */}
+      {(session?.user.role === 'admin' ||
+        session?.user.role === 'teknisi') &&
+        page === 'report' && (
+          <Report
+            token={session.token}
+            user={session.user}
+            onBack={() => setPage('landing')}
+            onError={setNotice}
+          />
+        )}
 
-      {(session?.user.role === 'admin' || session?.user.role === 'teknisi') && page === 'inventory' && (
-        <Inventory
-          token={session.token}
-          user={session.user}
-          onBack={() => setPage('landing')}
-          onError={setNotice}
-        />
-      )}
+      {/* INVENTORY */}
+      {(session?.user.role === 'admin' ||
+        session?.user.role === 'teknisi') &&
+        page === 'inventory' && (
+          <Inventory
+            token={session.token}
+            user={session.user}
+            onBack={() => setPage('landing')}
+            onError={setNotice}
+          />
+        )}
 
-      {session?.user.role === 'admin' && page === 'audit-log' && (
-        <AuditLog token={session.token} onBack={() => setPage('landing')} onError={setNotice} />
-      )}
+      {/* AUDIT LOG */}
+      {session?.user.role === 'admin' &&
+        page === 'audit-log' && (
+          <AuditLog
+            token={session.token}
+            onBack={() => setPage('landing')}
+            onError={setNotice}
+          />
+        )}
 
-      {/* Popup Login Modal dengan Notifikasi Error di Bawah Password */}
+      {/* =====================================================
+          LOGIN MODAL
+          ===================================================== */}
       {showLoginModal && (
-        <div className="modal-backdrop" onClick={() => setShowLoginModal(false)} style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          backdropFilter: 'blur(5px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9997
-        }}>
-          <section className="login-card" aria-label="Login" onClick={(e) => e.stopPropagation()} style={{
-            background: '#ffffff',
-            padding: '32px',
-            borderRadius: '20px',
-            width: '100%',
-            maxWidth: '400px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-            position: 'relative',
-            border: '1px solid #e2e8f0',
-            overflow: 'hidden'
-          }}>
-            {/* Aksen Garis Gradasi Hijau Tua */}
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '6px', background: 'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)' }} />
+        <div
+          className="modal-backdrop"
+          onClick={() => {
+            setShowLoginModal(false)
+            setShowPassword(false)
+          }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9997,
+          }}
+        >
+          <section
+            className="login-card"
+            aria-label="Login"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#ffffff',
+              padding: '32px',
+              borderRadius: '20px',
+              width: '100%',
+              maxWidth: '400px',
+              boxShadow:
+                '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+              position: 'relative',
+              border: '1px solid #e2e8f0',
+              overflow: 'hidden',
+            }}
+          >
+            {/* AKSEN GARIS */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '6px',
+                background:
+                  'linear-gradient(135deg, #0c4a30 0%, #064e3b 100%)',
+              }}
+            />
 
-            <button className="close-ticket-form" onClick={() => setShowLoginModal(false)} aria-label="Tutup modal" style={{
-              position: 'absolute',
-              top: '16px',
-              right: '16px',
-              background: '#f1f5f9',
-              border: 'none',
-              borderRadius: '50%',
-              width: '32px',
-              height: '32px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              color: '#64748b',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>×</button>
+            {/* CLOSE */}
+            <button
+              className="close-ticket-form"
+              onClick={() => {
+                setShowLoginModal(false)
+                setShowPassword(false)
+              }}
+              aria-label="Tutup modal"
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: '#f1f5f9',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                color: '#64748b',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              ×
+            </button>
 
-            <div className="login-brand" style={{ textAlign: 'center', marginBottom: '20px', marginTop: '8px' }}>
-              <img src={ummuhaniLogo} alt="Ummuhani" style={{ width: '48px', height: 'auto', marginBottom: '12px' }} />
-              <h2 style={{ fontSize: '1.4rem', color: '#064e3b', margin: '0 0 4px 0', fontWeight: '800' }}>IT Helpdesk</h2>
-              <p style={{ fontSize: '0.9rem', color: '#64748b', margin: 0 }}>Self-Service Portal</p>
+            {/* BRAND */}
+            <div
+              className="login-brand"
+              style={{
+                textAlign: 'center',
+                marginBottom: '20px',
+                marginTop: '8px',
+              }}
+            >
+              <img
+                src={ummuhaniLogo}
+                alt="Ummuhani"
+                style={{
+                  width: '48px',
+                  height: 'auto',
+                  marginBottom: '12px',
+                }}
+              />
+
+              <h2
+                style={{
+                  fontSize: '1.4rem',
+                  color: '#064e3b',
+                  margin: '0 0 4px 0',
+                  fontWeight: '800',
+                }}
+              >
+                IT Helpdesk
+              </h2>
+
+              <p
+                style={{
+                  fontSize: '0.9rem',
+                  color: '#64748b',
+                  margin: 0,
+                }}
+              >
+                Self-Service Portal
+              </p>
             </div>
 
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>
+            {/* LOGIN FORM */}
+            <form
+              onSubmit={handleLogin}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+              }}
+            >
+              {/* USERNAME */}
+              <label
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  color: '#334155',
+                }}
+              >
                 Username
+
                 <input
                   name="username"
                   autoComplete="username"
                   placeholder="Masukkan username"
                   required
-                  style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none' }}
+                  style={{
+                    boxSizing: 'border-box',
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.95rem',
+                    outline: 'none',
+                  }}
                 />
               </label>
 
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>
+              {/* PASSWORD */}
+              <label
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  color: '#334155',
+                }}
+              >
                 Password
-                <input
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="Masukkan password"
-                  required
-                  style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none' }}
-                />
+
+                <div
+                  style={{
+                    position: 'relative',
+                    width: '100%',
+                  }}
+                >
+                  <input
+                    name="password"
+                    type={
+                      showPassword
+                        ? 'text'
+                        : 'password'
+                    }
+                    autoComplete="current-password"
+                    placeholder="Masukkan password"
+                    required
+                    style={{
+                      boxSizing: 'border-box',
+                      width: '100%',
+                      padding:
+                        '12px 48px 12px 16px',
+                      borderRadius: '10px',
+                      border:
+                        '1px solid #cbd5e1',
+                      fontSize: '0.95rem',
+                      outline: 'none',
+                    }}
+                  />
+
+                  {/* TOMBOL LIHAT / SEMBUNYIKAN PASSWORD */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowPassword(
+                        (prev) => !prev
+                      )
+                    }
+                    aria-label={
+                      showPassword
+                        ? 'Sembunyikan password'
+                        : 'Lihat password'
+                    }
+                    title={
+                      showPassword
+                        ? 'Sembunyikan password'
+                        : 'Lihat password'
+                    }
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      right: '12px',
+                      transform:
+                        'translateY(-50%)',
+                      width: '28px',
+                      height: '28px',
+                      padding: 0,
+                      border: 'none',
+                      background:
+                        'transparent',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#64748b',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color =
+                        '#047857'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color =
+                        '#64748b'
+                    }}
+                  >
+                    {showPassword ? (
+                      /* ICON MATA TERBUKA */
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="3"
+                        />
+                      </svg>
+                    ) : (
+                      /* ICON MATA TERTUTUP */
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M3 3l18 18" />
+                        <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                        <path d="M9.9 4.2A10.7 10.7 0 0 1 12 4c6.5 0 10 8 10 8a18.5 18.5 0 0 1-3.1 4.4" />
+                        <path d="M6.6 6.6C3.5 8.7 2 12 2 12s3.5 8 10 8c1.8 0 3.4-.5 4.8-1.2" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </label>
 
-              {/* Notifikasi Error diposisikan di bawah kotak password */}
+              {/* ERROR LOGIN */}
               {loginError && (
-                <div style={{ 
-                  padding: '10px 14px', 
-                  backgroundColor: '#fee2e2', 
-                  color: '#991b1b', 
-                  borderRadius: '8px', 
-                  fontSize: '0.85rem', 
-                  fontWeight: '500', 
-                  textAlign: 'center',
-                  border: '1px solid #fca5a5'
-                }}>
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    backgroundColor: '#fee2e2',
+                    color: '#991b1b',
+                    borderRadius: '8px',
+                    fontSize: '0.85rem',
+                    fontWeight: '500',
+                    textAlign: 'center',
+                    border:
+                      '1px solid #fca5a5',
+                  }}
+                >
                   {loginError}
                 </div>
               )}
 
-              <button 
-                className="login" 
-                type="submit" 
+              {/* LOGIN BUTTON */}
+              <button
+                className="login"
+                type="submit"
                 style={{
                   marginTop: '8px',
                   width: '100%',
@@ -613,18 +1347,25 @@ function App() {
                   fontWeight: 'bold',
                   fontSize: '1rem',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(4, 120, 87, 0.3)',
-                  transition: 'all 0.15s ease'
+                  boxShadow:
+                    '0 4px 12px rgba(4, 120, 87, 0.3)',
+                  transition: 'all 0.15s ease',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#065f46';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(4, 120, 87, 0.4)';
+                  e.currentTarget.style.backgroundColor =
+                    '#065f46'
+                  e.currentTarget.style.transform =
+                    'translateY(-2px)'
+                  e.currentTarget.style.boxShadow =
+                    '0 6px 16px rgba(4, 120, 87, 0.4)'
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#047857';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(4, 120, 87, 0.3)';
+                  e.currentTarget.style.backgroundColor =
+                    '#047857'
+                  e.currentTarget.style.transform =
+                    'translateY(0)'
+                  e.currentTarget.style.boxShadow =
+                    '0 4px 12px rgba(4, 120, 87, 0.3)'
                 }}
               >
                 Login
@@ -634,10 +1375,10 @@ function App() {
         </div>
       )}
 
-      {/* Sidebar Akun Presisi */}
+      {/* SIDEBAR AKUN */}
       {showSidebar && session && (
-        <div 
-          className="sidebar-backdrop" 
+        <div
+          className="sidebar-backdrop"
           onClick={() => setShowSidebar(false)}
           style={{
             position: 'fixed',
@@ -645,14 +1386,17 @@ function App() {
             left: 0,
             width: '100vw',
             height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.4)',
-            zIndex: 9998
+            backgroundColor:
+              'rgba(0, 0, 0, 0.4)',
+            zIndex: 9998,
           }}
         >
-          <aside 
-            className="account-sidebar" 
-            aria-label="Menu akun" 
-            onClick={(event) => event.stopPropagation()}
+          <aside
+            className="account-sidebar"
+            aria-label="Menu akun"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -667,19 +1411,47 @@ function App() {
               top: 0,
               backgroundColor: '#ffffff',
               zIndex: 9999,
-              boxShadow: '-4px 0 20px rgba(0,0,0,0.15)'
+              boxShadow:
+                '-4px 0 20px rgba(0,0,0,0.15)',
             }}
           >
             <div>
-              <button className="sidebar-close" onClick={() => setShowSidebar(false)} aria-label="Tutup menu">×</button>
-              <img 
-                src={ummuhaniLogo} 
-                alt="Ummuhani" 
-                style={{ width: '120px', height: 'auto', display: 'block', margin: '0 auto 16px auto' }} 
+              <button
+                className="sidebar-close"
+                onClick={() =>
+                  setShowSidebar(false)
+                }
+                aria-label="Tutup menu"
+              >
+                ×
+              </button>
+
+              <img
+                src={ummuhaniLogo}
+                alt="Ummuhani"
+                style={{
+                  width: '120px',
+                  height: 'auto',
+                  display: 'block',
+                  margin: '0 auto 16px auto',
+                }}
               />
-              <h2 style={{ fontSize: '1.25rem', marginBottom: '16px', textAlign: 'center' }}>Akun</h2>
+
+              <h2
+                style={{
+                  fontSize: '1.25rem',
+                  marginBottom: '16px',
+                  textAlign: 'center',
+                }}
+              >
+                Akun
+              </h2>
+
               <section className="profile-card">
-                <span className="profile-initial">{session.user.username[0].toUpperCase()}</span>
+                <span className="profile-initial">
+                  {session.user.username[0].toUpperCase()}
+                </span>
+
                 <div>
                   <b>{session.user.username}</b>
                   <small>{session.user.email}</small>
@@ -688,24 +1460,54 @@ function App() {
               </section>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', marginTop: 'auto' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+                width: '100%',
+                marginTop: 'auto',
+              }}
+            >
               {session.user.role === 'admin' && (
-                <button className="admin-menu" onClick={() => { setShowSidebar(false); setPage('admin') }}>
+                <button
+                  className="admin-menu"
+                  onClick={() => {
+                    setShowSidebar(false)
+                    setPage('admin')
+                  }}
+                >
                   Admin Knowledge
                 </button>
               )}
+
               {session.user.role === 'admin' && (
-                <button className="admin-menu" onClick={() => { setShowSidebar(false); setPage('audit-log') }}>
+                <button
+                  className="admin-menu"
+                  onClick={() => {
+                    setShowSidebar(false)
+                    setPage('audit-log')
+                  }}
+                >
                   Log Aktivitas
                 </button>
               )}
-              {(session.user.role === 'admin' || session.user.role === 'teknisi') && (
-                <button className="admin-menu" onClick={() => { setShowSidebar(false); setPage('inventory') }}>
+
+              {(session.user.role === 'admin' ||
+                session.user.role === 'teknisi') && (
+                <button
+                  className="admin-menu"
+                  onClick={() => {
+                    setShowSidebar(false)
+                    setPage('inventory')
+                  }}
+                >
                   Inventaris
                 </button>
               )}
-              <button 
-                className="logout" 
+
+              <button
+                className="logout"
                 onClick={logout}
                 style={{
                   backgroundColor: '#dc2626',
@@ -715,7 +1517,7 @@ function App() {
                   borderRadius: '6px',
                   cursor: 'pointer',
                   fontWeight: 'bold',
-                  width: '100%'
+                  width: '100%',
                 }}
               >
                 Logout
@@ -728,4 +1530,6 @@ function App() {
   )
 }
 
-createRoot(document.getElementById('root')).render(<App />)
+createRoot(document.getElementById('root')).render(
+  <App />
+)
