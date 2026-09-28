@@ -102,6 +102,7 @@ export default function Inventory({ token, user, onBack, onError }) {
   // STATE LAINNYA
   const [selectedAsset, setSelectedAsset] = useState(null)
   const [selectedPart, setSelectedPart] = useState(null)
+  const [selectedRecord, setSelectedRecord] = useState(null)
   const [showStockModal, setShowStockModal] = useState(false)
   const [stockUpdateItem, setStockUpdateItem] = useState(null)
   const [stockUpdateType, setStockUpdateType] = useState(null) // 'asset' atau 'sparepart'
@@ -352,34 +353,34 @@ export default function Inventory({ token, user, onBack, onError }) {
 
     {/* ===================== TAB: TABEL LAINNYA (NON-MODAL CONTENT) ===================== */}
     {tab === 'movements' && (
-      <WorkSection title="Pergerakan Inventaris" items={data.movements} itemsPerPage={ITEMS_PER_PAGE} columns={['item_name', 'movement_type', 'quantity', 'from_room', 'to_room', 'movement_date']} labels={['Item', 'Jenis', 'Jumlah', 'Asal', 'Tujuan', 'Tanggal']} onAdd={isAdmin ? () => { setMovement(blankMovement); setShowMovementModal(true); } : null} addLabel="+ Tambah Pergerakan" />
+      <WorkSection title="Pergerakan Inventaris" items={data.movements} itemsPerPage={ITEMS_PER_PAGE} columns={['item_name', 'movement_type', 'quantity', 'from_room', 'to_room', 'movement_date']} labels={['Item', 'Jenis', 'Jumlah', 'Asal', 'Tujuan', 'Tanggal']} renderActions={(item) => <button type="button" className="secondary-button" onClick={() => setSelectedRecord({ title: 'Detail Pergerakan Inventaris', item })}>Detail</button>} onAdd={isAdmin ? () => { setMovement(blankMovement); setShowMovementModal(true); } : null} addLabel="+ Tambah Pergerakan" />
     )}
     
     {tab === 'transactions' && (
-      <WorkSection title="Transaksi Sparepart" items={data.transactions} itemsPerPage={ITEMS_PER_PAGE} columns={['sparepart_name', 'transaction_type', 'quantity', 'transaction_date', 'ticket_title', 'pic_name']} labels={['Sparepart', 'Jenis', 'Jumlah', 'Tanggal', 'Referensi tiket', 'PIC']} onAdd={isAdmin ? () => { setTransaction(blankTransaction); setShowTransactionModal(true); } : null} addLabel="+ Tambah Transaksi" />
+      <WorkSection title="Transaksi Sparepart" items={data.transactions} itemsPerPage={ITEMS_PER_PAGE} columns={['sparepart_name', 'transaction_type', 'quantity', 'transaction_date', 'ticket_title', 'pic_name']} labels={['Sparepart', 'Jenis', 'Jumlah', 'Tanggal', 'Referensi tiket', 'PIC']} renderActions={(item) => <button type="button" className="secondary-button" onClick={() => setSelectedRecord({ title: 'Detail Transaksi Sparepart', item })}>Detail</button>} onAdd={isAdmin ? () => { setTransaction(blankTransaction); setShowTransactionModal(true); } : null} addLabel="+ Tambah Transaksi" />
     )}
     
     {tab === 'maintenance' && (
-      <WorkSection title="Maintenance" items={data.maintenance} itemsPerPage={ITEMS_PER_PAGE} columns={['asset_code', 'maintenance_type', 'start_date', 'end_date', 'status', 'pic_name']} labels={['Aset', 'Jenis', 'Mulai', 'Selesai', 'Status', 'PIC']} renderActions={isAdmin ? (item) => <button type="button" className="secondary-button" onClick={() => handleEditMaintenance(item)}>Edit</button> : null} onAdd={isAdmin ? () => { setMaintenance(blankMaintenance); setMaintenanceEditingId(null); setShowMaintenanceModal(true); } : null} addLabel="+ Tambah Maintenance" />
+      <WorkSection title="Maintenance" items={data.maintenance} itemsPerPage={ITEMS_PER_PAGE} columns={['asset_code', 'maintenance_type', 'start_date', 'end_date', 'status', 'pic_name']} labels={['Aset', 'Jenis', 'Mulai', 'Selesai', 'Status', 'PIC']} renderActions={(item) => <div style={{ display: 'flex', gap: '6px' }}><button type="button" className="secondary-button" onClick={() => setSelectedRecord({ title: 'Detail Maintenance', item })}>Detail</button>{isAdmin && <button type="button" className="secondary-button" onClick={() => handleEditMaintenance(item)}>Edit</button>}</div>} onAdd={isAdmin ? () => { setMaintenance(blankMaintenance); setMaintenanceEditingId(null); setShowMaintenanceModal(true); } : null} addLabel="+ Tambah Maintenance" />
     )}
     
     {tab === 'procurement' && (
-      <WorkSection title="Pengadaan" items={data.procurement} itemsPerPage={ITEMS_PER_PAGE} columns={['po_number', 'request_date', 'supplier', 'status', 'total_cost']} labels={['Nomor PO', 'Pengajuan', 'Supplier', 'Status', 'Total biaya']} onAdd={isAdmin ? () => { setProcurement(blankProcurement); setShowProcurementModal(true); } : null} addLabel="+ Tambah Pengadaan" />
+      <WorkSection title="Pengadaan" items={data.procurement} itemsPerPage={ITEMS_PER_PAGE} columns={['po_number', 'request_date', 'supplier', 'status', 'total_cost']} labels={['Nomor PO', 'Pengajuan', 'Supplier', 'Status', 'Total biaya']} renderActions={(item) => <button type="button" className="secondary-button" onClick={() => setSelectedRecord({ title: 'Detail Pengadaan', item })}>Detail</button>} onAdd={isAdmin ? () => { setProcurement(blankProcurement); setShowProcurementModal(true); } : null} addLabel="+ Tambah Pengadaan" />
     )}
 
     {tab === 'master-products' && (
       <section className="inventory-section">
         <SectionTitle title="Master Produk / SKU" count={masterProductsList.length} search="" onAdd={isAdmin ? () => { setMasterProduct(blankMasterProduct); setMasterProductEditingId(null); setShowMasterProductModal(true); } : null} addLabel="+ Tambah Master Aset" />
         <table className="inventory-table">
-          <thead><tr><th>SKU</th><th>Produk</th><th>Kategori</th><th>Harga default</th>{isAdmin && <th>Aksi</th>}</tr></thead>
+          <thead><tr><th>SKU</th><th>Produk</th><th>Kategori</th><th>Harga default</th><th>Aksi</th></tr></thead>
           <tbody>
             {paginatedMaster.map((item) => (
               <tr key={item.id}>
                 <td>{item.sku_code}</td><td>{item.product_name}</td><td>{setup.categories.find((category) => String(category.id) === String(item.id_category))?.name || '-'}</td><td>{item.default_price ? `Rp ${Number(item.default_price).toLocaleString('id-ID')}` : '-'}</td>
-                {isAdmin && <td><div style={{ display: 'flex', gap: '6px' }}><button className="secondary-button" type="button" onClick={() => handleEditMasterProduct(item)}>Edit</button><button className="danger-button" type="button" onClick={() => remove(`/inventory/master-products/${item.id}`)}>Hapus</button></div></td>}
+                <td><div style={{ display: 'flex', gap: '6px' }}><button className="secondary-button" type="button" onClick={() => setSelectedRecord({ title: 'Detail Master Produk', item })}>Detail</button>{isAdmin && <><button className="secondary-button" type="button" onClick={() => handleEditMasterProduct(item)}>Edit</button><button className="danger-button" type="button" onClick={() => remove(`/inventory/master-products/${item.id}`)}>Hapus</button></>}</div></td>
               </tr>
             ))}
-            {!paginatedMaster.length && <tr><td colSpan={isAdmin ? 5 : 4} style={{ textAlign: 'center', color: '#64748b' }}>Belum ada master produk.</td></tr>}
+            {!paginatedMaster.length && <tr><td colSpan="5" style={{ textAlign: 'center', color: '#64748b' }}>Belum ada master produk.</td></tr>}
           </tbody>
         </table>
         <PaginationControls currentPage={masterPage} totalItems={masterProductsList.length} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setMasterPage} />
@@ -390,15 +391,15 @@ export default function Inventory({ token, user, onBack, onError }) {
       <section className="inventory-section">
         <SectionTitle title="Master Sparepart / SKU" count={(setup.masterSpareparts || []).length} search="" onAdd={isAdmin ? () => { setMasterSparepart(blankMasterSparepart); setMasterSparepartEditingId(null); setShowMasterSparepartModal(true); } : null} addLabel="+ Tambah Master Sparepart" />
         <table className="inventory-table">
-          <thead><tr><th>SKU</th><th>Sparepart</th><th>Kategori</th><th>Satuan</th><th>Harga default</th>{isAdmin && <th>Aksi</th>}</tr></thead>
+          <thead><tr><th>SKU</th><th>Sparepart</th><th>Kategori</th><th>Satuan</th><th>Harga default</th><th>Aksi</th></tr></thead>
           <tbody>
             {(setup.masterSpareparts || []).map((item) => (
               <tr key={item.id}>
                 <td>{item.sku_code}</td><td>{item.sparepart_name}</td><td>{setup.sparepartCategories.find((category) => String(category.id) === String(item.id_category))?.name || '-'}</td><td>{item.unit || '-'}</td><td>{item.default_price ? `Rp ${Number(item.default_price).toLocaleString('id-ID')}` : '-'}</td>
-                {isAdmin && <td><div style={{ display: 'flex', gap: '6px' }}><button className="secondary-button" type="button" onClick={() => handleEditMasterSparepart(item)}>Edit</button><button className="danger-button" type="button" onClick={() => remove(`/inventory/master-spareparts/${item.id}`)}>Hapus</button></div></td>}
+                <td><div style={{ display: 'flex', gap: '6px' }}><button className="secondary-button" type="button" onClick={() => setSelectedRecord({ title: 'Detail Master Sparepart', item })}>Detail</button>{isAdmin && <><button className="secondary-button" type="button" onClick={() => handleEditMasterSparepart(item)}>Edit</button><button className="danger-button" type="button" onClick={() => remove(`/inventory/master-spareparts/${item.id}`)}>Hapus</button></>}</div></td>
               </tr>
             ))}
-            {!(setup.masterSpareparts || []).length && <tr><td colSpan={isAdmin ? 6 : 5} style={{ textAlign: 'center', color: '#64748b' }}>Belum ada master sparepart.</td></tr>}
+            {!(setup.masterSpareparts || []).length && <tr><td colSpan="6" style={{ textAlign: 'center', color: '#64748b' }}>Belum ada master sparepart.</td></tr>}
           </tbody>
         </table>
       </section>
@@ -617,6 +618,7 @@ export default function Inventory({ token, user, onBack, onError }) {
     {selectedAsset && <AssetDetailModal asset={selectedAsset} maintenance={data.maintenance.filter((item) => Number(item.id_asset) === Number(selectedAsset.id_asset))} movements={data.movements.filter((item) => Number(item.id_asset) === Number(selectedAsset.id_asset))} onClose={() => setSelectedAsset(null)} />}
     {selectedPart && <PartDetailModal part={selectedPart} onClose={() => setSelectedPart(null)} />}
     {qrAsset && <AssetQrModal asset={qrAsset} onClose={() => setQrAsset(null)} />}
+    {selectedRecord && <RecordDetailModal title={selectedRecord.title} item={selectedRecord.item} onClose={() => setSelectedRecord(null)} />}
   </section>
 }
 
@@ -683,6 +685,41 @@ function SectionTitle({ title, count, search, setSearch, onAdd, addLabel }) {
       </div>
     </div>
   ) 
+}
+
+const recordLabels = {
+  id: 'ID', id_asset: 'ID aset', id_sparepart: 'ID sparepart', id_tiket: 'ID tiket',
+  item_name: 'Item', asset_code: 'Kode aset', sparepart_name: 'Nama sparepart',
+  movement_type: 'Jenis pergerakan', transaction_type: 'Jenis transaksi', quantity: 'Jumlah',
+  asset_quantity: 'Jumlah aset', sparepart_quantity: 'Jumlah sparepart', from_room: 'Lokasi asal', to_room: 'Lokasi tujuan',
+  movement_date: 'Tanggal pergerakan', transaction_date: 'Tanggal transaksi', ticket_title: 'Referensi tiket', pic_name: 'PIC',
+  maintenance_type: 'Jenis maintenance', start_date: 'Tanggal mulai', end_date: 'Tanggal selesai', complaint: 'Keluhan', action: 'Tindakan', result: 'Hasil', cost: 'Biaya', status: 'Status', vendor: 'Vendor', notes: 'Catatan',
+  po_number: 'Nomor PO', request_date: 'Tanggal pengajuan', approval_date: 'Tanggal persetujuan', received_date: 'Tanggal penerimaan', supplier: 'Supplier', total_cost: 'Total biaya', details: 'Rincian pengadaan',
+  sku_code: 'Kode SKU', product_name: 'Nama produk', id_category: 'Kategori', default_price: 'Harga default', unit: 'Satuan', min_stock: 'Stok minimum', specifications: 'Spesifikasi', created_at: 'Dibuat', updated_at: 'Diperbarui'
+}
+function displayRecordValue(key, value) {
+  if (value == null || value === '') return '-'
+  if (key.includes('date') || key.endsWith('_at')) return formatTableDate(value)
+  if (['price', 'cost', 'total_cost', 'default_price', 'unit_price'].includes(key)) return rupiah(value)
+  if (typeof value === 'object') return Array.isArray(value)
+    ? value.map((item, index) => `${index + 1}. ${item.item_name || item.asset_code || item.sparepart_name || 'Item'} — ${item.quantity ?? 0} × ${rupiah(item.unit_price)}`).join('\n')
+    : Object.entries(value).map(([name, detail]) => `${name.replace(/_/g, ' ')}: ${detail}`).join('\n')
+  return String(value)
+}
+function RecordDetailModal({ title, item, onClose }) {
+  const fields = Object.entries(item).filter(([key]) => !['id_pic', 'id_user'].includes(key))
+  return <div className="modal-backdrop" onClick={onClose}>
+    <section onClick={(event) => event.stopPropagation()} style={{ background: '#fff', width: 'min(680px, calc(100vw - 32px))', maxHeight: '85vh', overflowY: 'auto', borderRadius: '14px', padding: '24px', position: 'relative' }}>
+      <button type="button" onClick={onClose} aria-label="Tutup detail" style={{ position: 'absolute', top: '12px', right: '16px', border: 0, background: 'none', fontSize: '24px', cursor: 'pointer' }}>×</button>
+      <h2 style={{ margin: '0 0 18px', color: '#0f172a' }}>{title}</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '10px' }}>
+        {fields.map(([key, value]) => <div key={key} style={{ padding: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+          <small style={{ display: 'block', color: '#64748b', marginBottom: '4px' }}>{recordLabels[key] || key.replace(/_/g, ' ')}</small>
+          <strong style={{ display: 'block', color: '#1e293b', fontSize: '13px', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{displayRecordValue(key, value)}</strong>
+        </div>)}
+      </div>
+    </section>
+  </div>
 }
 
 function RoomSelect({ name, value, onChange, rooms }) { return <Select name={name} value={value} onChange={onChange}><option value="">Tidak berubah</option>{rooms.map((item) => <option key={item.id} value={item.id}>{item.ruangan}</option>)}</Select> }
