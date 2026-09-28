@@ -16,7 +16,7 @@ import AuditLog from './audit-log.jsx'
 const savedSession = JSON.parse(localStorage.getItem('helpdesk-session') || 'null')
 
 function App() {
-  const [page, setPage] = useState('landing')
+  const [page, setPage] = useState(() => new URLSearchParams(window.location.search).has('asset') ? 'inventory' : 'landing')
   const [session, setSession] = useState(savedSession)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showCreateTicketModal, setShowCreateTicketModal] = useState(false)

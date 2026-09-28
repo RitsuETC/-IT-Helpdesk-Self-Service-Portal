@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import QRCode from 'qrcode'
 import { api } from './api.js'
 
 const tabs = [
@@ -27,6 +28,34 @@ const formatTableDate = (val) => {
   } catch (e) {
     return val;
   }
+}
+
+const rupiah = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`
+const csvCell = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`
+function downloadCsv(fileName, headers, rows) {
+  const csv = [headers, ...rows].map((row) => row.map(csvCell).join(',')).join('\n')
+  const url = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8;' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${fileName}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+function printReport(title, headers, rows) {
+  const escape = (value) => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+  printDocument(`<!doctype html><html><head><title>${escape(title)}</title><style>body{font:12px Arial;padding:28px;color:#1e293b}h1{font-size:20px;margin:0 0 6px}p{color:#64748b;margin:0 0 20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #cbd5e1;padding:8px;text-align:left}th{background:#ecfdf5;color:#065f46}@media print{body{padding:0}}</style></head><body><h1>${escape(title)}</h1><p>Dicetak ${escape(new Date().toLocaleString('id-ID'))}</p><table><thead><tr>${headers.map((header) => `<th>${escape(header)}</th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${escape(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></body></html>`)
+}
+function printDocument(html) {
+  const frame = document.createElement('iframe')
+  frame.setAttribute('aria-hidden', 'true')
+  frame.style.cssText = 'position:fixed;width:0;height:0;border:0;visibility:hidden;'
+  frame.onload = () => {
+    frame.contentWindow?.focus()
+    frame.contentWindow?.print()
+    window.setTimeout(() => frame.remove(), 1000)
+  }
+  frame.srcdoc = html
+  document.body.appendChild(frame)
 }
 
 function Field({ label, children }) { return <label className="inventory-field"><span>{label}</span>{children}</label> }
@@ -76,6 +105,7 @@ export default function Inventory({ token, user, onBack, onError }) {
   const [showStockModal, setShowStockModal] = useState(false)
   const [stockUpdateItem, setStockUpdateItem] = useState(null)
   const [stockUpdateType, setStockUpdateType] = useState(null) // 'asset' atau 'sparepart'
+  const [qrAsset, setQrAsset] = useState(null)
   
   const [search, setSearch] = useState('')
   const [assetFilters, setAssetFilters] = useState({ category: '', location: '', status: '', condition: '' })
@@ -106,6 +136,13 @@ export default function Inventory({ token, user, onBack, onError }) {
     } catch (error) { onError(error.message) }
   }
   useEffect(() => { load() }, [token])
+
+  useEffect(() => {
+    const assetCode = new URLSearchParams(window.location.search).get('asset')
+    if (!assetCode || !data.assets.length) return
+    const scannedAsset = data.assets.find((item) => item.asset_code === assetCode)
+    if (scannedAsset) setSelectedAsset(scannedAsset)
+  }, [data.assets])
 
   const submit = async (event, path, method, body, reset) => {
     event.preventDefault()
@@ -159,6 +196,17 @@ export default function Inventory({ token, user, onBack, onError }) {
   const userOptions = setup.users.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.role})</option>)
   const assetOptions = setup.rooms.length >= 0 && data.assets.map((item) => <option key={item.id_asset} value={item.id_asset}>{item.asset_code}</option>)
   const partOptions = data.spareparts.map((item) => <option key={item.id} value={item.id}>{item.name} (stok {item.stock})</option>)
+  const exportAssets = () => downloadCsv('laporan-aset', ['Kode aset', 'Kategori', 'Lokasi', 'Pengguna', 'Model', 'Stok', 'Status', 'Kondisi', 'Harga'], data.assets.map((item) => [item.asset_code, item.category_name, item.ruangan, item.user_name, item.brand_model, item.stock, item.status, item.condition, item.price]))
+  const exportMaintenance = () => downloadCsv('riwayat-maintenance', ['Aset', 'Jenis', 'Mulai', 'Selesai', 'Status', 'Vendor', 'PIC', 'Biaya'], data.maintenance.map((item) => [item.asset_code, item.maintenance_type, formatTableDate(item.start_date), formatTableDate(item.end_date), item.status, item.vendor, item.pic_name, item.cost]))
+  const monthlySpending = useMemo(() => Object.values(data.procurement.reduce((result, item) => {
+    const date = item.received_date || item.approval_date || item.request_date
+    const month = date ? new Date(date).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) : 'Tanpa tanggal'
+    result[month] = result[month] || { month, count: 0, total: 0 }
+    result[month].count += 1
+    result[month].total += Number(item.total_cost || 0)
+    return result
+  }, {})), [data.procurement])
+  const exportSpending = () => downloadCsv('rekap-pengeluaran-bulanan', ['Bulan', 'Jumlah pengadaan', 'Total pengeluaran'], monthlySpending.map((item) => [item.month, item.count, item.total]))
 
   const handleOpenAddAsset = () => { setAsset(blankAsset); setAssetEditingId(null); setTechnicalSpecs(blankTechnicalSpecs); setShowAssetModal(true); }
   const handleOpenEditAsset = (item) => {
@@ -224,6 +272,17 @@ export default function Inventory({ token, user, onBack, onError }) {
     {/* ===================== DASHBOARD ===================== */}
     {tab === 'dashboard' && (
       <div className="inventory-dashboard">
+        <section className="inventory-section" style={{ marginBottom: '20px' }}>
+          <div className="inventory-section-title"><div><h3>Laporan Manajerial</h3><span>Ekspor data untuk audit, anggaran, atau arsip.</span></div></div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+            <button className="secondary-button" onClick={exportAssets}>Excel Aset</button>
+            <button className="secondary-button" onClick={exportMaintenance}>Excel Maintenance</button>
+            <button className="secondary-button" onClick={exportSpending}>Excel Pengeluaran</button>
+            <button className="primary-button" onClick={() => printReport('Laporan Aset Inventaris', ['Kode aset', 'Kategori', 'Lokasi', 'Model', 'Stok', 'Status', 'Harga'], data.assets.map((item) => [item.asset_code, item.category_name, item.ruangan, item.brand_model, item.stock, item.status, rupiah(item.price)]))}>PDF Aset</button>
+            <button className="primary-button" onClick={() => printReport('Riwayat Maintenance', ['Aset', 'Jenis', 'Mulai', 'Status', 'Vendor', 'Biaya'], data.maintenance.map((item) => [item.asset_code, item.maintenance_type, formatTableDate(item.start_date), item.status, item.vendor, rupiah(item.cost)]))}>PDF Maintenance</button>
+            <button className="primary-button" onClick={() => printReport('Rekap Pengeluaran Bulanan', ['Bulan', 'Jumlah pengadaan', 'Total pengeluaran'], monthlySpending.map((item) => [item.month, item.count, rupiah(item.total)]))}>PDF Pengeluaran</button>
+          </div>
+        </section>
         <div className="inventory-stat-grid">
           {[['total_assets', 'Total aset'], ['available_assets', 'Aset tersedia'], ['in_use_assets', 'Sedang digunakan'], ['broken_assets', 'Aset rusak'], ['total_spareparts', 'Total stok sparepart'], ['low_stock_spareparts', 'Stok rendah'], ['active_maintenance', 'Maintenance berjalan'], ['active_procurement', 'Pengadaan berjalan']].map(([key, label]) => (
             <article className="inventory-stat" key={key}>
@@ -256,7 +315,7 @@ export default function Inventory({ token, user, onBack, onError }) {
           <Select value={assetFilters.condition} onChange={(event) => setAssetFilters({ ...assetFilters, condition: event.target.value })}><option value="">Semua kondisi</option><option value="good">Baik</option><option value="fair">Cukup</option><option value="broken">Rusak</option></Select>
         </div>
 
-        <AssetTable items={paginatedAssets} isAdmin={isAdmin} remove={remove} onView={setSelectedAsset} onEdit={handleOpenEditAsset} onUpdateStock={(item) => { setStockUpdateType('asset'); setStockUpdateItem(item); setShowStockModal(true); }} />
+        <AssetTable items={paginatedAssets} isAdmin={isAdmin} remove={remove} onView={setSelectedAsset} onEdit={handleOpenEditAsset} onPrintQr={setQrAsset} onUpdateStock={(item) => { setStockUpdateType('asset'); setStockUpdateItem(item); setShowStockModal(true); }} />
         <PaginationControls currentPage={assetPage} totalItems={assets.length} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setAssetPage} />
       </section>
     )}
@@ -555,8 +614,9 @@ export default function Inventory({ token, user, onBack, onError }) {
       </div>
     )}
 
-    {selectedAsset && <AssetDetailModal asset={selectedAsset} onClose={() => setSelectedAsset(null)} />}
+    {selectedAsset && <AssetDetailModal asset={selectedAsset} maintenance={data.maintenance.filter((item) => Number(item.id_asset) === Number(selectedAsset.id_asset))} movements={data.movements.filter((item) => Number(item.id_asset) === Number(selectedAsset.id_asset))} onClose={() => setSelectedAsset(null)} />}
     {selectedPart && <PartDetailModal part={selectedPart} onClose={() => setSelectedPart(null)} />}
+    {qrAsset && <AssetQrModal asset={qrAsset} onClose={() => setQrAsset(null)} />}
   </section>
 }
 
@@ -629,7 +689,7 @@ function RoomSelect({ name, value, onChange, rooms }) { return <Select name={nam
 
 function TechnicalSpecsForm({ categoryName, values, onChange }) { return <section className="inventory-section" style={{ border: '1px solid #a7f3d0', background: '#f0fdf4', padding: '16px', borderRadius: '8px' }}><h3 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: '#047857' }}>Spesifikasi Teknis: {categoryName}</h3><div className="inventory-form" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}><Field label="Processor"><Input name="processor" value={values.processor} onChange={onChange} placeholder="Contoh: Intel Core i5-1235U" /></Field><Field label="RAM"><Input name="ram" value={values.ram} onChange={onChange} placeholder="Contoh: 16 GB DDR4" /></Field><Field label="Penyimpanan (SSD/HDD)"><Input name="storage" value={values.storage} onChange={onChange} placeholder="Contoh: 512 GB NVMe SSD" /></Field><Field label="Sistem Operasi"><Input name="operating_system" value={values.operating_system} onChange={onChange} placeholder="Contoh: Windows 11 Pro" /></Field><Field label="GPU / VGA"><Input name="gpu" value={values.gpu} onChange={onChange} placeholder="Contoh: Intel Iris Xe" /></Field><Field label="Layar"><Input name="display" value={values.display} onChange={onChange} placeholder="Contoh: 14 inci FHD" /></Field></div></section> }
 
-function AssetTable({ items, isAdmin, remove, onEdit, onView, onUpdateStock }) { 
+function AssetTable({ items, isAdmin, remove, onEdit, onView, onPrintQr, onUpdateStock }) {
   return (
     <table className="inventory-table">
       <thead><tr><th>Kode</th><th>Kategori</th><th>Lokasi</th><th>Pengguna</th><th>Merek/Model</th><th>Stok</th><th>Status</th><th>Kondisi</th><th>Aksi</th></tr></thead>
@@ -647,6 +707,7 @@ function AssetTable({ items, isAdmin, remove, onEdit, onView, onUpdateStock }) {
             <td>
               <div style={{ display: 'flex', gap: '6px' }}>
                 <button className="secondary-button" onClick={() => onView(item)}>Detail</button>
+                <button className="secondary-button" onClick={() => onPrintQr(item)}>QR</button>
                 {isAdmin && (
                   <>
                     <button className="secondary-button" style={{ background: '#f0fdf4', borderColor: '#bbf7d0', color: '#059669' }} onClick={() => onUpdateStock(item)}>Stok</button>
@@ -661,6 +722,32 @@ function AssetTable({ items, isAdmin, remove, onEdit, onView, onUpdateStock }) {
       </tbody>
     </table>
   ) 
+}
+
+function AssetQrModal({ asset, onClose }) {
+  const [qrImage, setQrImage] = useState('')
+  const assetUrl = `${window.location.origin}${window.location.pathname}?asset=${encodeURIComponent(asset.asset_code)}`
+  useEffect(() => {
+    let active = true
+    QRCode.toDataURL(assetUrl, { width: 260, margin: 2, errorCorrectionLevel: 'M' })
+      .then((image) => { if (active) setQrImage(image) })
+    return () => { active = false }
+  }, [assetUrl])
+
+  const printLabel = () => {
+    printDocument(`<!doctype html><html><head><title>Label ${asset.asset_code}</title><style>body{font-family:Arial;text-align:center;padding:20px}.label{display:inline-block;border:1px solid #111;padding:16px}img{width:220px;height:220px}h1{font-size:17px;margin:0 0 6px}p{margin:4px 0;font-size:12px}</style></head><body><section class="label"><h1>IT Helpdesk — Aset</h1><p><b>${asset.asset_code}</b></p><p>${asset.brand_model || ''}</p><img src="${qrImage}" alt="QR ${asset.asset_code}" /><p>Scan untuk melihat detail dan riwayat aset</p></section></body></html>`)
+  }
+
+  return <div className="modal-backdrop" onClick={onClose}>
+    <section onClick={(event) => event.stopPropagation()} style={{ background: '#fff', width: 'min(380px, calc(100vw - 32px))', borderRadius: '14px', padding: '24px', textAlign: 'center', position: 'relative' }}>
+      <button type="button" onClick={onClose} aria-label="Tutup QR" style={{ position: 'absolute', top: '12px', right: '16px', border: 0, background: 'none', fontSize: '24px', cursor: 'pointer' }}>×</button>
+      <h2 style={{ margin: 0, color: '#065f46' }}>Label QR Aset</h2>
+      <p style={{ margin: '8px 0', color: '#475569' }}><b>{asset.asset_code}</b><br />{asset.brand_model || 'Aset IT'}</p>
+      {qrImage ? <img src={qrImage} alt={`QR code ${asset.asset_code}`} style={{ width: '260px', height: '260px', maxWidth: '100%' }} /> : <p>Membuat QR code…</p>}
+      <p style={{ fontSize: '12px', color: '#64748b' }}>Scan QR untuk membuka detail aset dan riwayatnya.</p>
+      <button className="primary-button" type="button" disabled={!qrImage} onClick={printLabel}>Cetak Label QR</button>
+    </section>
+  </div>
 }
 
 function PartTable({ items, isAdmin, remove, onEdit, onView, onUpdateStock }) { 
@@ -695,7 +782,7 @@ function PartTable({ items, isAdmin, remove, onEdit, onView, onUpdateStock }) {
   ) 
 }
 
-function AssetDetailModal({ asset, onClose }) { 
+function AssetDetailModal({ asset, maintenance, movements, onClose }) {
   const specs = asset.specifications && typeof asset.specifications === 'object' ? asset.specifications : {}; 
   const fields = [['Kode Aset', asset.asset_code], ['Kategori', asset.category_name], ['Lokasi', asset.ruangan], ['Pengguna', asset.user_name], ['Merek/Model', asset.brand_model], ['Serial Number', asset.serial_number], ['Tanggal Pembelian', asset.purchase_year], ['Harga', asset.price ? `Rp ${Number(asset.price).toLocaleString('id-ID')}` : '-'], ['Stok Saat Ini', asset.stock], ['Status', asset.status], ['Kondisi', asset.condition], ['Catatan', asset.notes]]; 
   return (
@@ -725,6 +812,14 @@ function AssetDetailModal({ asset, onClose }) {
             </div>
           </section>
         )}
+        <section style={{ marginTop: '16px' }}>
+          <h3 style={{ margin: '0 0 8px', color: '#0f172a', fontSize: '15px' }}>Riwayat Maintenance</h3>
+          {maintenance.length ? maintenance.map((item) => <div key={item.id} style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', fontSize: '13px' }}><b>{item.maintenance_type}</b> · {formatTableDate(item.start_date)} · {item.status}<br /><span style={{ color: '#64748b' }}>{item.result || item.complaint || 'Tanpa keterangan'}</span></div>) : <p style={{ color: '#64748b', fontSize: '13px' }}>Belum ada riwayat maintenance.</p>}
+        </section>
+        <section style={{ marginTop: '16px' }}>
+          <h3 style={{ margin: '0 0 8px', color: '#0f172a', fontSize: '15px' }}>Riwayat Mutasi</h3>
+          {movements.length ? movements.map((item) => <div key={item.id} style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', fontSize: '13px' }}><b>{item.movement_type}</b> · {formatTableDate(item.movement_date)}<br /><span style={{ color: '#64748b' }}>{item.from_room || '-'} → {item.to_room || '-'} · {item.quantity || 0} unit</span></div>) : <p style={{ color: '#64748b', fontSize: '13px' }}>Belum ada riwayat mutasi.</p>}
+        </section>
       </section>
     </div>
   ) 
