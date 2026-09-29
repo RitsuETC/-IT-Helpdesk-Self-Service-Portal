@@ -275,7 +275,7 @@ export default function Inventory({ token, user, onBack, onError }) {
       <div className="inventory-dashboard">
         <section className="inventory-section" style={{ marginBottom: '20px' }}>
           <div className="inventory-section-title"><div><h3>Laporan Manajerial</h3><span>Ekspor data untuk audit, anggaran, atau arsip.</span></div></div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+          <div className="inventory-report-actions">
             <button className="secondary-button" onClick={exportAssets}>Excel Aset</button>
             <button className="secondary-button" onClick={exportMaintenance}>Excel Maintenance</button>
             <button className="secondary-button" onClick={exportSpending}>Excel Pengeluaran</button>
@@ -286,7 +286,7 @@ export default function Inventory({ token, user, onBack, onError }) {
         </section>
         <div className="inventory-stat-grid">
           {[['total_assets', 'Total aset'], ['available_assets', 'Aset tersedia'], ['in_use_assets', 'Sedang digunakan'], ['broken_assets', 'Aset rusak'], ['total_spareparts', 'Total stok sparepart'], ['low_stock_spareparts', 'Stok rendah'], ['active_maintenance', 'Maintenance berjalan'], ['active_procurement', 'Pengadaan berjalan']].map(([key, label]) => (
-            <article className="inventory-stat" key={key}>
+            <article className="inventory-stat" key={key} data-stat={key}>
               <strong>{data.dashboard[key] ?? 0}</strong>
               <span>{label}</span>
             </article>
@@ -303,7 +303,7 @@ export default function Inventory({ token, user, onBack, onError }) {
             <h3>Data Aset</h3>
             <span>{assets.length} data tercatat</span>
           </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <div className="inventory-toolbar">
             <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari..." />
             {isAdmin && <button onClick={handleOpenAddAsset} className="primary-button">+ Tambah Aset</button>}
           </div>
@@ -329,7 +329,7 @@ export default function Inventory({ token, user, onBack, onError }) {
             <h3>Data Sparepart</h3>
             <span>{parts.length} data tercatat</span>
           </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <div className="inventory-toolbar">
             <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari..." />
             {isAdmin && <button onClick={handleOpenAddPart} className="primary-button">+ Tambah Sparepart</button>}
           </div>
@@ -361,7 +361,7 @@ export default function Inventory({ token, user, onBack, onError }) {
     )}
     
     {tab === 'maintenance' && (
-      <WorkSection title="Maintenance" items={data.maintenance} itemsPerPage={ITEMS_PER_PAGE} columns={['asset_code', 'maintenance_type', 'start_date', 'end_date', 'status', 'pic_name']} labels={['Aset', 'Jenis', 'Mulai', 'Selesai', 'Status', 'PIC']} renderActions={(item) => <div style={{ display: 'flex', gap: '6px' }}><button type="button" className="secondary-button" onClick={() => setSelectedRecord({ title: 'Detail Maintenance', item })}>Detail</button>{isAdmin && <button type="button" className="secondary-button" onClick={() => handleEditMaintenance(item)}>Edit</button>}</div>} onAdd={isAdmin ? () => { setMaintenance(blankMaintenance); setMaintenanceEditingId(null); setShowMaintenanceModal(true); } : null} addLabel="+ Tambah Maintenance" />
+      <WorkSection title="Maintenance" items={data.maintenance} itemsPerPage={ITEMS_PER_PAGE} columns={['asset_code', 'maintenance_type', 'start_date', 'end_date', 'status', 'pic_name']} labels={['Aset', 'Jenis', 'Mulai', 'Selesai', 'Status', 'PIC']} renderActions={(item) => <div className="inventory-action-group"><button type="button" className="secondary-button" onClick={() => setSelectedRecord({ title: 'Detail Maintenance', item })}>Detail</button>{isAdmin && <button type="button" className="secondary-button" onClick={() => handleEditMaintenance(item)}>Edit</button>}</div>} onAdd={isAdmin ? () => { setMaintenance(blankMaintenance); setMaintenanceEditingId(null); setShowMaintenanceModal(true); } : null} addLabel="+ Tambah Maintenance" />
     )}
     
     {tab === 'procurement' && (
@@ -377,7 +377,7 @@ export default function Inventory({ token, user, onBack, onError }) {
             {paginatedMaster.map((item) => (
               <tr key={item.id}>
                 <td>{item.sku_code}</td><td>{item.product_name}</td><td>{setup.categories.find((category) => String(category.id) === String(item.id_category))?.name || '-'}</td><td>{item.default_price ? `Rp ${Number(item.default_price).toLocaleString('id-ID')}` : '-'}</td>
-                <td><div style={{ display: 'flex', gap: '6px' }}><button className="secondary-button" type="button" onClick={() => setSelectedRecord({ title: 'Detail Master Produk', item })}>Detail</button>{isAdmin && <><button className="secondary-button" type="button" onClick={() => handleEditMasterProduct(item)}>Edit</button><button className="danger-button" type="button" onClick={() => remove(`/inventory/master-products/${item.id}`)}>Hapus</button></>}</div></td>
+                <td><div className="inventory-action-group"><button className="secondary-button" type="button" onClick={() => setSelectedRecord({ title: 'Detail Master Produk', item })}>Detail</button>{isAdmin && <><button className="secondary-button" type="button" onClick={() => handleEditMasterProduct(item)}>Edit</button><button className="danger-button" type="button" onClick={() => remove(`/inventory/master-products/${item.id}`)}>Hapus</button></>}</div></td>
               </tr>
             ))}
             {!paginatedMaster.length && <tr><td colSpan="5" style={{ textAlign: 'center', color: '#64748b' }}>Belum ada master produk.</td></tr>}
@@ -396,7 +396,7 @@ export default function Inventory({ token, user, onBack, onError }) {
             {(setup.masterSpareparts || []).map((item) => (
               <tr key={item.id}>
                 <td>{item.sku_code}</td><td>{item.sparepart_name}</td><td>{setup.sparepartCategories.find((category) => String(category.id) === String(item.id_category))?.name || '-'}</td><td>{item.unit || '-'}</td><td>{item.default_price ? `Rp ${Number(item.default_price).toLocaleString('id-ID')}` : '-'}</td>
-                <td><div style={{ display: 'flex', gap: '6px' }}><button className="secondary-button" type="button" onClick={() => setSelectedRecord({ title: 'Detail Master Sparepart', item })}>Detail</button>{isAdmin && <><button className="secondary-button" type="button" onClick={() => handleEditMasterSparepart(item)}>Edit</button><button className="danger-button" type="button" onClick={() => remove(`/inventory/master-spareparts/${item.id}`)}>Hapus</button></>}</div></td>
+                <td><div className="inventory-action-group"><button className="secondary-button" type="button" onClick={() => setSelectedRecord({ title: 'Detail Master Sparepart', item })}>Detail</button>{isAdmin && <><button className="secondary-button" type="button" onClick={() => handleEditMasterSparepart(item)}>Edit</button><button className="danger-button" type="button" onClick={() => remove(`/inventory/master-spareparts/${item.id}`)}>Hapus</button></>}</div></td>
               </tr>
             ))}
             {!(setup.masterSpareparts || []).length && <tr><td colSpan="6" style={{ textAlign: 'center', color: '#64748b' }}>Belum ada master sparepart.</td></tr>}
@@ -679,7 +679,7 @@ function SectionTitle({ title, count, search, setSearch, onAdd, addLabel }) {
   return (
     <div className="inventory-section-title">
       <div><h3>{title}</h3><span>{count} data tercatat</span></div>
-      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+      <div className="inventory-toolbar">
         {setSearch && (<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari..." />)}
         {onAdd && <button onClick={onAdd} className="primary-button">{addLabel}</button>}
       </div>
@@ -742,7 +742,7 @@ function AssetTable({ items, isAdmin, remove, onEdit, onView, onPrintQr, onUpdat
             <td>{item.status}</td>
             <td>{item.condition}</td>
             <td>
-              <div style={{ display: 'flex', gap: '6px' }}>
+              <div className="inventory-action-group">
                 <button className="secondary-button" onClick={() => onView(item)}>Detail</button>
                 <button className="secondary-button" onClick={() => onPrintQr(item)}>QR</button>
                 {isAdmin && (
@@ -801,7 +801,7 @@ function PartTable({ items, isAdmin, remove, onEdit, onView, onUpdateStock }) {
             <td>{item.unit || '-'}</td>
             <td>{item.supplier || '-'}</td>
             <td>
-              <div style={{ display: 'flex', gap: '6px' }}>
+              <div className="inventory-action-group">
                 <button className="secondary-button" onClick={() => onView(item)}>Detail</button>
                 {isAdmin && (
                   <>
