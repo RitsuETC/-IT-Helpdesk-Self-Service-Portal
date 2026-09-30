@@ -174,6 +174,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   if (!ticket) return null
 
   const isStaff = user?.role === 'admin' || user?.role === 'teknisi'
+  const maintenanceRecords = Array.isArray(ticket.maintenance) ? ticket.maintenance : []
 
   return (
     <div className="tickets-page" style={{ backgroundColor: '#f0fdf4', color: '#064e3b', padding: '28px', borderRadius: '20px', margin: '0 auto', maxWidth: '100%', boxShadow: '0 20px 40px rgba(4, 120, 87, 0.12)', border: isStaff ? '2px solid #059669' : '1px solid #a7f3d0' }}>
@@ -259,6 +260,29 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           </div>
         </div>
       </div>
+
+      <section style={{ marginTop: '24px', background: '#ffffff', border: '1px solid #a7f3d0', borderRadius: '14px', padding: '16px' }}>
+        <h3 style={{ margin: '0 0 12px', color: '#065f46', fontSize: '15px' }}>Aset yang Diperbaiki</h3>
+        {maintenanceRecords.length === 0 ? (
+          <p style={{ margin: 0, color: '#64748b', fontSize: '12px' }}>Belum ada aset yang dihubungkan ke tiket ini.</p>
+        ) : (
+          <div style={{ display: 'grid', gap: '10px' }}>
+            {maintenanceRecords.map((record) => (
+              <article key={record.id} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '12px', fontSize: '12px', color: '#1f2937' }}>
+                <strong style={{ color: '#065f46' }}>{record.asset_code}{record.brand_model ? ` — ${record.brand_model}` : ''}</strong>
+                <div style={{ marginTop: '6px', display: 'grid', gap: '3px' }}>
+                  <span><b>Maintenance:</b> {record.maintenance_type || '-'}</span>
+                  <span><b>Status:</b> {record.status || '-'}</span>
+                  <span><b>Mulai:</b> {record.start_date ? new Date(record.start_date).toLocaleString('id-ID') : '-'}</span>
+                  <span><b>Tindakan:</b> {record.action || '-'}</span>
+                  <span><b>Hasil:</b> {record.result || '-'}</span>
+                  <span><b>Biaya:</b> Rp {Number(record.cost || 0).toLocaleString('id-ID')}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section style={{ marginTop: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
         <div style={{ background: '#fff', border: '1px solid #a7f3d0', borderRadius: '14px', padding: '16px' }}><h3 style={{ margin: '0 0 10px', color: '#065f46', fontSize: '15px' }}>Komentar & Pembaruan</h3><div style={{ display: 'grid', gap: '9px', maxHeight: '230px', overflowY: 'auto', marginBottom: '12px' }}>{comments.length ? comments.map((item) => <div key={item.id} style={{ background: '#f8fafc', padding: '9px', borderRadius: '8px', fontSize: '12px' }}><b>{item.author_name || 'Pengguna'} <small>({item.author_role || '-'})</small></b><div>{item.message}</div><small>{new Date(item.created_at).toLocaleString('id-ID')}</small></div>) : <small>Belum ada komentar.</small>}</div><form onSubmit={sendComment}><textarea required value={commentText} onChange={(event) => setCommentText(event.target.value)} rows="2" placeholder="Tulis komentar atau informasi tambahan..." style={{ width: '100%', boxSizing: 'border-box', padding: '9px', borderRadius: '8px', border: '1px solid #cbd5e1' }} /><button type="submit" className="primary-button" style={{ marginTop: '7px' }}>Kirim komentar</button></form></div>
@@ -525,18 +549,6 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
     }
   }
 
-  if (selectedTicketId) {
-    return (
-      <TicketDetail 
-        token={token} 
-        user={user} 
-        ticketId={selectedTicketId} 
-        onBack={() => setSelectedTicketId(null)} 
-        onError={onError} 
-      />
-    )
-  }
-
   const filteredTickets = useMemo(() => tickets.filter(t => {
     if (priorityFilter === 'ALL') return true
     const ticketPriority = (t.prioritas || '').toLowerCase()
@@ -568,6 +580,18 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage)
     }
+  }
+
+  if (selectedTicketId) {
+    return (
+      <TicketDetail
+        token={token}
+        user={user}
+        ticketId={selectedTicketId}
+        onBack={() => setSelectedTicketId(null)}
+        onError={onError}
+      />
+    )
   }
 
   if (createOnly) {

@@ -9,6 +9,7 @@
   "seed": "node seed.js",
   "migrate:audit": "node migrations/007_create_audit_log.js",
   "migrate:collaboration": "node migrations/008_create_ticket_collaboration.js",
+  "migrate:maintenance-ticket": "node migrations/009_add_maintenance_ticket_link.js",
   "test": "echo \"Error: no test specified\" && exit 1"
 },
   "keywords": [],

@@ -13,7 +13,7 @@ const blankTechnicalSpecs = { processor: '', ram: '', storage: '', operating_sys
 const blankPart = { name: '', id_category: '', stock: 0, min_stock: 0, unit: 'pcs', price: '', supplier: '', notes: '' }
 const blankMovement = { id_asset: '', id_sparepart: '', asset_quantity: 1, sparepart_quantity: 1, id_user: '', from_location: '', to_location: '', movement_type: 'TRANSFER', movement_date: '', condition: '', notes: '' }
 const blankTransaction = { id_sparepart: '', transaction_type: 'MASUK', quantity: 1, transaction_date: '', id_tiket: '', notes: '' }
-const blankMaintenance = { id_asset: '', maintenance_type: 'Preventive', start_date: '', end_date: '', complaint: '', action: '', result: '', cost: 0, status: 'scheduled', vendor: '', notes: '' }
+const blankMaintenance = { id_asset: '', id_tiket: '', maintenance_type: 'Preventive', start_date: '', end_date: '', complaint: '', action: '', result: '', cost: 0, status: 'scheduled', vendor: '', notes: '' }
 const blankProcurement = { po_number: '', request_date: '', approval_date: '', received_date: '', supplier: '', status: 'draft', notes: '', details: [{ id_asset: '', id_sparepart: '', item_name: '', quantity: 1, unit_price: 0 }] }
 const blankMasterProduct = { sku_code: '', product_name: '', id_category: '', default_price: '', processor: '', ram: '', storage: '', operating_system: '', notes: '' }
 const blankMasterSparepart = { sku_code: '', sparepart_name: '', id_category: '', default_price: '', unit: 'pcs', min_stock: 0, specifications: '' }
@@ -198,7 +198,7 @@ export default function Inventory({ token, user, onBack, onError }) {
   const assetOptions = setup.rooms.length >= 0 && data.assets.map((item) => <option key={item.id_asset} value={item.id_asset}>{item.asset_code}</option>)
   const partOptions = data.spareparts.map((item) => <option key={item.id} value={item.id}>{item.name} (stok {item.stock})</option>)
   const exportAssets = () => downloadCsv('laporan-aset', ['Kode aset', 'Kategori', 'Lokasi', 'Pengguna', 'Model', 'Stok', 'Status', 'Kondisi', 'Harga'], data.assets.map((item) => [item.asset_code, item.category_name, item.ruangan, item.user_name, item.brand_model, item.stock, item.status, item.condition, item.price]))
-  const exportMaintenance = () => downloadCsv('riwayat-maintenance', ['Aset', 'Jenis', 'Mulai', 'Selesai', 'Status', 'Vendor', 'PIC', 'Biaya'], data.maintenance.map((item) => [item.asset_code, item.maintenance_type, formatTableDate(item.start_date), formatTableDate(item.end_date), item.status, item.vendor, item.pic_name, item.cost]))
+  const exportMaintenance = () => downloadCsv('riwayat-maintenance', ['Aset', 'Referensi tiket', 'Jenis', 'Mulai', 'Selesai', 'Status', 'Vendor', 'PIC', 'Biaya'], data.maintenance.map((item) => [item.asset_code, item.id_tiket ? `HD-${item.id_tiket} ${item.ticket_title || ''}` : '-', item.maintenance_type, formatTableDate(item.start_date), formatTableDate(item.end_date), item.status, item.vendor, item.pic_name, item.cost]))
   const monthlySpending = useMemo(() => Object.values(data.procurement.reduce((result, item) => {
     const date = item.received_date || item.approval_date || item.request_date
     const month = date ? new Date(date).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) : 'Tanpa tanggal'
@@ -257,7 +257,7 @@ export default function Inventory({ token, user, onBack, onError }) {
   return <section className="inventory-page">
     <div className="inventory-heading">
       <div>
-        <button className="text-button" onClick={onBack}>← Kembali</button>
+        <button className="text-button" onClick={onBack}>Kembali</button>
         <h2>Inventaris</h2>
         <p>Kelola aset, sparepart, pemeliharaan, dan pengadaan IT.</p>
       </div>
@@ -280,7 +280,7 @@ export default function Inventory({ token, user, onBack, onError }) {
             <button className="secondary-button" onClick={exportMaintenance}>Excel Maintenance</button>
             <button className="secondary-button" onClick={exportSpending}>Excel Pengeluaran</button>
             <button className="primary-button" onClick={() => printReport('Laporan Aset Inventaris', ['Kode aset', 'Kategori', 'Lokasi', 'Model', 'Stok', 'Status', 'Harga'], data.assets.map((item) => [item.asset_code, item.category_name, item.ruangan, item.brand_model, item.stock, item.status, rupiah(item.price)]))}>PDF Aset</button>
-            <button className="primary-button" onClick={() => printReport('Riwayat Maintenance', ['Aset', 'Jenis', 'Mulai', 'Status', 'Vendor', 'Biaya'], data.maintenance.map((item) => [item.asset_code, item.maintenance_type, formatTableDate(item.start_date), item.status, item.vendor, rupiah(item.cost)]))}>PDF Maintenance</button>
+            <button className="primary-button" onClick={() => printReport('Riwayat Maintenance', ['Aset', 'Referensi tiket', 'Jenis', 'Mulai', 'Status', 'Vendor', 'Biaya'], data.maintenance.map((item) => [item.asset_code, item.id_tiket ? `HD-${item.id_tiket} ${item.ticket_title || ''}` : '-', item.maintenance_type, formatTableDate(item.start_date), item.status, item.vendor, rupiah(item.cost)]))}>PDF Maintenance</button>
             <button className="primary-button" onClick={() => printReport('Rekap Pengeluaran Bulanan', ['Bulan', 'Jumlah pengadaan', 'Total pengeluaran'], monthlySpending.map((item) => [item.month, item.count, rupiah(item.total)]))}>PDF Pengeluaran</button>
           </div>
         </section>
@@ -361,7 +361,7 @@ export default function Inventory({ token, user, onBack, onError }) {
     )}
     
     {tab === 'maintenance' && (
-      <WorkSection title="Maintenance" items={data.maintenance} itemsPerPage={ITEMS_PER_PAGE} columns={['asset_code', 'maintenance_type', 'start_date', 'end_date', 'status', 'pic_name']} labels={['Aset', 'Jenis', 'Mulai', 'Selesai', 'Status', 'PIC']} renderActions={(item) => <div className="inventory-action-group"><button type="button" className="secondary-button" onClick={() => setSelectedRecord({ title: 'Detail Maintenance', item })}>Detail</button>{isAdmin && <button type="button" className="secondary-button" onClick={() => handleEditMaintenance(item)}>Edit</button>}</div>} onAdd={isAdmin ? () => { setMaintenance(blankMaintenance); setMaintenanceEditingId(null); setShowMaintenanceModal(true); } : null} addLabel="+ Tambah Maintenance" />
+      <WorkSection title="Maintenance" items={data.maintenance} itemsPerPage={ITEMS_PER_PAGE} columns={['asset_code', 'ticket_title', 'maintenance_type', 'start_date', 'end_date', 'status', 'pic_name']} labels={['Aset', 'Referensi tiket', 'Jenis', 'Mulai', 'Selesai', 'Status', 'PIC']} renderCell={(item, column) => column === 'ticket_title' ? (item.id_tiket ? `HD-${item.id_tiket} ${item.ticket_title || '-'}` : '-') : undefined} renderActions={(item) => <div className="inventory-action-group"><button type="button" className="secondary-button" onClick={() => setSelectedRecord({ title: 'Detail Maintenance', item })}>Detail</button>{isAdmin && <button type="button" className="secondary-button" onClick={() => handleEditMaintenance(item)}>Edit</button>}</div>} onAdd={isAdmin ? () => { setMaintenance(blankMaintenance); setMaintenanceEditingId(null); setShowMaintenanceModal(true); } : null} addLabel="+ Tambah Maintenance" />
     )}
     
     {tab === 'procurement' && (
@@ -411,7 +411,7 @@ export default function Inventory({ token, user, onBack, onError }) {
     {showStockModal && stockUpdateItem && (
       <div className="modal-backdrop" onClick={() => setShowStockModal(false)}>
         <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: '12px', padding: '24px', width: '90%', maxWidth: '400px', position: 'relative' }}>
-          <button type="button" onClick={() => setShowStockModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', color: '#64748b' }}>×</button>
+          <button type="button" onClick={() => setShowStockModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'none', fontSize: '13px', cursor: 'pointer', color: '#64748b' }}>Tutup</button>
           <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#0f172a' }}>Update Stok: {stockUpdateItem.asset_code || stockUpdateItem.name}</h3>
           <form onSubmit={handleSaveStock}>
             <Field label="Total Stok Saat Ini"><Input type="number" min="0" value={stockUpdateItem.stock} onChange={(e) => setStockUpdateItem({ ...stockUpdateItem, stock: e.target.value })} required /></Field>
@@ -431,7 +431,7 @@ export default function Inventory({ token, user, onBack, onError }) {
                 </div>
                 <form className="inventory-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }} onSubmit={(event) => submit(event, assetEditingId ? `/inventory/assets/${assetEditingId}` : '/inventory/assets', assetEditingId ? 'PUT' : 'POST', { ...asset, id_category: asset.id_category || null, id_ruangan: Number(asset.id_ruangan), id_user: asset.id_user || null, serial_number: asset.serial_number?.trim() || null, purchase_year: asset.purchase_year || null, price: asset.price || null, stock: Number(asset.stock), specifications: asset.specifications ? { detail: asset.specifications } : null }, () => { setAsset(blankAsset); setAssetEditingId(null) })}>
                     <div style={{ gridColumn: '1 / -1', background: '#e0f2fe', padding: '16px', borderRadius: '8px', border: '1px solid #bae6fd' }}>
-                        <Field label="💡 Isi Otomatis dari Master Produk / SKU (Opsional)">
+                        <Field label="Isi Otomatis dari Master Produk / SKU (Opsional)">
                             <Select name="master_sku" onChange={(e) => { const selectedId = e.target.value; if (!selectedId) return; const master = setup.masterProducts?.find(m => String(m.id) === String(selectedId)); if (master) { setAsset(prev => ({ ...prev, id_category: master.id_category || prev.id_category, brand_model: master.product_name || prev.brand_model, price: master.default_price || prev.price })); if (master.specifications) { setTechnicalSpecs(typeof master.specifications === 'string' ? JSON.parse(master.specifications) : master.specifications); } } }}>
                                 <option value="">-- Ketik manual atau pilih SKU dari Master Data --</option>
                                 {setup.masterProducts?.map(master => <option key={master.id} value={master.id}>[{master.sku_code}] - {master.product_name}</option>)}
@@ -467,7 +467,7 @@ export default function Inventory({ token, user, onBack, onError }) {
                 </div>
                 <form className="inventory-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }} onSubmit={(event) => submit(event, partEditingId ? `/inventory/spareparts/${partEditingId}` : '/inventory/spareparts', partEditingId ? 'PUT' : 'POST', { ...part, id_category: part.id_category || null, stock: Number(part.stock), min_stock: Number(part.min_stock) }, () => { setPart(blankPart); setPartEditingId(null) })}>
                     <div style={{ gridColumn: '1 / -1', background: '#e0f2fe', padding: '16px', borderRadius: '8px', border: '1px solid #bae6fd' }}>
-                      <Field label="💡 Isi dari Master Sparepart (opsional)">
+                      <Field label="Isi dari Master Sparepart (opsional)">
                         <Select value="" onChange={(event) => { const master = (setup.masterSpareparts || []).find((item) => String(item.id) === event.target.value); if (master) setPart((current) => ({ ...current, name: master.sparepart_name, id_category: master.id_category || '', price: master.default_price || '', unit: master.unit || 'pcs', min_stock: master.min_stock || 0, notes: master.specifications?.notes || current.notes })) }}>
                           <option value="">-- Pilih SKU untuk isi otomatis --</option>
                           {(setup.masterSpareparts || []).map((item) => <option key={item.id} value={item.id}>[{item.sku_code}] - {item.sparepart_name}</option>)}
@@ -534,8 +534,9 @@ export default function Inventory({ token, user, onBack, onError }) {
       <div className="modal-backdrop" onClick={() => setShowMaintenanceModal(false)}>
         <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: '12px', padding: '24px', width: '90%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}><h2 style={{ margin: '0' }}>{maintenanceEditingId ? 'Edit Maintenance' : 'Catat Maintenance'}</h2><button onClick={() => setShowMaintenanceModal(false)} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', color: '#64748b' }}>&times;</button></div>
-          <form className="inventory-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }} onSubmit={(event) => submit(event, maintenanceEditingId ? `/inventory/maintenance/${maintenanceEditingId}` : '/inventory/maintenance', maintenanceEditingId ? 'PUT' : 'POST', { ...maintenance, id_asset: Number(maintenance.id_asset), end_date: maintenance.end_date || null, cost: Number(maintenance.cost || 0) }, () => { setMaintenance(blankMaintenance); setMaintenanceEditingId(null) })}>
+          <form className="inventory-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }} onSubmit={(event) => submit(event, maintenanceEditingId ? `/inventory/maintenance/${maintenanceEditingId}` : '/inventory/maintenance', maintenanceEditingId ? 'PUT' : 'POST', { ...maintenance, id_asset: Number(maintenance.id_asset), id_tiket: maintenance.id_tiket || null, end_date: maintenance.end_date || null, cost: Number(maintenance.cost || 0) }, () => { setMaintenance(blankMaintenance); setMaintenanceEditingId(null) })}>
             <Field label="Aset *"><Select name="id_asset" value={maintenance.id_asset} onChange={update(setMaintenance)} required><option value="">Pilih aset</option>{assetOptions}</Select></Field>
+            <Field label="Referensi Tiket"><Select name="id_tiket" value={maintenance.id_tiket} onChange={update(setMaintenance)}><option value="">Tidak ada</option>{setup.tickets.map((item) => <option key={item.id} value={item.id}>#{item.id} {item.judul}</option>)}</Select></Field>
             <Field label="Jenis maintenance *"><Input name="maintenance_type" value={maintenance.maintenance_type} onChange={update(setMaintenance)} required /></Field>
             <Field label="Tanggal mulai *"><Input name="start_date" value={maintenance.start_date} onChange={update(setMaintenance)} type="datetime-local" required /></Field>
             <Field label="Tanggal selesai"><Input name="end_date" value={maintenance.end_date} onChange={update(setMaintenance)} type="datetime-local" /></Field>
@@ -633,17 +634,17 @@ function PaginationControls({ currentPage, totalItems, itemsPerPage, onPageChang
         Menampilkan {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalItems)} dari total {totalItems} data
       </div>
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-        <button onClick={() => onPageChange(1)} disabled={currentPage === 1} className="secondary-button">«</button>
-        <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1} className="secondary-button">‹</button>
+        <button onClick={() => onPageChange(1)} disabled={currentPage === 1} className="secondary-button">Pertama</button>
+        <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1} className="secondary-button">Sebelumnya</button>
         <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Hal {currentPage} / {totalPages}</span>
-        <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages} className="secondary-button">›</button>
-        <button onClick={() => onPageChange(totalPages)} disabled={currentPage === totalPages} className="secondary-button">»</button>
+        <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages} className="secondary-button">Selanjutnya</button>
+        <button onClick={() => onPageChange(totalPages)} disabled={currentPage === totalPages} className="secondary-button">Terakhir</button>
       </div>
     </div>
   )
 }
 
-function WorkSection({ title, items, columns, labels, itemsPerPage = 10, children, renderActions, onAdd, addLabel }) {
+function WorkSection({ title, items, columns, labels, itemsPerPage = 10, children, renderCell, renderActions, onAdd, addLabel }) {
   const [currentPage, setCurrentPage] = useState(1)
   useEffect(() => { setCurrentPage(1) }, [items])
   const paginatedItems = useMemo(() => items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), [items, currentPage, itemsPerPage])
@@ -662,7 +663,7 @@ function WorkSection({ title, items, columns, labels, itemsPerPage = 10, childre
             {paginatedItems.map((item) => (
               <tr key={item.id || `${item.asset_code}-${item.movement_date}`}>
                 {columns.map((column) => (
-                  <td key={column}>{column.includes('date') ? formatTableDate(item[column]) : (item[column] ?? '-')}</td>
+                  <td key={column}>{renderCell?.(item, column) ?? (column.includes('date') ? formatTableDate(item[column]) : (item[column] ?? '-'))}</td>
                 ))}
                 {renderActions && <td>{renderActions(item)}</td>}
               </tr>
@@ -710,7 +711,7 @@ function RecordDetailModal({ title, item, onClose }) {
   const fields = Object.entries(item).filter(([key]) => !['id_pic', 'id_user'].includes(key))
   return <div className="modal-backdrop" onClick={onClose}>
     <section onClick={(event) => event.stopPropagation()} style={{ background: '#fff', width: 'min(680px, calc(100vw - 32px))', maxHeight: '85vh', overflowY: 'auto', borderRadius: '14px', padding: '24px', position: 'relative' }}>
-      <button type="button" onClick={onClose} aria-label="Tutup detail" style={{ position: 'absolute', top: '12px', right: '16px', border: 0, background: 'none', fontSize: '24px', cursor: 'pointer' }}>×</button>
+      <button type="button" onClick={onClose} aria-label="Tutup detail" style={{ position: 'absolute', top: '12px', right: '16px', border: 0, background: 'none', fontSize: '13px', cursor: 'pointer' }}>Tutup</button>
       <h2 style={{ margin: '0 0 18px', color: '#0f172a' }}>{title}</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '10px' }}>
         {fields.map(([key, value]) => <div key={key} style={{ padding: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
@@ -777,7 +778,7 @@ function AssetQrModal({ asset, onClose }) {
 
   return <div className="modal-backdrop" onClick={onClose}>
     <section onClick={(event) => event.stopPropagation()} style={{ background: '#fff', width: 'min(380px, calc(100vw - 32px))', borderRadius: '14px', padding: '24px', textAlign: 'center', position: 'relative' }}>
-      <button type="button" onClick={onClose} aria-label="Tutup QR" style={{ position: 'absolute', top: '12px', right: '16px', border: 0, background: 'none', fontSize: '24px', cursor: 'pointer' }}>×</button>
+      <button type="button" onClick={onClose} aria-label="Tutup QR" style={{ position: 'absolute', top: '12px', right: '16px', border: 0, background: 'none', fontSize: '13px', cursor: 'pointer' }}>Tutup</button>
       <h2 style={{ margin: 0, color: '#065f46' }}>Label QR Aset</h2>
       <p style={{ margin: '8px 0', color: '#475569' }}><b>{asset.asset_code}</b><br />{asset.brand_model || 'Aset IT'}</p>
       {qrImage ? <img src={qrImage} alt={`QR code ${asset.asset_code}`} style={{ width: '260px', height: '260px', maxWidth: '100%' }} /> : <p>Membuat QR code…</p>}
@@ -825,7 +826,7 @@ function AssetDetailModal({ asset, maintenance, movements, onClose }) {
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <section onClick={(event) => event.stopPropagation()} style={{ background: '#fff', width: 'min(620px, calc(100vw - 32px))', maxHeight: '85vh', overflowY: 'auto', borderRadius: '14px', padding: '24px', position: 'relative' }}>
-        <button type="button" onClick={onClose} aria-label="Tutup detail" style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', color: '#64748b' }}>×</button>
+        <button type="button" onClick={onClose} aria-label="Tutup detail" style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'none', fontSize: '13px', cursor: 'pointer', color: '#64748b' }}>Tutup</button>
         <h2 style={{ margin: '0 0 4px', color: '#0f172a' }}>Detail Aset</h2>
         <p style={{ margin: '0 0 18px', color: '#64748b', fontWeight: 'bold' }}>{asset.asset_code}</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '12px' }}>
@@ -867,7 +868,7 @@ function PartDetailModal({ part, onClose }) {
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <section onClick={(event) => event.stopPropagation()} style={{ background: '#fff', width: 'min(620px, calc(100vw - 32px))', maxHeight: '85vh', overflowY: 'auto', borderRadius: '14px', padding: '24px', position: 'relative' }}>
-        <button type="button" onClick={onClose} aria-label="Tutup detail" style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', color: '#64748b' }}>×</button>
+        <button type="button" onClick={onClose} aria-label="Tutup detail" style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'none', fontSize: '13px', cursor: 'pointer', color: '#64748b' }}>Tutup</button>
         <h2 style={{ margin: '0 0 4px', color: '#0f172a' }}>Detail Sparepart</h2>
         <p style={{ margin: '0 0 18px', color: '#64748b', fontWeight: 'bold' }}>{part.name}</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '12px' }}>

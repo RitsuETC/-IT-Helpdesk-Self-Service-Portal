@@ -397,7 +397,30 @@ router.get("/:id", verifyToken, async (req, res) => {
         pelapor.email AS pelapor_email,
         teknisi_user.id AS teknisi_id,
         teknisi_user."Nama" AS teknisi_nama,
-        teknisi_user.email AS teknisi_email
+        teknisi_user.email AS teknisi_email,
+        COALESCE((
+          SELECT json_agg(
+            json_build_object(
+              'id', m.id,
+              'id_asset', m.id_asset,
+              'asset_code', a.asset_code,
+              'brand_model', a.brand_model,
+              'maintenance_type', m.maintenance_type,
+              'start_date', m.start_date,
+              'end_date', m.end_date,
+              'status', m.status,
+              'complaint', m.complaint,
+              'action', m.action,
+              'result', m.result,
+              'cost', m.cost,
+              'vendor', m.vendor,
+              'notes', m.notes
+            ) ORDER BY m.start_date DESC
+          )
+          FROM maintenance m
+          JOIN asset a ON a.id_asset = m.id_asset
+          WHERE m.id_tiket = t.id
+        ), '[]'::json) AS maintenance
       FROM tiket t
       JOIN unit u ON u.id = t.ruangan
       JOIN knowledge_kategori k ON k.id = t.categori
@@ -434,14 +457,21 @@ router.get("/:id", verifyToken, async (req, res) => {
 
 router.delete("/:id", verifyToken, authorizeRole("admin"), async (req, res) => {
   try {
-    const usage = await db.query(
-      "SELECT count(*) AS total FROM sparepart_transaction WHERE id_tiket = $1",
-      [req.params.id]
-    );
+    const usage = await db.query(`
+      SELECT
+        (SELECT count(*) FROM sparepart_transaction WHERE id_tiket = $1) AS sparepart_total,
+        (SELECT count(*) FROM maintenance WHERE id_tiket = $1) AS maintenance_total
+    `, [req.params.id]);
 
-    if (Number(usage.rows[0].total)) {
+    if (Number(usage.rows[0].sparepart_total)) {
       return res.status(409).json({
         message: "Tiket masih digunakan pada transaksi sparepart dan tidak dapat dihapus",
+      });
+    }
+
+    if (Number(usage.rows[0].maintenance_total)) {
+      return res.status(409).json({
+        message: "Tiket masih digunakan pada data maintenance dan tidak dapat dihapus",
       });
     }
 
