@@ -22,9 +22,73 @@ export default function Report({ token, user, onBack, onError }) {
     user?.role === 'admin' ||
     user?.role === 'teknisi'
 
+  const statusOptions = [
+    { value: 'NEW', label: 'Baru' },
+    { value: 'ASSIGNED', label: 'Ditugaskan' },
+    { value: 'IN_PROGRESS', label: 'Diproses' },
+    { value: 'WAITING', label: 'Ditunggu' },
+    { value: 'RESOLVED', label: 'Selesai' },
+    { value: 'CLOSED', label: 'Ditutup' }
+  ]
+
+  const statusLabel = Object.fromEntries(
+    statusOptions.map((item) => [
+      item.value,
+      item.label
+    ])
+  )
+
+  const statusColor = {
+    NEW: {
+      background: '#fffbeb',
+      border: '#fde68a',
+      text: '#92400e',
+      dot: '#f59e0b'
+    },
+
+    ASSIGNED: {
+      background: '#eff6ff',
+      border: '#bfdbfe',
+      text: '#1d4ed8',
+      dot: '#3b82f6'
+    },
+
+    IN_PROGRESS: {
+      background: '#eef2ff',
+      border: '#c7d2fe',
+      text: '#4338ca',
+      dot: '#6366f1'
+    },
+
+    WAITING: {
+      background: '#fff7ed',
+      border: '#fed7aa',
+      text: '#c2410c',
+      dot: '#f97316'
+    },
+
+    RESOLVED: {
+      background: '#ecfdf5',
+      border: '#a7f3d0',
+      text: '#047857',
+      dot: '#10b981'
+    },
+
+    CLOSED: {
+      background: '#f8fafc',
+      border: '#cbd5e1',
+      text: '#475569',
+      dot: '#64748b'
+    }
+  }
+
   const loadCategories = async () => {
     try {
-      const res = await api('/knowledge/categories', {})
+      const res = await api(
+        '/knowledge/categories',
+        {}
+      )
+
       setCategories(res.data || [])
     } catch (err) {
       console.error(err)
@@ -37,6 +101,11 @@ export default function Report({ token, user, onBack, onError }) {
     try {
       const params = new URLSearchParams()
 
+      /*
+        Kalau tidak ada status dipilih:
+        tidak mengirim parameter status.
+        Backend akan menampilkan semua status.
+      */
       if (statusFilter.length > 0) {
         params.append(
           'status',
@@ -171,7 +240,8 @@ export default function Report({ token, user, onBack, onError }) {
       const query = params.toString()
 
       await api(
-        `/tickets/reports/print${query ? `?${query}` : ''}`,
+        `/tickets/reports/print` +
+        `${query ? `?${query}` : ''}`,
         { token }
       )
 
@@ -198,17 +268,23 @@ export default function Report({ token, user, onBack, onError }) {
     }
 
     const tgl =
-      d.toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      })
+      d.toLocaleDateString(
+        'id-ID',
+        {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }
+      )
 
     const jam =
-      d.toLocaleTimeString('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      d.toLocaleTimeString(
+        'id-ID',
+        {
+          hour: '2-digit',
+          minute: '2-digit'
+        }
+      )
 
     return `${tgl} ${jam}`
   }
@@ -232,97 +308,39 @@ export default function Report({ token, user, onBack, onError }) {
     )
   }
 
-  const statusOptions = [
-    {
-      value: 'NEW',
-      label: 'Baru'
-    },
-    {
-      value: 'ASSIGNED',
-      label: 'Ditugaskan'
-    },
-    {
-      value: 'IN_PROGRESS',
-      label: 'Diproses'
-    },
-    {
-      value: 'WAITING',
-      label: 'Ditunggu'
-    },
-    {
-      value: 'RESOLVED',
-      label: 'Selesai'
-    },
-    {
-      value: 'CLOSED',
-      label: 'Ditutup'
+  const getFinishedDate = (ticket) => {
+    if (
+      ticket?.status === 'RESOLVED'
+    ) {
+      return ticket.resolved_at
     }
-  ]
 
-  const statusLabel = {
-    NEW: 'Baru',
-    ASSIGNED: 'Ditugaskan',
-    IN_PROGRESS: 'Diproses',
-    WAITING: 'Ditunggu',
-    RESOLVED: 'Selesai',
-    CLOSED: 'Ditutup'
+    if (
+      ticket?.status === 'CLOSED'
+    ) {
+      return ticket.closed_at
+    }
+
+    return null
   }
 
-  const statusColor = {
-    NEW: {
-      background: '#eff6ff',
-      border: '#bfdbfe',
-      text: '#1d4ed8',
-      dot: '#3b82f6'
-    },
+  const resolvedCount =
+    tickets.filter(
+      (ticket) =>
+        ticket.status === 'RESOLVED'
+    ).length
 
-    ASSIGNED: {
-      background: '#f5f3ff',
-      border: '#ddd6fe',
-      text: '#6d28d9',
-      dot: '#8b5cf6'
-    },
+  const closedCount =
+    tickets.filter(
+      (ticket) =>
+        ticket.status === 'CLOSED'
+    ).length
 
-    IN_PROGRESS: {
-      background: '#fffbeb',
-      border: '#fde68a',
-      text: '#b45309',
-      dot: '#f59e0b'
-    },
-
-    WAITING: {
-      background: '#fff7ed',
-      border: '#fed7aa',
-      text: '#c2410c',
-      dot: '#f97316'
-    },
-
-    RESOLVED: {
-      background: '#ecfdf5',
-      border: '#a7f3d0',
-      text: '#047857',
-      dot: '#10b981'
-    },
-
-    CLOSED: {
-      background: '#f8fafc',
-      border: '#cbd5e1',
-      text: '#475569',
-      dot: '#64748b'
-    }
-  }
-
-  const resolvedCount = tickets.filter(
-    (t) => t.status === 'RESOLVED'
-  ).length
-
-  const waitingCount = tickets.filter(
-    (t) => t.status === 'WAITING'
-  ).length
-
-  const closedCount = tickets.filter(
-    (t) => t.status === 'CLOSED'
-  ).length
+  const waitingCount =
+    tickets.filter(
+      (ticket) =>
+        ticket.status === 'WAITING'
+    ).length
 
   const totalPages =
     Math.ceil(
@@ -330,18 +348,24 @@ export default function Report({ token, user, onBack, onError }) {
       ITEMS_PER_PAGE
     ) || 1
 
-  const paginatedTickets = useMemo(() => {
-    const start =
-      (currentPage - 1) *
-      ITEMS_PER_PAGE
+  const paginatedTickets =
+    useMemo(() => {
+      const start =
+        (currentPage - 1) *
+        ITEMS_PER_PAGE
 
-    return tickets.slice(
-      start,
-      start + ITEMS_PER_PAGE
-    )
-  }, [tickets, currentPage])
+      return tickets.slice(
+        start,
+        start + ITEMS_PER_PAGE
+      )
+    }, [
+      tickets,
+      currentPage
+    ])
 
-  const handlePageChange = (newPage) => {
+  const handlePageChange = (
+    newPage
+  ) => {
     if (
       newPage >= 1 &&
       newPage <= totalPages
@@ -371,27 +395,26 @@ export default function Report({ token, user, onBack, onError }) {
 
       <style>{`
 
-        /* =========================
-           GLOBAL REPORT
-        ========================= */
-
         .report-page * {
           box-sizing: border-box;
         }
 
         .report-header {
-          animation: reportFadeIn .25s ease;
+          animation:
+            reportFadeIn .25s ease;
         }
 
         @keyframes reportFadeIn {
           from {
             opacity: 0;
-            transform: translateY(4px);
+            transform:
+              translateY(4px);
           }
 
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform:
+              translateY(0);
           }
         }
 
@@ -409,11 +432,14 @@ export default function Report({ token, user, onBack, onError }) {
         }
 
         .report-action-btn:hover {
-          transform: translateY(-1px);
+          transform:
+            translateY(-1px);
         }
 
         .report-detail-btn:hover {
-          transform: translateY(-1px);
+          transform:
+            translateY(-1px);
+
           box-shadow:
             0 4px 10px
             rgba(12, 74, 48, .16);
@@ -421,40 +447,12 @@ export default function Report({ token, user, onBack, onError }) {
 
         .report-filter-input:focus,
         .report-filter-select:focus {
-          border-color: #0f766e !important;
+          border-color:
+            #0f766e !important;
+
           box-shadow:
             0 0 0 3px
             rgba(15, 118, 110, .08);
-        }
-
-        .report-status-picker > summary::-webkit-details-marker {
-          display: none;
-        }
-
-        .report-status-picker > summary {
-          list-style: none;
-        }
-
-        .report-status-picker > summary:focus {
-          border-color: #0f766e !important;
-          box-shadow:
-            0 0 0 3px
-            rgba(15, 118, 110, .08);
-        }
-
-        .report-status-picker[open] > summary {
-          border-color: #0f766e !important;
-          box-shadow:
-            0 0 0 3px
-            rgba(15, 118, 110, .08);
-        }
-
-        .report-status-option:hover {
-          background: #f8fafc !important;
-        }
-
-        .report-status-option.selected:hover {
-          background: #ecfdf5 !important;
         }
 
         .report-table tbody tr {
@@ -464,19 +462,23 @@ export default function Report({ token, user, onBack, onError }) {
         }
 
         .report-table tbody tr:hover {
-          background: #f8fafc;
+          background:
+            #f8fafc;
         }
 
         .report-table td {
-          vertical-align: middle;
+          vertical-align:
+            middle;
         }
 
         .report-modal-overlay {
-          animation: modalOverlay .18s ease;
+          animation:
+            modalOverlay .18s ease;
         }
 
         .report-modal {
-          animation: modalShow .2s ease;
+          animation:
+            modalShow .2s ease;
         }
 
         @keyframes modalOverlay {
@@ -512,15 +514,197 @@ export default function Report({ token, user, onBack, onError }) {
         }
 
         .report-info-card:hover {
-          border-color: #cbd5e1 !important;
-          background: #ffffff !important;
+          border-color:
+            #cbd5e1 !important;
+
+          background:
+            #ffffff !important;
         }
 
         .report-page-btn:not(:disabled):hover {
-          background: #f0fdf4 !important;
-          border-color: #86efac !important;
-          color: #166534 !important;
+          background:
+            #f0fdf4 !important;
+
+          border-color:
+            #86efac !important;
+
+          color:
+            #166534 !important;
         }
+
+        /* =========================
+           MULTI STATUS
+        ========================= */
+
+        .report-status-picker {
+          position: relative;
+          width: 100%;
+        }
+
+        .report-status-picker summary {
+          list-style: none;
+        }
+
+        .report-status-picker
+        summary::-webkit-details-marker {
+          display: none;
+        }
+
+        .report-status-picker[open]
+        summary {
+          border-color:
+            #0f766e !important;
+
+          box-shadow:
+            0 0 0 3px
+            rgba(15, 118, 110, .08);
+        }
+
+        .report-status-menu {
+          position: absolute;
+          z-index: 50;
+          left: 0;
+          right: 0;
+          top:
+            calc(100% + 6px);
+
+          background:
+            #ffffff;
+
+          border:
+            1px solid #cbd5e1;
+
+          border-radius:
+            10px;
+
+          padding:
+            7px;
+
+          box-shadow:
+            0 14px 30px
+            rgba(15, 23, 42, .14);
+        }
+
+        .report-status-option {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          width: 100%;
+          padding:
+            8px 9px;
+
+          border-radius:
+            7px;
+
+          cursor:
+            pointer;
+
+          font-size:
+            12px;
+
+          color:
+            #334155;
+        }
+
+        .report-status-option:hover {
+          background:
+            #f8fafc;
+        }
+
+        .report-status-option input {
+          accent-color:
+            #047857;
+        }
+
+        .report-status-clear {
+          width: 100%;
+          margin-top:
+            5px;
+
+          padding:
+            8px 9px;
+
+          border:
+            0;
+
+          border-top:
+            1px solid #e2e8f0;
+
+          background:
+            #ffffff;
+
+          color:
+            #047857;
+
+          cursor:
+            pointer;
+
+          font-size:
+            11px;
+
+          font-weight:
+            800;
+
+          text-align:
+            left;
+        }
+
+        /* =========================
+           MODAL SCROLL
+        ========================= */
+
+        .report-modal-body {
+          scrollbar-width:
+            thin;
+
+          scrollbar-color:
+            #cbd5e1
+            #f1f5f9;
+        }
+
+        .report-modal-body::-webkit-scrollbar {
+          width:
+            8px;
+        }
+
+        .report-modal-body::-webkit-scrollbar-track {
+          background:
+            #f1f5f9;
+        }
+
+        .report-modal-body::-webkit-scrollbar-thumb {
+          background:
+            #cbd5e1;
+
+          border-radius:
+            999px;
+        }
+
+        .report-modal-body::-webkit-scrollbar-thumb:hover {
+          background:
+            #94a3b8;
+        }
+
+        .report-detail-text {
+          white-space:
+            pre-wrap;
+
+          word-break:
+            break-word;
+
+          overflow-wrap:
+            anywhere;
+
+          line-height:
+            1.6;
+
+          color:
+            #334155;
+        }
+
+        /* =========================
+           RESPONSIVE
+        ========================= */
 
         @media (max-width: 1100px) {
           .report-filter-grid {
@@ -532,16 +716,21 @@ export default function Report({ token, user, onBack, onError }) {
 
         @media (max-width: 900px) {
           .report-header-main {
-            flex-direction: column !important;
-            align-items: stretch !important;
+            flex-direction:
+              column !important;
+
+            align-items:
+              stretch !important;
           }
 
           .report-header-title {
-            text-align: left !important;
+            text-align:
+              left !important;
           }
 
           .report-header-actions {
-            justify-content: space-between !important;
+            justify-content:
+              flex-start !important;
           }
 
           .report-summary-grid {
@@ -572,17 +761,17 @@ export default function Report({ token, user, onBack, onError }) {
               1fr !important;
           }
 
-          .report-modal-wide {
-            grid-column: auto !important;
-          }
-
           .report-pagination {
-            flex-direction: column !important;
-            align-items: stretch !important;
+            flex-direction:
+              column !important;
+
+            align-items:
+              stretch !important;
           }
 
           .report-pagination-controls {
-            justify-content: center !important;
+            justify-content:
+              center !important;
           }
         }
 
@@ -593,13 +782,20 @@ export default function Report({ token, user, onBack, onError }) {
         @media print {
 
           @page {
-            size: A4 landscape;
-            margin: 8mm;
+            size:
+              A4 landscape;
+
+            margin:
+              8mm;
           }
 
           body {
-            background: #ffffff !important;
-            color: #000000 !important;
+            background:
+              #ffffff !important;
+
+            color:
+              #000000 !important;
+
             font-family:
               Arial, sans-serif !important;
           }
@@ -613,71 +809,97 @@ export default function Report({ token, user, onBack, onError }) {
           .report-summary-cards,
           .report-charts,
           .report-pagination {
-            display: none !important;
+            display:
+              none !important;
           }
 
           .print-only {
-            display: block !important;
+            display:
+              block !important;
           }
 
           .report-page {
-            padding: 0 !important;
-            margin: 0 !important;
-            max-width: 100% !important;
-            box-shadow: none !important;
+            padding:
+              0 !important;
+
+            margin:
+              0 !important;
+
+            max-width:
+              100% !important;
           }
 
           .report-table-container {
-            overflow: visible !important;
+            overflow:
+              visible !important;
+
             border:
               1px solid #000 !important;
-            border-radius: 0 !important;
-            box-shadow: none !important;
+
+            border-radius:
+              0 !important;
+
+            box-shadow:
+              none !important;
           }
 
           .report-table {
-            width: 100% !important;
+            width:
+              100% !important;
+
             border-collapse:
               collapse !important;
-            font-size: 7pt !important;
+
+            font-size:
+              7pt !important;
           }
 
           .report-table th {
-            background-color:
+            background:
               #0c4a30 !important;
-            color: #ffffff !important;
+
+            color:
+              #ffffff !important;
+
             -webkit-print-color-adjust:
               exact;
-            print-color-adjust: exact;
+
+            print-color-adjust:
+              exact;
+
             border:
               1px solid #000 !important;
+
             padding:
               5px 6px !important;
-            text-align: left !important;
           }
 
           .report-table td {
             border:
               1px solid #666 !important;
+
             padding:
               5px 6px !important;
-            color: #000000 !important;
-            vertical-align: top !important;
+
+            color:
+              #000000 !important;
+
+            vertical-align:
+              top !important;
+
             word-break:
               break-word !important;
           }
 
           .action-column {
-            display: none !important;
-          }
-
-          .print-only {
-            display: block !important;
+            display:
+              none !important;
           }
         }
 
         .print-only {
-          display: none;
+          display:
+            none;
         }
 
       `}</style>
@@ -714,7 +936,8 @@ export default function Report({ token, user, onBack, onError }) {
 
           <p
             style={{
-              margin: '3px 0 0',
+              margin:
+                '3px 0 0',
               fontSize: '9pt',
               color: '#333'
             }}
@@ -753,19 +976,30 @@ export default function Report({ token, user, onBack, onError }) {
       ========================= */}
 
       <div
-        className="report-header report-header-main no-print"
+        className="
+          report-header
+          report-header-main
+          no-print
+        "
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent:
             'space-between',
           gap: '18px',
-          padding: '20px 22px',
-          marginBottom: '18px',
-          borderRadius: '18px',
+          padding:
+            '20px 22px',
+          marginBottom:
+            '18px',
+          borderRadius:
+            '18px',
+
           background:
             'linear-gradient(135deg, #064e3b 0%, #065f46 55%, #047857 100%)',
-          color: '#ffffff',
+
+          color:
+            '#ffffff',
+
           boxShadow:
             '0 10px 28px rgba(6, 78, 59, .18)'
         }}
@@ -783,12 +1017,18 @@ export default function Report({ token, user, onBack, onError }) {
             color: '#ffffff',
             border:
               '1px solid rgba(255,255,255,.18)',
-            padding: '9px 14px',
-            borderRadius: '9px',
-            cursor: 'pointer',
-            fontWeight: '700',
-            fontSize: '12px',
-            whiteSpace: 'nowrap'
+            padding:
+              '9px 14px',
+            borderRadius:
+              '9px',
+            cursor:
+              'pointer',
+            fontWeight:
+              '700',
+            fontSize:
+              '12px',
+            whiteSpace:
+              'nowrap'
           }}
         >
           <span
@@ -811,10 +1051,13 @@ export default function Report({ token, user, onBack, onError }) {
         >
           <div
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
+              display:
+                'inline-flex',
+              alignItems:
+                'center',
               gap: '8px',
-              marginBottom: '5px'
+              marginBottom:
+                '5px'
             }}
           >
             <div
@@ -822,14 +1065,22 @@ export default function Report({ token, user, onBack, onError }) {
                 width: '30px',
                 height: '30px',
                 borderRadius: '9px',
-                display: 'grid',
-                placeItems: 'center',
+                display:
+                  'grid',
+                placeItems:
+                  'center',
+
                 background:
                   'rgba(255,255,255,.12)',
+
                 border:
                   '1px solid rgba(255,255,255,.14)',
-                fontSize: '15px',
-                fontWeight: '800'
+
+                fontSize:
+                  '15px',
+
+                fontWeight:
+                  '800'
               }}
             >
               R
@@ -838,9 +1089,12 @@ export default function Report({ token, user, onBack, onError }) {
             <h2
               style={{
                 margin: 0,
-                fontSize: '1.25rem',
-                color: '#ffffff',
-                fontWeight: '800'
+                fontSize:
+                  '1.25rem',
+                color:
+                  '#ffffff',
+                fontWeight:
+                  '800'
               }}
             >
               Laporan Tiket
@@ -850,20 +1104,24 @@ export default function Report({ token, user, onBack, onError }) {
           <p
             style={{
               margin: 0,
-              color: '#a7f3d0',
-              fontSize: '0.78rem'
+              color:
+                '#a7f3d0',
+              fontSize:
+                '0.78rem'
             }}
           >
-            Rekap dan monitoring seluruh
-            tiket IT Helpdesk
+            Rekap seluruh tiket dan
+            riwayat penanganan tim IT
           </p>
         </div>
 
         <div
           className="report-header-actions"
           style={{
-            display: 'flex',
-            justifyContent: 'flex-end'
+            display:
+              'flex',
+            justifyContent:
+              'flex-end'
           }}
         >
           {isStaff && (
@@ -871,20 +1129,41 @@ export default function Report({ token, user, onBack, onError }) {
               className="report-action-btn"
               onClick={handlePrint}
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
+                display:
+                  'inline-flex',
+                alignItems:
+                  'center',
                 gap: '7px',
-                background: '#ffffff',
-                color: '#065f46',
-                border: 'none',
-                padding: '9px 15px',
-                borderRadius: '9px',
-                cursor: 'pointer',
-                fontWeight: '800',
-                fontSize: '12px',
+
+                background:
+                  '#ffffff',
+
+                color:
+                  '#065f46',
+
+                border:
+                  'none',
+
+                padding:
+                  '9px 15px',
+
+                borderRadius:
+                  '9px',
+
+                cursor:
+                  'pointer',
+
+                fontWeight:
+                  '800',
+
+                fontSize:
+                  '12px',
+
                 boxShadow:
                   '0 4px 12px rgba(0,0,0,.12)',
-                whiteSpace: 'nowrap'
+
+                whiteSpace:
+                  'nowrap'
               }}
             >
               Print Laporan
@@ -900,12 +1179,21 @@ export default function Report({ token, user, onBack, onError }) {
       <div
         className="report-filters no-print"
         style={{
-          background: '#ffffff',
+          background:
+            '#ffffff',
+
           border:
             '1px solid #e2e8f0',
-          borderRadius: '16px',
-          padding: '16px',
-          marginBottom: '18px',
+
+          borderRadius:
+            '16px',
+
+          padding:
+            '16px',
+
+          marginBottom:
+            '18px',
+
           boxShadow:
             '0 3px 12px rgba(15,23,42,.04)'
         }}
@@ -913,20 +1201,33 @@ export default function Report({ token, user, onBack, onError }) {
 
         <div
           style={{
-            display: 'flex',
+            display:
+              'flex',
+
             justifyContent:
               'space-between',
-            alignItems: 'center',
-            marginBottom: '12px',
-            gap: '10px'
+
+            alignItems:
+              'center',
+
+            marginBottom:
+              '12px',
+
+            gap:
+              '10px'
           }}
         >
           <div>
             <div
               style={{
-                fontSize: '13px',
-                fontWeight: '800',
-                color: '#0f172a'
+                fontSize:
+                  '13px',
+
+                fontWeight:
+                  '800',
+
+                color:
+                  '#0f172a'
               }}
             >
               Filter Laporan
@@ -934,13 +1235,18 @@ export default function Report({ token, user, onBack, onError }) {
 
             <div
               style={{
-                fontSize: '11px',
-                color: '#64748b',
-                marginTop: '2px'
+                fontSize:
+                  '11px',
+
+                color:
+                  '#64748b',
+
+                marginTop:
+                  '2px'
               }}
             >
-              Gunakan filter untuk
-              mempersempit data tiket
+              Pilih satu atau beberapa
+              status sesuai kebutuhan
             </div>
           </div>
 
@@ -951,18 +1257,36 @@ export default function Report({ token, user, onBack, onError }) {
                 handleResetFilter
               }
               style={{
-                border: 'none',
-                background: '#fef2f2',
-                color: '#b91c1c',
-                padding: '7px 10px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '11px',
-                fontWeight: '700'
+                border:
+                  'none',
+
+                background:
+                  '#fef2f2',
+
+                color:
+                  '#b91c1c',
+
+                padding:
+                  '7px 10px',
+
+                borderRadius:
+                  '8px',
+
+                cursor:
+                  'pointer',
+
+                fontSize:
+                  '11px',
+
+                fontWeight:
+                  '700',
+
+                whiteSpace:
+                  'nowrap'
               }}
             >
-              Reset {activeFilterCount}{' '}
-              filter
+              Reset {activeFilterCount}
+              {' '}filter
             </button>
           )}
         </div>
@@ -970,93 +1294,144 @@ export default function Report({ token, user, onBack, onError }) {
         <div
           className="report-filter-grid"
           style={{
-            display: 'grid',
+            display:
+              'grid',
+
             gridTemplateColumns:
               'minmax(220px, 1.6fr) repeat(4, minmax(130px, 1fr))',
-            gap: '9px'
+
+            gap:
+              '9px'
           }}
         >
 
+          {/* SEARCH */}
+
           <input
-            className="report-filter-input"
+            className="
+              report-filter-input
+            "
             type="text"
-            placeholder={
-              'Cari ID, judul, pelapor, tindakan...'
-            }
+            placeholder="
+              Cari ID, judul, pelapor,
+              tindakan...
+            "
             value={search}
             onChange={(e) =>
               setSearch(
                 e.target.value
               )
             }
-            onKeyDown={handleSearch}
+            onKeyDown={
+              handleSearch
+            }
             style={{
-              width: '100%',
-              padding: '10px 12px',
-              borderRadius: '9px',
+              width:
+                '100%',
+
+              padding:
+                '10px 12px',
+
+              borderRadius:
+                '9px',
+
               border:
                 '1px solid #cbd5e1',
-              fontSize: '12px',
-              outline: 'none',
-              color: '#0f172a',
-              background: '#ffffff'
+
+              fontSize:
+                '12px',
+
+              outline:
+                'none',
+
+              color:
+                '#0f172a',
+
+              background:
+                '#ffffff'
             }}
           />
 
-          {/* MULTI STATUS FILTER */}
+          {/* MULTI STATUS */}
 
           <details
-            className="report-status-picker"
-            style={{
-              position: 'relative'
-            }}
+            className="
+              report-status-picker
+            "
           >
             <summary
               style={{
-                width: '100%',
-                padding: '10px 11px',
-                borderRadius: '9px',
+                width:
+                  '100%',
+
+                minHeight:
+                  '38px',
+
+                padding:
+                  '10px 11px',
+
+                borderRadius:
+                  '9px',
+
                 border:
                   '1px solid #cbd5e1',
-                fontSize: '12px',
-                background: '#ffffff',
-                color: '#334155',
-                outline: 'none',
-                cursor: 'pointer',
-                listStyle: 'none',
-                display: 'flex',
-                alignItems: 'center',
+
+                fontSize:
+                  '12px',
+
+                background:
+                  '#ffffff',
+
+                color:
+                  '#334155',
+
+                cursor:
+                  'pointer',
+
+                outline:
+                  'none',
+
+                display:
+                  'flex',
+
+                alignItems:
+                  'center',
+
                 justifyContent:
                   'space-between',
-                gap: '8px',
-                minHeight: '37px'
+
+                gap:
+                  '8px'
               }}
             >
               <span
                 style={{
-                  overflow: 'hidden',
+                  overflow:
+                    'hidden',
+
                   textOverflow:
                     'ellipsis',
+
                   whiteSpace:
                     'nowrap'
                 }}
               >
                 {statusFilter.length === 0
                   ? 'Semua Status'
-                  : statusFilter
-                      .map(
-                        (value) =>
-                          statusLabel[
-                            value
-                          ] || value
-                      )
-                      .join(', ')}
+                  : `${statusFilter.length} status dipilih`
+                }
               </span>
 
               <span
                 style={{
-                  fontSize: '10px',
-                  flexShrink: 0
+                  color:
+                    '#64748b',
+
+                  fontSize:
+                    '10px',
+
+                  flexShrink:
+                    0
                 }}
               >
                 ▼
@@ -1064,140 +1439,75 @@ export default function Report({ token, user, onBack, onError }) {
             </summary>
 
             <div
-              style={{
-                position: 'absolute',
-                top:
-                  'calc(100% + 5px)',
-                left: 0,
-                right: 0,
-                zIndex: 100,
-                background: '#ffffff',
-                border:
-                  '1px solid #cbd5e1',
-                borderRadius: '10px',
-                padding: '7px',
-                boxShadow:
-                  '0 10px 25px rgba(15,23,42,.12)'
-              }}
+              className="
+                report-status-menu
+              "
             >
-
-              <button
-                type="button"
-                onClick={() =>
-                  setStatusFilter([])
-                }
-                style={{
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '8px 9px',
-                  border: 'none',
-                  borderRadius: '7px',
-                  background:
-                    statusFilter.length === 0
-                      ? '#f0fdf4'
-                      : '#ffffff',
-                  color:
-                    statusFilter.length === 0
-                      ? '#166534'
-                      : '#334155',
-                  cursor: 'pointer',
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  marginBottom: '3px'
-                }}
-              >
-                Semua Status
-              </button>
-
               {statusOptions.map(
-                (option) => {
-                  const checked =
-                    statusFilter.includes(
+                (option) => (
+                  <label
+                    key={
                       option.value
-                    )
-
-                  return (
-                    <label
-                      key={
-                        option.value
+                    }
+                    className="
+                      report-status-option
+                    "
+                  >
+                    <input
+                      type="checkbox"
+                      checked={
+                        statusFilter.includes(
+                          option.value
+                        )
                       }
-                      className={
-                        `report-status-option ${
-                          checked
-                            ? 'selected'
-                            : ''
-                        }`
-                      }
-                      style={{
-                        display: 'flex',
-                        alignItems:
-                          'center',
-                        gap: '8px',
-                        padding:
-                          '8px 9px',
-                        borderRadius:
-                          '7px',
-                        cursor:
-                          'pointer',
-                        background:
-                          checked
-                            ? '#f0fdf4'
-                            : '#ffffff',
-                        fontSize:
-                          '11px',
-                        color:
-                          '#334155',
-                        fontWeight:
-                          checked
-                            ? '700'
-                            : '500'
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => {
-                          setStatusFilter(
-                            (current) =>
-                              current.includes(
-                                option.value
-                              )
-                                ? current.filter(
-                                    (item) =>
-                                      item !==
-                                      option.value
-                                  )
-                                : [
-                                    ...current,
+                      onChange={() => {
+                        setStatusFilter(
+                          (current) =>
+                            current.includes(
+                              option.value
+                            )
+                              ? current.filter(
+                                  (value) =>
+                                    value !==
                                     option.value
-                                  ]
-                          )
-                        }}
-                        style={{
-                          width: '14px',
-                          height: '14px',
-                          accentColor:
-                            '#047857',
-                          cursor:
-                            'pointer'
-                        }}
-                      />
+                                )
+                              : [
+                                  ...current,
+                                  option.value
+                                ]
+                        )
+                      }}
+                    />
 
-                      <span>
-                        {option.label}
-                      </span>
-                    </label>
-                  )
-                }
+                    <span>
+                      {option.label}
+                    </span>
+                  </label>
+                )
               )}
 
+              {statusFilter.length > 0 && (
+                <button
+                  type="button"
+                  className="
+                    report-status-clear
+                  "
+                  onClick={() =>
+                    setStatusFilter([])
+                  }
+                >
+                  Hapus pilihan status
+                </button>
+              )}
             </div>
           </details>
 
           {/* CATEGORY */}
 
           <select
-            className="report-filter-select"
+            className="
+              report-filter-select
+            "
             value={
               categoryFilter
             }
@@ -1207,15 +1517,29 @@ export default function Report({ token, user, onBack, onError }) {
               )
             }
             style={{
-              width: '100%',
-              padding: '10px 11px',
-              borderRadius: '9px',
+              width:
+                '100%',
+
+              padding:
+                '10px 11px',
+
+              borderRadius:
+                '9px',
+
               border:
                 '1px solid #cbd5e1',
-              fontSize: '12px',
-              background: '#ffffff',
-              color: '#334155',
-              outline: 'none'
+
+              fontSize:
+                '12px',
+
+              background:
+                '#ffffff',
+
+              color:
+                '#334155',
+
+              outline:
+                'none'
             }}
           >
             <option value="all">
@@ -1239,7 +1563,9 @@ export default function Report({ token, user, onBack, onError }) {
           {/* DATE FROM */}
 
           <input
-            className="report-filter-input"
+            className="
+              report-filter-input
+            "
             type="date"
             value={dateFrom}
             onChange={(e) =>
@@ -1248,22 +1574,38 @@ export default function Report({ token, user, onBack, onError }) {
               )
             }
             style={{
-              width: '100%',
-              padding: '9px 10px',
-              borderRadius: '9px',
+              width:
+                '100%',
+
+              padding:
+                '9px 10px',
+
+              borderRadius:
+                '9px',
+
               border:
                 '1px solid #cbd5e1',
-              fontSize: '12px',
-              outline: 'none',
-              color: '#334155',
-              background: '#ffffff'
+
+              fontSize:
+                '12px',
+
+              outline:
+                'none',
+
+              color:
+                '#334155',
+
+              background:
+                '#ffffff'
             }}
           />
 
           {/* DATE TO */}
 
           <input
-            className="report-filter-input"
+            className="
+              report-filter-input
+            "
             type="date"
             value={dateTo}
             onChange={(e) =>
@@ -1272,15 +1614,29 @@ export default function Report({ token, user, onBack, onError }) {
               )
             }
             style={{
-              width: '100%',
-              padding: '9px 10px',
-              borderRadius: '9px',
+              width:
+                '100%',
+
+              padding:
+                '9px 10px',
+
+              borderRadius:
+                '9px',
+
               border:
                 '1px solid #cbd5e1',
-              fontSize: '12px',
-              outline: 'none',
-              color: '#334155',
-              background: '#ffffff'
+
+              fontSize:
+                '12px',
+
+              outline:
+                'none',
+
+              color:
+                '#334155',
+
+              background:
+                '#ffffff'
             }}
           />
 
@@ -1288,14 +1644,20 @@ export default function Report({ token, user, onBack, onError }) {
 
         <div
           style={{
-            marginTop: '9px',
-            fontSize: '10px',
-            color: '#94a3b8'
+            marginTop:
+              '9px',
+
+            fontSize:
+              '10px',
+
+            color:
+              '#94a3b8'
           }}
         >
-          Tekan Enter pada kolom
-          pencarian untuk menjalankan
-          pencarian.
+          Tidak mencentang status =
+          semua status ditampilkan.
+          Tekan Enter pada pencarian
+          untuk menjalankan pencarian.
         </div>
       </div>
 
@@ -1304,13 +1666,23 @@ export default function Report({ token, user, onBack, onError }) {
       ========================= */}
 
       <div
-        className="report-summary-cards report-summary-grid no-print"
+        className="
+          report-summary-cards
+          report-summary-grid
+          no-print
+        "
         style={{
-          display: 'grid',
+          display:
+            'grid',
+
           gridTemplateColumns:
             'repeat(4, minmax(0, 1fr))',
-          gap: '12px',
-          marginBottom: '18px'
+
+          gap:
+            '12px',
+
+          marginBottom:
+            '18px'
         }}
       >
 
@@ -1318,219 +1690,261 @@ export default function Report({ token, user, onBack, onError }) {
 
         <div
           style={{
-            background: '#ffffff',
-            padding: '17px 18px',
-            borderRadius: '15px',
+            background:
+              '#ffffff',
+
+            padding:
+              '17px 18px',
+
+            borderRadius:
+              '15px',
+
             border:
               '1px solid #bbf7d0',
+
             boxShadow:
-              '0 3px 10px rgba(15,23,42,.035)',
-            position: 'relative',
-            overflow: 'hidden'
+              '0 3px 10px rgba(15,23,42,.035)'
           }}
         >
-          <div
+          <span
             style={{
-              position: 'absolute',
-              right: '-18px',
-              top: '-22px',
-              width: '75px',
-              height: '75px',
-              borderRadius: '50%',
-              background: '#ecfdf5'
-            }}
-          />
+              display:
+                'inline-block',
 
-          <div
-            style={{
-              position: 'relative'
+              background:
+                '#ecfdf5',
+
+              color:
+                '#047857',
+
+              borderRadius:
+                '7px',
+
+              padding:
+                '5px 8px',
+
+              fontSize:
+                '10px',
+
+              fontWeight:
+                '800'
             }}
           >
-            <span
-              style={{
-                display:
-                  'inline-block',
-                background: '#ecfdf5',
-                color: '#047857',
-                borderRadius: '7px',
-                padding: '5px 8px',
-                fontSize: '10px',
-                fontWeight: '800'
-              }}
-            >
-              SELESAI
-            </span>
+            SELESAI
+          </span>
 
-            <strong
-              style={{
-                display: 'block',
-                fontSize: '2rem',
-                lineHeight: 1,
-                color: '#166534',
-                marginTop: '11px'
-              }}
-            >
-              {resolvedCount}
-            </strong>
+          <strong
+            style={{
+              display:
+                'block',
 
-            <span
-              style={{
-                display: 'block',
-                fontSize: '11px',
-                color: '#64748b',
-                marginTop: '5px'
-              }}
-            >
-              Tiket berstatus
-              resolved
-            </span>
-          </div>
+              fontSize:
+                '2rem',
+
+              lineHeight:
+                1,
+
+              color:
+                '#166534',
+
+              marginTop:
+                '11px'
+            }}
+          >
+            {resolvedCount}
+          </strong>
+
+          <span
+            style={{
+              display:
+                'block',
+
+              fontSize:
+                '11px',
+
+              color:
+                '#64748b',
+
+              marginTop:
+                '5px'
+            }}
+          >
+            Tiket berstatus resolved
+          </span>
         </div>
 
         {/* DITUNGGU */}
 
         <div
           style={{
-            background: '#ffffff',
-            padding: '17px 18px',
-            borderRadius: '15px',
+            background:
+              '#ffffff',
+
+            padding:
+              '17px 18px',
+
+            borderRadius:
+              '15px',
+
             border:
               '1px solid #fed7aa',
+
             boxShadow:
-              '0 3px 10px rgba(15,23,42,.035)',
-            position: 'relative',
-            overflow: 'hidden'
+              '0 3px 10px rgba(15,23,42,.035)'
           }}
         >
-          <div
+          <span
             style={{
-              position: 'absolute',
-              right: '-18px',
-              top: '-22px',
-              width: '75px',
-              height: '75px',
-              borderRadius: '50%',
-              background: '#fff7ed'
-            }}
-          />
+              display:
+                'inline-block',
 
-          <div
-            style={{
-              position: 'relative'
+              background:
+                '#fff7ed',
+
+              color:
+                '#c2410c',
+
+              borderRadius:
+                '7px',
+
+              padding:
+                '5px 8px',
+
+              fontSize:
+                '10px',
+
+              fontWeight:
+                '800'
             }}
           >
-            <span
-              style={{
-                display:
-                  'inline-block',
-                background: '#fff7ed',
-                color: '#c2410c',
-                borderRadius: '7px',
-                padding: '5px 8px',
-                fontSize: '10px',
-                fontWeight: '800'
-              }}
-            >
-              DITUNGGU
-            </span>
+            DITUNGGU
+          </span>
 
-            <strong
-              style={{
-                display: 'block',
-                fontSize: '2rem',
-                lineHeight: 1,
-                color: '#c2410c',
-                marginTop: '11px'
-              }}
-            >
-              {waitingCount}
-            </strong>
+          <strong
+            style={{
+              display:
+                'block',
 
-            <span
-              style={{
-                display: 'block',
-                fontSize: '11px',
-                color: '#64748b',
-                marginTop: '5px'
-              }}
-            >
-              Tiket berstatus
-              waiting
-            </span>
-          </div>
+              fontSize:
+                '2rem',
+
+              lineHeight:
+                1,
+
+              color:
+                '#c2410c',
+
+              marginTop:
+                '11px'
+            }}
+          >
+            {waitingCount}
+          </strong>
+
+          <span
+            style={{
+              display:
+                'block',
+
+              fontSize:
+                '11px',
+
+              color:
+                '#64748b',
+
+              marginTop:
+                '5px'
+            }}
+          >
+            Tiket menunggu tindak lanjut
+          </span>
         </div>
 
         {/* DITUTUP */}
 
         <div
           style={{
-            background: '#ffffff',
-            padding: '17px 18px',
-            borderRadius: '15px',
+            background:
+              '#ffffff',
+
+            padding:
+              '17px 18px',
+
+            borderRadius:
+              '15px',
+
             border:
               '1px solid #e2e8f0',
+
             boxShadow:
-              '0 3px 10px rgba(15,23,42,.035)',
-            position: 'relative',
-            overflow: 'hidden'
+              '0 3px 10px rgba(15,23,42,.035)'
           }}
         >
-          <div
+          <span
             style={{
-              position: 'absolute',
-              right: '-18px',
-              top: '-22px',
-              width: '75px',
-              height: '75px',
-              borderRadius: '50%',
-              background: '#f8fafc'
-            }}
-          />
+              display:
+                'inline-block',
 
-          <div
-            style={{
-              position: 'relative'
+              background:
+                '#f1f5f9',
+
+              color:
+                '#475569',
+
+              borderRadius:
+                '7px',
+
+              padding:
+                '5px 8px',
+
+              fontSize:
+                '10px',
+
+              fontWeight:
+                '800'
             }}
           >
-            <span
-              style={{
-                display:
-                  'inline-block',
-                background: '#f1f5f9',
-                color: '#475569',
-                borderRadius: '7px',
-                padding: '5px 8px',
-                fontSize: '10px',
-                fontWeight: '800'
-              }}
-            >
-              DITUTUP
-            </span>
+            DITUTUP
+          </span>
 
-            <strong
-              style={{
-                display: 'block',
-                fontSize: '2rem',
-                lineHeight: 1,
-                color: '#1e293b',
-                marginTop: '11px'
-              }}
-            >
-              {closedCount}
-            </strong>
+          <strong
+            style={{
+              display:
+                'block',
 
-            <span
-              style={{
-                display: 'block',
-                fontSize: '11px',
-                color: '#64748b',
-                marginTop: '5px'
-              }}
-            >
-              Tiket berstatus
-              closed
-            </span>
-          </div>
+              fontSize:
+                '2rem',
+
+              lineHeight:
+                1,
+
+              color:
+                '#1e293b',
+
+              marginTop:
+                '11px'
+            }}
+          >
+            {closedCount}
+          </strong>
+
+          <span
+            style={{
+              display:
+                'block',
+
+              fontSize:
+                '11px',
+
+              color:
+                '#64748b',
+
+              marginTop:
+                '5px'
+            }}
+          >
+            Tiket berstatus closed
+          </span>
         </div>
 
         {/* TOTAL */}
@@ -1539,75 +1953,88 @@ export default function Report({ token, user, onBack, onError }) {
           style={{
             background:
               'linear-gradient(135deg, #064e3b 0%, #047857 100%)',
-            padding: '17px 18px',
-            borderRadius: '15px',
+
+            padding:
+              '17px 18px',
+
+            borderRadius:
+              '15px',
+
             border:
               '1px solid #065f46',
-            color: '#ffffff',
+
+            color:
+              '#ffffff',
+
             boxShadow:
-              '0 7px 18px rgba(6,78,59,.15)',
-            position: 'relative',
-            overflow: 'hidden'
+              '0 7px 18px rgba(6,78,59,.15)'
           }}
         >
-          <div
+          <span
             style={{
-              position: 'absolute',
-              right: '-20px',
-              top: '-24px',
-              width: '95px',
-              height: '95px',
-              borderRadius: '50%',
-              border:
-                '15px solid rgba(255,255,255,.06)'
-            }}
-          />
+              display:
+                'inline-block',
 
-          <div
-            style={{
-              position: 'relative'
+              background:
+                'rgba(255,255,255,.11)',
+
+              color:
+                '#d1fae5',
+
+              borderRadius:
+                '7px',
+
+              padding:
+                '5px 8px',
+
+              fontSize:
+                '10px',
+
+              fontWeight:
+                '800'
             }}
           >
-            <span
-              style={{
-                display:
-                  'inline-block',
-                background:
-                  'rgba(255,255,255,.11)',
-                color: '#d1fae5',
-                borderRadius: '7px',
-                padding: '5px 8px',
-                fontSize: '10px',
-                fontWeight: '800'
-              }}
-            >
-              TOTAL LAPORAN
-            </span>
+            TOTAL LAPORAN
+          </span>
 
-            <strong
-              style={{
-                display: 'block',
-                fontSize: '2rem',
-                lineHeight: 1,
-                color: '#ffffff',
-                marginTop: '11px'
-              }}
-            >
-              {tickets.length}
-            </strong>
+          <strong
+            style={{
+              display:
+                'block',
 
-            <span
-              style={{
-                display: 'block',
-                fontSize: '11px',
-                color: '#a7f3d0',
-                marginTop: '5px'
-              }}
-            >
-              Seluruh tiket
-              sesuai filter
-            </span>
-          </div>
+              fontSize:
+                '2rem',
+
+              lineHeight:
+                1,
+
+              color:
+                '#ffffff',
+
+              marginTop:
+                '11px'
+            }}
+          >
+            {tickets.length}
+          </strong>
+
+          <span
+            style={{
+              display:
+                'block',
+
+              fontSize:
+                '11px',
+
+              color:
+                '#a7f3d0',
+
+              marginTop:
+                '5px'
+            }}
+          >
+            Seluruh tiket sesuai filter
+          </span>
         </div>
 
       </div>
@@ -1617,9 +2044,13 @@ export default function Report({ token, user, onBack, onError }) {
       ========================= */}
 
       <div
-        className="report-charts no-print"
+        className="
+          report-charts
+          no-print
+        "
         style={{
-          marginBottom: '18px'
+          marginBottom:
+            '18px'
         }}
       >
         <TicketCharts
@@ -1636,27 +2067,45 @@ export default function Report({ token, user, onBack, onError }) {
 
         <div
           style={{
-            background: '#ffffff',
+            background:
+              '#ffffff',
+
             border:
               '1px solid #e2e8f0',
-            borderRadius: '15px',
-            padding: '55px 20px',
-            textAlign: 'center',
+
+            borderRadius:
+              '15px',
+
+            padding:
+              '55px 20px',
+
+            textAlign:
+              'center',
+
             boxShadow:
               '0 3px 10px rgba(15,23,42,.035)'
           }}
         >
           <div
             style={{
-              width: '30px',
-              height: '30px',
-              borderRadius: '50%',
+              width:
+                '30px',
+
+              height:
+                '30px',
+
+              borderRadius:
+                '50%',
+
               border:
                 '3px solid #d1fae5',
+
               borderTopColor:
                 '#047857',
+
               margin:
                 '0 auto 12px',
+
               animation:
                 'reportSpin .8s linear infinite'
             }}
@@ -1665,16 +2114,22 @@ export default function Report({ token, user, onBack, onError }) {
           <style>{`
             @keyframes reportSpin {
               to {
-                transform: rotate(360deg);
+                transform:
+                  rotate(360deg);
               }
             }
           `}</style>
 
           <div
             style={{
-              fontSize: '13px',
-              fontWeight: '700',
-              color: '#334155'
+              fontSize:
+                '13px',
+
+              fontWeight:
+                '700',
+
+              color:
+                '#334155'
             }}
           >
             Memuat laporan...
@@ -1682,9 +2137,14 @@ export default function Report({ token, user, onBack, onError }) {
 
           <div
             style={{
-              fontSize: '11px',
-              color: '#94a3b8',
-              marginTop: '4px'
+              fontSize:
+                '11px',
+
+              color:
+                '#94a3b8',
+
+              marginTop:
+                '4px'
             }}
           >
             Mohon tunggu sebentar
@@ -1694,177 +2154,125 @@ export default function Report({ token, user, onBack, onError }) {
       ) : (
 
         <div
-          className="report-table-container"
+          className="
+            report-table-container
+          "
           style={{
-            overflowX: 'auto',
-            borderRadius: '15px',
+            overflowX:
+              'auto',
+
+            borderRadius:
+              '15px',
+
             border:
               '1px solid #e2e8f0',
-            background: '#ffffff',
+
+            background:
+              '#ffffff',
+
             boxShadow:
               '0 3px 12px rgba(15,23,42,.045)'
           }}
         >
 
           <table
-            className="report-table"
+            className="
+              report-table
+            "
             style={{
-              width: '100%',
-              minWidth: '1180px',
+              width:
+                '100%',
+
+              minWidth:
+                '1450px',
+
               borderCollapse:
                 'collapse',
-              fontSize: '0.78rem',
-              color: '#1f2937'
+
+              fontSize:
+                '0.78rem',
+
+              color:
+                '#1f2937',
+
+              tableLayout:
+                'fixed'
             }}
           >
+
+            <colgroup>
+              <col style={{ width: '75px' }} />
+              <col style={{ width: '180px' }} />
+              <col style={{ width: '125px' }} />
+              <col style={{ width: '130px' }} />
+              <col style={{ width: '115px' }} />
+              <col style={{ width: '130px' }} />
+              <col style={{ width: '190px' }} />
+              <col style={{ width: '190px' }} />
+              <col style={{ width: '110px' }} />
+              <col style={{ width: '125px' }} />
+              <col style={{ width: '125px' }} />
+              <col style={{ width: '110px' }} />
+            </colgroup>
 
             <thead>
               <tr
                 style={{
                   background:
                     'linear-gradient(90deg, #064e3b, #065f46)',
-                  color: '#ffffff',
+
+                  color:
+                    '#ffffff',
+
                   textTransform:
                     'uppercase',
-                  fontSize: '0.65rem',
+
+                  fontSize:
+                    '0.65rem',
+
                   letterSpacing:
                     '0.04em'
                 }}
               >
+                {[
+                  'ID',
+                  'Judul',
+                  'Kategori',
+                  'Pelapor',
+                  'Ruangan',
+                  'Teknisi',
+                  'Tindakan',
+                  'Hasil / Solusi',
+                  'Status',
+                  'Dibuat',
+                  'Selesai',
+                  'Aksi'
+                ].map(
+                  (label, index) => (
+                    <th
+                      key={label}
+                      className={
+                        index === 11
+                          ? 'action-column'
+                          : ''
+                      }
+                      style={{
+                        padding:
+                          '12px',
 
-                <th
-                  style={{
-                    padding: '12px',
-                    textAlign: 'left',
-                    fontWeight: '800',
-                    width: '70px'
-                  }}
-                >
-                  ID
-                </th>
+                        textAlign:
+                          index === 11
+                            ? 'center'
+                            : 'left',
 
-                <th
-                  style={{
-                    padding: '12px',
-                    textAlign: 'left',
-                    fontWeight: '800',
-                    minWidth: '170px'
-                  }}
-                >
-                  Judul
-                </th>
-
-                <th
-                  style={{
-                    padding: '12px',
-                    textAlign: 'left',
-                    fontWeight: '800',
-                    minWidth: '120px'
-                  }}
-                >
-                  Kategori
-                </th>
-
-                <th
-                  style={{
-                    padding: '12px',
-                    textAlign: 'left',
-                    fontWeight: '800',
-                    minWidth: '120px'
-                  }}
-                >
-                  Pelapor
-                </th>
-
-                <th
-                  style={{
-                    padding: '12px',
-                    textAlign: 'left',
-                    fontWeight: '800',
-                    minWidth: '105px'
-                  }}
-                >
-                  Ruangan
-                </th>
-
-                <th
-                  style={{
-                    padding: '12px',
-                    textAlign: 'left',
-                    fontWeight: '800',
-                    minWidth: '120px'
-                  }}
-                >
-                  Teknisi
-                </th>
-
-                <th
-                  style={{
-                    padding: '12px',
-                    textAlign: 'left',
-                    fontWeight: '800',
-                    minWidth: '180px'
-                  }}
-                >
-                  Tindakan
-                </th>
-
-                <th
-                  style={{
-                    padding: '12px',
-                    textAlign: 'left',
-                    fontWeight: '800',
-                    minWidth: '180px'
-                  }}
-                >
-                  Hasil / Solusi
-                </th>
-
-                <th
-                  style={{
-                    padding: '12px',
-                    textAlign: 'left',
-                    fontWeight: '800',
-                    minWidth: '115px'
-                  }}
-                >
-                  Status
-                </th>
-
-                <th
-                  style={{
-                    padding: '12px',
-                    textAlign: 'left',
-                    fontWeight: '800',
-                    minWidth: '125px'
-                  }}
-                >
-                  Dibuat
-                </th>
-
-                <th
-                  style={{
-                    padding: '12px',
-                    textAlign: 'left',
-                    fontWeight: '800',
-                    minWidth: '125px'
-                  }}
-                >
-                  Selesai
-                </th>
-
-                <th
-                  className="action-column"
-                  style={{
-                    padding: '12px',
-                    textAlign: 'center',
-                    fontWeight: '800',
-                    minWidth: '105px'
-                  }}
-                >
-                  Aksi
-                </th>
-
+                        fontWeight:
+                          '800'
+                      }}
+                    >
+                      {label}
+                    </th>
+                  )
+                )}
               </tr>
             </thead>
 
@@ -1878,25 +2286,39 @@ export default function Report({ token, user, onBack, onError }) {
                     style={{
                       padding:
                         '55px 20px',
+
                       textAlign:
                         'center'
                     }}
                   >
-
                     <div
                       style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '14px',
+                        width:
+                          '48px',
+
+                        height:
+                          '48px',
+
+                        borderRadius:
+                          '14px',
+
                         background:
                           '#f1f5f9',
-                        display: 'grid',
+
+                        display:
+                          'grid',
+
                         placeItems:
                           'center',
+
                         margin:
                           '0 auto 12px',
-                        color: '#64748b',
-                        fontWeight: '800'
+
+                        color:
+                          '#64748b',
+
+                        fontWeight:
+                          '800'
                       }}
                     >
                       -
@@ -1906,8 +2328,10 @@ export default function Report({ token, user, onBack, onError }) {
                       style={{
                         fontWeight:
                           '800',
+
                         color:
                           '#334155',
+
                         fontSize:
                           '13px'
                       }}
@@ -1919,17 +2343,17 @@ export default function Report({ token, user, onBack, onError }) {
                       style={{
                         color:
                           '#94a3b8',
+
                         fontSize:
                           '11px',
+
                         marginTop:
                           '4px'
                       }}
                     >
-                      Tidak ada tiket
-                      yang sesuai
-                      dengan filter.
+                      Tidak ada tiket yang
+                      sesuai dengan filter.
                     </div>
-
                   </td>
                 </tr>
 
@@ -1941,23 +2365,23 @@ export default function Report({ token, user, onBack, onError }) {
                     const status =
                       statusColor[
                         ticket.status
-                      ] ||
-                      statusColor.CLOSED
+                      ] || {
+                        background:
+                          '#f8fafc',
 
-                    const completionDate =
-                      ticket.status ===
-                        'RESOLVED'
-                        ? ticket.resolved_at
-                        : ticket.status ===
-                          'CLOSED'
-                          ? ticket.closed_at
-                          : null
+                        border:
+                          '#cbd5e1',
+
+                        text:
+                          '#475569',
+
+                        dot:
+                          '#64748b'
+                      }
 
                     return (
                       <tr
-                        key={
-                          ticket.id
-                        }
+                        key={ticket.id}
                         style={{
                           borderBottom:
                             '1px solid #f1f5f9'
@@ -1970,10 +2394,13 @@ export default function Report({ token, user, onBack, onError }) {
                           style={{
                             padding:
                               '11px 12px',
+
                             fontWeight:
                               '800',
+
                             color:
                               '#047857',
+
                             whiteSpace:
                               'nowrap'
                           }}
@@ -1987,28 +2414,33 @@ export default function Report({ token, user, onBack, onError }) {
                           style={{
                             padding:
                               '11px 12px',
+
                             color:
                               '#0f172a',
+
                             fontWeight:
-                              '700',
-                            maxWidth:
-                              '190px'
+                              '700'
                           }}
                         >
                           <div
                             style={{
                               overflow:
                                 'hidden',
+
                               textOverflow:
                                 'ellipsis',
+
                               display:
                                 '-webkit-box',
+
                               WebkitLineClamp:
                                 2,
+
                               WebkitBoxOrient:
                                 'vertical',
-                              lineHeight:
-                                '1.4'
+
+                              wordBreak:
+                                'break-word'
                             }}
                           >
                             {ticket.judul ||
@@ -2022,10 +2454,10 @@ export default function Report({ token, user, onBack, onError }) {
                           style={{
                             padding:
                               '11px 12px',
+
                             color:
                               '#475569',
-                            lineHeight:
-                              '1.4',
+
                             wordBreak:
                               'break-word'
                           }}
@@ -2040,10 +2472,10 @@ export default function Report({ token, user, onBack, onError }) {
                           style={{
                             padding:
                               '11px 12px',
+
                             color:
                               '#475569',
-                            lineHeight:
-                              '1.4',
+
                             wordBreak:
                               'break-word'
                           }}
@@ -2058,10 +2490,10 @@ export default function Report({ token, user, onBack, onError }) {
                           style={{
                             padding:
                               '11px 12px',
+
                             color:
                               '#475569',
-                            lineHeight:
-                              '1.4',
+
                             wordBreak:
                               'break-word'
                           }}
@@ -2076,10 +2508,10 @@ export default function Report({ token, user, onBack, onError }) {
                           style={{
                             padding:
                               '11px 12px',
+
                             color:
                               '#475569',
-                            lineHeight:
-                              '1.4',
+
                             wordBreak:
                               'break-word'
                           }}
@@ -2094,28 +2526,36 @@ export default function Report({ token, user, onBack, onError }) {
                           style={{
                             padding:
                               '11px 12px',
+
                             color:
                               '#334155',
+
                             fontSize:
                               '0.72rem',
+
                             lineHeight:
-                              '1.4',
-                            maxWidth:
-                              '190px'
+                              '1.4'
                           }}
                         >
                           <div
                             style={{
                               overflow:
                                 'hidden',
+
                               textOverflow:
                                 'ellipsis',
+
                               display:
                                 '-webkit-box',
+
                               WebkitLineClamp:
-                                2,
+                                3,
+
                               WebkitBoxOrient:
-                                'vertical'
+                                'vertical',
+
+                              wordBreak:
+                                'break-word'
                             }}
                           >
                             {ticket.tindakan ||
@@ -2129,28 +2569,36 @@ export default function Report({ token, user, onBack, onError }) {
                           style={{
                             padding:
                               '11px 12px',
+
                             color:
                               '#334155',
+
                             fontSize:
                               '0.72rem',
+
                             lineHeight:
-                              '1.4',
-                            maxWidth:
-                              '190px'
+                              '1.4'
                           }}
                         >
                           <div
                             style={{
                               overflow:
                                 'hidden',
+
                               textOverflow:
                                 'ellipsis',
+
                               display:
                                 '-webkit-box',
+
                               WebkitLineClamp:
-                                2,
+                                3,
+
                               WebkitBoxOrient:
-                                'vertical'
+                                'vertical',
+
+                              wordBreak:
+                                'break-word'
                             }}
                           >
                             {ticket.hasil ||
@@ -2163,53 +2611,71 @@ export default function Report({ token, user, onBack, onError }) {
                         <td
                           style={{
                             padding:
-                              '11px 12px',
-                            whiteSpace:
-                              'nowrap'
+                              '11px 12px'
                           }}
                         >
                           <span
                             style={{
                               display:
                                 'inline-flex',
+
                               alignItems:
                                 'center',
-                              gap: '6px',
+
+                              gap:
+                                '6px',
+
                               background:
                                 status.background,
+
                               border:
                                 `1px solid ${status.border}`,
+
                               color:
                                 status.text,
+
                               padding:
                                 '5px 8px',
+
                               borderRadius:
                                 '7px',
+
                               fontSize:
                                 '0.65rem',
+
                               fontWeight:
-                                '800'
+                                '800',
+
+                              whiteSpace:
+                                'nowrap'
                             }}
                           >
                             <span
                               style={{
                                 width:
                                   '5px',
+
                                 height:
                                   '5px',
+
                                 borderRadius:
                                   '50%',
+
                                 background:
                                   status.dot,
+
                                 flexShrink:
                                   0
                               }}
                             />
 
-                            {statusLabel[
-                              ticket.status
-                            ] ||
-                              ticket.status}
+                            {
+                              statusLabel[
+                                ticket.status
+                              ] ||
+                              ticket.status ||
+                              '-'
+                            }
                           </span>
                         </td>
 
@@ -2219,10 +2685,13 @@ export default function Report({ token, user, onBack, onError }) {
                           style={{
                             padding:
                               '11px 12px',
+
                             color:
                               '#64748b',
+
                             fontSize:
                               '0.7rem',
+
                             whiteSpace:
                               'nowrap'
                           }}
@@ -2238,34 +2707,45 @@ export default function Report({ token, user, onBack, onError }) {
                           style={{
                             padding:
                               '11px 12px',
+
                             color:
                               '#64748b',
+
                             fontSize:
                               '0.7rem',
+
                             whiteSpace:
                               'nowrap'
                           }}
                         >
                           {formatDateTime(
-                            completionDate
+                            getFinishedDate(
+                              ticket
+                            )
                           )}
                         </td>
 
                         {/* AKSI */}
 
                         <td
-                          className="action-column"
+                          className="
+                            action-column
+                          "
                           style={{
                             padding:
                               '11px 12px',
+
                             textAlign:
                               'center',
+
                             whiteSpace:
                               'nowrap'
                           }}
                         >
                           <button
-                            className="report-detail-btn"
+                            className="
+                              report-detail-btn
+                            "
                             onClick={() =>
                               setSelectedTicket(
                                 ticket
@@ -2274,18 +2754,25 @@ export default function Report({ token, user, onBack, onError }) {
                             style={{
                               background:
                                 '#ecfdf5',
+
                               color:
                                 '#047857',
+
                               border:
                                 '1px solid #a7f3d0',
+
                               padding:
                                 '6px 10px',
+
                               borderRadius:
                                 '7px',
+
                               cursor:
                                 'pointer',
+
                               fontSize:
                                 '0.68rem',
+
                               fontWeight:
                                 '800'
                             }}
@@ -2311,21 +2798,39 @@ export default function Report({ token, user, onBack, onError }) {
 
       {!loading &&
         tickets.length > 0 && (
-
           <div
-            className="report-pagination no-print"
+            className="
+              report-pagination
+              no-print
+            "
             style={{
-              display: 'flex',
+              display:
+                'flex',
+
               justifyContent:
                 'space-between',
-              alignItems: 'center',
-              gap: '14px',
-              marginTop: '14px',
-              padding: '12px 14px',
-              background: '#ffffff',
-              borderRadius: '12px',
+
+              alignItems:
+                'center',
+
+              gap:
+                '14px',
+
+              marginTop:
+                '14px',
+
+              padding:
+                '12px 14px',
+
+              background:
+                '#ffffff',
+
+              borderRadius:
+                '12px',
+
               border:
                 '1px solid #e2e8f0',
+
               boxShadow:
                 '0 2px 8px rgba(15,23,42,.035)'
             }}
@@ -2333,27 +2838,35 @@ export default function Report({ token, user, onBack, onError }) {
 
             <div
               style={{
-                fontSize: '11px',
-                color: '#64748b'
+                fontSize:
+                  '11px',
+
+                color:
+                  '#64748b'
               }}
             >
               Menampilkan{' '}
 
               <strong
                 style={{
-                  color: '#334155'
+                  color:
+                    '#334155'
                 }}
               >
-                {(currentPage - 1) *
-                  ITEMS_PER_PAGE +
-                  1}
+                {tickets.length === 0
+                  ? 0
+                  : (
+                      (currentPage - 1) *
+                      ITEMS_PER_PAGE
+                    ) + 1}
               </strong>
 
               {' - '}
 
               <strong
                 style={{
-                  color: '#334155'
+                  color:
+                    '#334155'
                 }}
               >
                 {Math.min(
@@ -2367,7 +2880,8 @@ export default function Report({ token, user, onBack, onError }) {
 
               <strong
                 style={{
-                  color: '#334155'
+                  color:
+                    '#334155'
                 }}
               >
                 {tickets.length}
@@ -2378,10 +2892,16 @@ export default function Report({ token, user, onBack, onError }) {
             </div>
 
             <div
-              className="report-pagination-controls"
+              className="
+                report-pagination-controls
+              "
               style={{
-                display: 'flex',
-                gap: '5px',
+                display:
+                  'flex',
+
+                gap:
+                  '5px',
+
                 alignItems:
                   'center'
               }}
@@ -2397,7 +2917,9 @@ export default function Report({ token, user, onBack, onError }) {
                 ([label, page]) => (
                   <button
                     key={label}
-                    className="report-page-btn"
+                    className="
+                      report-page-btn
+                    "
                     onClick={() =>
                       handlePageChange(
                         page
@@ -2408,27 +2930,36 @@ export default function Report({ token, user, onBack, onError }) {
                       1
                     }
                     style={{
-                      width: '31px',
-                      height: '31px',
+                      width:
+                        '31px',
+
+                      height:
+                        '31px',
+
                       borderRadius:
                         '7px',
+
                       border:
                         '1px solid #cbd5e1',
+
                       background:
                         currentPage ===
                         1
                           ? '#f8fafc'
                           : '#ffffff',
+
                       color:
                         currentPage ===
                         1
                           ? '#94a3b8'
                           : '#334155',
+
                       cursor:
                         currentPage ===
                         1
                           ? 'not-allowed'
                           : 'pointer',
+
                       fontWeight:
                         '700'
                     }}
@@ -2442,17 +2973,22 @@ export default function Report({ token, user, onBack, onError }) {
                 style={{
                   minWidth:
                     '75px',
+
                   textAlign:
                     'center',
+
                   fontSize:
                     '11px',
+
                   fontWeight:
                     '800',
+
                   color:
                     '#334155'
                 }}
               >
-                {currentPage} /{' '}
+                {currentPage}
+                {' / '}
                 {totalPages}
               </div>
 
@@ -2469,7 +3005,9 @@ export default function Report({ token, user, onBack, onError }) {
                 ([label, page]) => (
                   <button
                     key={label}
-                    className="report-page-btn"
+                    className="
+                      report-page-btn
+                    "
                     onClick={() =>
                       handlePageChange(
                         page
@@ -2480,27 +3018,36 @@ export default function Report({ token, user, onBack, onError }) {
                       totalPages
                     }
                     style={{
-                      width: '31px',
-                      height: '31px',
+                      width:
+                        '31px',
+
+                      height:
+                        '31px',
+
                       borderRadius:
                         '7px',
+
                       border:
                         '1px solid #cbd5e1',
+
                       background:
                         currentPage ===
                         totalPages
                           ? '#f8fafc'
                           : '#ffffff',
+
                       color:
                         currentPage ===
                         totalPages
                           ? '#94a3b8'
                           : '#334155',
+
                       cursor:
                         currentPage ===
                         totalPages
                           ? 'not-allowed'
                           : 'pointer',
+
                       fontWeight:
                         '700'
                     }}
@@ -2515,161 +3062,251 @@ export default function Report({ token, user, onBack, onError }) {
         )}
 
       {/* =========================
-          MODAL DETAIL TIKET
+          MODAL DETAIL
       ========================= */}
 
       {selectedTicket && (
-
         <div
-          className="report-modal-overlay no-print"
+          className="
+            report-modal-overlay
+            no-print
+          "
           onClick={() =>
-            setSelectedTicket(null)
+            setSelectedTicket(
+              null
+            )
           }
           style={{
-            position: 'fixed',
-            inset: 0,
+            position:
+              'fixed',
+
+            inset:
+              0,
+
             background:
               'rgba(15,23,42,.62)',
+
             backdropFilter:
               'blur(5px)',
-            display: 'flex',
+
+            display:
+              'flex',
+
             alignItems:
               'center',
+
             justifyContent:
               'center',
-            zIndex: 1200,
-            padding: '18px'
+
+            zIndex:
+              1200,
+
+            padding:
+              '18px',
+
+            overflowY:
+              'auto'
           }}
         >
 
           <div
-            className="report-modal"
+            className="
+              report-modal
+            "
             onClick={(e) =>
               e.stopPropagation()
             }
             style={{
-              width: '100%',
-              maxWidth: '760px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              background: '#ffffff',
-              borderRadius: '18px',
+              width:
+                '100%',
+
+              maxWidth:
+                '760px',
+
+              maxHeight:
+                'calc(100vh - 36px)',
+
+              background:
+                '#ffffff',
+
+              borderRadius:
+                '18px',
+
               boxShadow:
                 '0 24px 70px rgba(0,0,0,.25)',
-              overflow: 'hidden'
+
+              overflow:
+                'hidden',
+
+              display:
+                'flex',
+
+              flexDirection:
+                'column'
             }}
           >
 
-            {/* Modal Header */}
+            {/* =====================
+                MODAL HEADER
+            ===================== */}
 
             <div
               style={{
                 background:
                   'linear-gradient(135deg, #064e3b, #047857)',
+
                 padding:
                   '20px 22px',
-                color: '#ffffff'
+
+                color:
+                  '#ffffff',
+
+                flexShrink:
+                  0
               }}
             >
 
               <div
                 style={{
-                  display: 'flex',
+                  display:
+                    'flex',
+
                   justifyContent:
                     'space-between',
+
                   alignItems:
                     'flex-start',
-                  gap: '15px'
+
+                  gap:
+                    '15px'
                 }}
               >
 
-                <div>
+                <div
+                  style={{
+                    minWidth:
+                      0
+                  }}
+                >
 
                   <div
                     style={{
-                      fontSize: '10px',
-                      fontWeight: '700',
-                      color: '#a7f3d0',
+                      fontSize:
+                        '10px',
+
+                      fontWeight:
+                        '700',
+
+                      color:
+                        '#a7f3d0',
+
                       textTransform:
                         'uppercase',
+
                       letterSpacing:
                         '.08em',
+
                       marginBottom:
                         '5px'
                     }}
                   >
-                    Detail Laporan
-                    Tiket
+                    Detail Laporan Tiket
                   </div>
 
                   <h3
                     style={{
-                      margin: 0,
+                      margin:
+                        0,
+
                       fontSize:
                         '1.2rem',
+
                       fontWeight:
                         '800',
+
                       color:
                         '#ffffff'
                     }}
                   >
-                    HD-
-                    {selectedTicket.id}
+                    HD-{selectedTicket.id}
                   </h3>
 
                   <div
                     style={{
                       marginTop:
                         '5px',
+
                       color:
                         '#d1fae5',
+
                       fontSize:
-                        '12px'
+                        '12px',
+
+                      wordBreak:
+                        'break-word'
                     }}
                   >
                     {selectedTicket.judul ||
                       'Tanpa judul'}
                   </div>
-
                 </div>
 
                 <button
-                  className="report-close-btn"
+                  className="
+                    report-close-btn
+                  "
                   onClick={() =>
                     setSelectedTicket(
                       null
                     )
                   }
                   style={{
-                    width: '32px',
-                    height: '32px',
-                    flexShrink: 0,
+                    width:
+                      '32px',
+
+                    height:
+                      '32px',
+
+                    flexShrink:
+                      0,
+
                     borderRadius:
                       '9px',
+
                     border:
                       '1px solid rgba(255,255,255,.18)',
+
                     background:
                       'rgba(255,255,255,.10)',
+
                     color:
                       '#ffffff',
+
                     cursor:
                       'pointer',
+
                     fontSize:
                       '20px',
-                    lineHeight: 1
+
+                    lineHeight:
+                      1
                   }}
                 >
                   ×
                 </button>
-
               </div>
 
               <div
                 style={{
-                  display: 'flex',
+                  display:
+                    'flex',
+
                   flexWrap:
                     'wrap',
-                  gap: '7px',
+
+                  gap:
+                    '7px',
+
                   marginTop:
                     '14px'
                 }}
@@ -2679,50 +3316,67 @@ export default function Report({ token, user, onBack, onError }) {
                   style={{
                     display:
                       'inline-flex',
+
                     alignItems:
                       'center',
-                    gap: '5px',
+
                     padding:
                       '5px 9px',
+
                     borderRadius:
                       '7px',
+
                     background:
                       'rgba(255,255,255,.10)',
+
                     border:
                       '1px solid rgba(255,255,255,.12)',
+
                     color:
                       '#ffffff',
+
                     fontSize:
                       '10px',
+
                     fontWeight:
                       '700'
                   }}
                 >
-                  {statusLabel[
-                    selectedTicket
-                      .status
-                  ] ||
-                    selectedTicket.status}
+                  {
+                    statusLabel[
+                      selectedTicket.status
+                    ] ||
+                    selectedTicket.status ||
+                    '-'
+                  }
                 </span>
 
                 <span
                   style={{
                     display:
                       'inline-flex',
+
                     alignItems:
                       'center',
+
                     padding:
                       '5px 9px',
+
                     borderRadius:
                       '7px',
+
                     background:
                       'rgba(255,255,255,.10)',
+
                     border:
                       '1px solid rgba(255,255,255,.12)',
+
                     color:
                       '#d1fae5',
+
                     fontSize:
                       '10px',
+
                     fontWeight:
                       '700'
                   }}
@@ -2730,30 +3384,49 @@ export default function Report({ token, user, onBack, onError }) {
                   {selectedTicket.nama_kategori ||
                     'Tanpa kategori'}
                 </span>
-
               </div>
-
             </div>
 
-            {/* Modal Body */}
+            {/* =====================
+                MODAL BODY
+                BAGIAN INI SCROLL
+            ===================== */}
 
             <div
+              className="
+                report-modal-body
+              "
               style={{
                 padding:
-                  '20px 22px'
+                  '20px 22px',
+
+                overflowY:
+                  'auto',
+
+                minHeight:
+                  0,
+
+                flex:
+                  1
               }}
             >
 
-              {/* Info */}
+              {/* INFO */}
 
               <div
-                className="report-modal-content"
+                className="
+                  report-modal-content
+                "
                 style={{
                   display:
                     'grid',
+
                   gridTemplateColumns:
                     '1fr 1fr',
-                  gap: '10px',
+
+                  gap:
+                    '10px',
+
                   marginBottom:
                     '14px'
                 }}
@@ -2785,41 +3458,43 @@ export default function Report({ token, user, onBack, onError }) {
                   [
                     'Selesai',
                     formatDateTime(
-                      selectedTicket.status ===
-                        'RESOLVED'
-                        ? selectedTicket.resolved_at
-                        : selectedTicket.status ===
-                          'CLOSED'
-                          ? selectedTicket.closed_at
-                          : null
+                      getFinishedDate(
+                        selectedTicket
+                      )
                     )
                   ]
                 ].map(
                   ([label, value]) => (
-
                     <div
                       key={label}
-                      className="report-info-card"
+                      className="
+                        report-info-card
+                      "
                       style={{
                         background:
                           '#f8fafc',
+
                         border:
                           '1px solid #e2e8f0',
+
                         borderRadius:
                           '10px',
+
                         padding:
                           '11px 12px'
                       }}
                     >
-
                       <div
                         style={{
                           fontSize:
                             '10px',
+
                           color:
                             '#64748b',
+
                           marginBottom:
                             '4px',
+
                           fontWeight:
                             '600'
                         }}
@@ -2831,37 +3506,40 @@ export default function Report({ token, user, onBack, onError }) {
                         style={{
                           fontSize:
                             '12px',
+
                           color:
                             '#0f172a',
+
                           fontWeight:
                             '700',
+
                           wordBreak:
                             'break-word'
                         }}
                       >
-                        {value ||
-                          '-'}
+                        {value || '-'}
                       </div>
-
                     </div>
                   )
                 )}
-
               </div>
 
-              {/* Tindakan */}
+              {/* TINDAKAN */}
 
               <div
-                className="report-info-card"
                 style={{
                   border:
                     '1px solid #d1fae5',
+
                   background:
                     '#f0fdf4',
+
                   borderRadius:
                     '11px',
+
                   padding:
                     '14px',
+
                   marginBottom:
                     '10px'
                 }}
@@ -2871,32 +3549,48 @@ export default function Report({ token, user, onBack, onError }) {
                   style={{
                     display:
                       'flex',
+
                     alignItems:
                       'center',
-                    gap: '7px',
+
+                    gap:
+                      '7px',
+
                     marginBottom:
                       '7px'
                   }}
                 >
-
                   <span
                     style={{
-                      width: '25px',
-                      height: '25px',
+                      width:
+                        '25px',
+
+                      height:
+                        '25px',
+
                       display:
                         'grid',
+
                       placeItems:
                         'center',
+
                       borderRadius:
                         '7px',
+
                       background:
                         '#dcfce7',
+
                       color:
                         '#15803d',
+
                       fontSize:
                         '11px',
+
                       fontWeight:
-                        '800'
+                        '800',
+
+                      flexShrink:
+                        0
                     }}
                   >
                     01
@@ -2906,47 +3600,45 @@ export default function Report({ token, user, onBack, onError }) {
                     style={{
                       fontSize:
                         '12px',
+
                       color:
                         '#166534'
                     }}
                   >
-                    Tindakan
-                    Perbaikan
+                    Tindakan Perbaikan
                   </strong>
-
                 </div>
 
                 <div
+                  className="
+                    report-detail-text
+                  "
                   style={{
                     fontSize:
-                      '12px',
-                    lineHeight:
-                      '1.6',
-                    color:
-                      '#334155',
-                    whiteSpace:
-                      'pre-wrap'
+                      '12px'
                   }}
                 >
                   {selectedTicket.tindakan ||
                     'Tidak ada tindakan yang dicatat.'}
                 </div>
-
               </div>
 
-              {/* Hasil */}
+              {/* HASIL */}
 
               <div
-                className="report-info-card"
                 style={{
                   border:
                     '1px solid #dbeafe',
+
                   background:
                     '#f8fafc',
+
                   borderRadius:
                     '11px',
+
                   padding:
                     '14px',
+
                   marginBottom:
                     '16px'
                 }}
@@ -2956,32 +3648,48 @@ export default function Report({ token, user, onBack, onError }) {
                   style={{
                     display:
                       'flex',
+
                     alignItems:
                       'center',
-                    gap: '7px',
+
+                    gap:
+                      '7px',
+
                     marginBottom:
                       '7px'
                   }}
                 >
-
                   <span
                     style={{
-                      width: '25px',
-                      height: '25px',
+                      width:
+                        '25px',
+
+                      height:
+                        '25px',
+
                       display:
                         'grid',
+
                       placeItems:
                         'center',
+
                       borderRadius:
                         '7px',
+
                       background:
                         '#e0f2fe',
+
                       color:
                         '#0369a1',
+
                       fontSize:
                         '11px',
+
                       fontWeight:
-                        '800'
+                        '800',
+
+                      flexShrink:
+                        0
                     }}
                   >
                     02
@@ -2991,51 +3699,50 @@ export default function Report({ token, user, onBack, onError }) {
                     style={{
                       fontSize:
                         '12px',
+
                       color:
                         '#0f172a'
                     }}
                   >
-                    Hasil / Solusi
-                    Akhir
+                    Hasil / Solusi Akhir
                   </strong>
-
                 </div>
 
                 <div
+                  className="
+                    report-detail-text
+                  "
                   style={{
                     fontSize:
-                      '12px',
-                    lineHeight:
-                      '1.6',
-                    color:
-                      '#334155',
-                    whiteSpace:
-                      'pre-wrap'
+                      '12px'
                   }}
                 >
                   {selectedTicket.hasil ||
                     'Tidak ada hasil atau solusi yang dicatat.'}
                 </div>
-
               </div>
 
-              {/* Footer */}
+              {/* FOOTER */}
 
               <div
                 style={{
                   display:
                     'flex',
+
                   justifyContent:
                     'flex-end',
+
                   paddingTop:
                     '13px',
+
                   borderTop:
                     '1px solid #e2e8f0'
                 }}
               >
-
                 <button
-                  className="report-close-btn"
+                  className="
+                    report-close-btn
+                  "
                   onClick={() =>
                     setSelectedTicket(
                       null
@@ -3044,25 +3751,31 @@ export default function Report({ token, user, onBack, onError }) {
                   style={{
                     padding:
                       '9px 16px',
+
                     borderRadius:
                       '8px',
+
                     border:
                       '1px solid #cbd5e1',
+
                     background:
                       '#ffffff',
+
                     color:
                       '#334155',
+
                     cursor:
                       'pointer',
+
                     fontSize:
                       '11px',
+
                     fontWeight:
                       '800'
                   }}
                 >
                   Tutup
                 </button>
-
               </div>
 
             </div>
