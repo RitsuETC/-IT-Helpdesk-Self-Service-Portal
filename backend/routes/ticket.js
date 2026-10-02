@@ -249,7 +249,9 @@ router.get("/reports/finished-tickets", verifyToken, authorizeRole("admin", "tek
       JOIN unit u ON u.id = t.ruangan
       JOIN knowledge_kategori k ON k.id = t.categori
       LEFT JOIN login pelapor ON pelapor.id = t.akun
-      LEFT JOIN login teknisi_user ON teknisi_user.id = t.teknisi AND teknisi_user.role = 'teknisi'
+      LEFT JOIN login teknisi_user
+        ON teknisi_user.id = t.teknisi
+        AND teknisi_user.role = 'teknisi'
       LEFT JOIN LATERAL (
         SELECT tr.tindakan, tr.hasil
         FROM troubleshooting tr
@@ -257,22 +259,48 @@ router.get("/reports/finished-tickets", verifyToken, authorizeRole("admin", "tek
         ORDER BY tr.id DESC
         LIMIT 1
       ) tr ON true
-      WHERE t.status IN ('RESOLVED', 'CLOSED')
+      WHERE 1 = 1
     `;
 
     const params = [];
     let paramIndex = 1;
 
-    if (req.user.role === 'user') {
-      query += ` AND t.akun = $${paramIndex}`;
-      params.push(req.user.id);
-      paramIndex++;
-    }
+    /*
+     * FILTER STATUS
+     *
+     * Bisa menerima:
+     * ?status=RESOLVED
+     *
+     * atau:
+     * ?status=RESOLVED,WAITING
+     *
+     * atau:
+     * ?status=RESOLVED,WAITING,CLOSED
+     *
+     * Kalau kosong -> semua status ditampilkan.
+     */
+    if (status) {
+      const allowedStatuses = [
+        "NEW",
+        "ASSIGNED",
+        "IN_PROGRESS",
+        "WAITING",
+        "RESOLVED",
+        "CLOSED",
+      ];
 
-    if (status && ['RESOLVED', 'CLOSED'].includes(status.toUpperCase())) {
-      query += ` AND t.status = $${paramIndex}`;
-      params.push(status.toUpperCase());
-      paramIndex++;
+      const selectedStatuses = String(status)
+        .split(",")
+        .map((item) => item.trim().toUpperCase())
+        .filter((item) => allowedStatuses.includes(item));
+
+      if (selectedStatuses.length > 0) {
+        const placeholders = selectedStatuses.map(() => `$${paramIndex++}`);
+
+        query += ` AND t.status IN (${placeholders.join(", ")})`;
+
+        params.push(...selectedStatuses);
+      }
     }
 
     if (category) {
@@ -286,25 +314,162 @@ router.get("/reports/finished-tickets", verifyToken, authorizeRole("admin", "tek
       params.push(date_from);
       paramIndex++;
     }
+
     if (date_to) {
       query += ` AND t.created_at <= $${paramIndex}`;
-      params.push(date_to + ' 23:59:59');
+      params.push(date_to + " 23:59:59");
       paramIndex++;
     }
 
     if (search) {
-      query += ` AND (t.judul ILIKE $${paramIndex} OR pelapor."Nama" ILIKE $${paramIndex} OR u.ruangan ILIKE $${paramIndex})`;
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
-      paramIndex += 3;
+      query += `
+        AND (
+          t.judul ILIKE $${paramIndex}
+          OR pelapor."Nama" ILIKE $${paramIndex}
+          OR u.ruangan ILIKE $${paramIndex}
+        )
+      `;
+
+      params.push(`%${search}%`);
+      paramIndex++;
     }
 
     query += ` ORDER BY t.created_at DESC`;
 
     const { rows } = await db.query(query, params);
-    res.json({ data: rows });
+
+    res.json({
+      data: rows,
+    });
   } catch (error) {
     console.error("Get report error:", error);
-    res.status(500).json({ message: "Gagal mengambil data laporan", error: error.message });
+
+    res.status(500).json({
+      message: "Gagal mengambil data laporan",
+      error: error.message,
+    });
+  }
+});
+
+
+router.get("/reports/print", verifyToken, authorizeRole("admin", "teknisi"), async (req, res) => {
+  try {
+    const { status, category, date_from, date_to, search } = req.query;
+
+    let query = `
+      SELECT
+        t.id,
+        t.judul,
+        t.prioritas,
+        t.status,
+        t.created_at,
+        t.resolved_at,
+        t.closed_at,
+        k.nama_kategori,
+        u.ruangan AS nama_ruangan,
+        pelapor."Nama" AS pelapor_nama,
+        teknisi_user."Nama" AS teknisi_nama,
+        tr.tindakan,
+        tr.hasil
+      FROM tiket t
+      JOIN unit u ON u.id = t.ruangan
+      JOIN knowledge_kategori k ON k.id = t.categori
+      LEFT JOIN login pelapor
+        ON pelapor.id = t.akun
+      LEFT JOIN login teknisi_user
+        ON teknisi_user.id = t.teknisi
+        AND teknisi_user.role = 'teknisi'
+      LEFT JOIN LATERAL (
+        SELECT tr.tindakan, tr.hasil
+        FROM troubleshooting tr
+        WHERE tr.id_tiket = t.id
+        ORDER BY tr.id DESC
+        LIMIT 1
+      ) tr ON true
+      WHERE 1 = 1
+    `;
+
+    const params = [];
+    let paramIndex = 1;
+
+    /*
+     * FILTER STATUS UNTUK PRINT
+     *
+     * Contoh:
+     * ?status=RESOLVED
+     * ?status=RESOLVED,WAITING
+     *
+     * Kalau kosong -> semua status.
+     */
+    if (status) {
+      const allowedStatuses = [
+        "NEW",
+        "ASSIGNED",
+        "IN_PROGRESS",
+        "WAITING",
+        "RESOLVED",
+        "CLOSED",
+      ];
+
+      const selectedStatuses = String(status)
+        .split(",")
+        .map((item) => item.trim().toUpperCase())
+        .filter((item) => allowedStatuses.includes(item));
+
+      if (selectedStatuses.length > 0) {
+        const placeholders = selectedStatuses.map(() => `$${paramIndex++}`);
+
+        query += ` AND t.status IN (${placeholders.join(", ")})`;
+
+        params.push(...selectedStatuses);
+      }
+    }
+
+    if (category) {
+      query += ` AND k.nama_kategori ILIKE $${paramIndex}`;
+      params.push(`%${category}%`);
+      paramIndex++;
+    }
+
+    if (date_from) {
+      query += ` AND t.created_at >= $${paramIndex}`;
+      params.push(date_from);
+      paramIndex++;
+    }
+
+    if (date_to) {
+      query += ` AND t.created_at <= $${paramIndex}`;
+      params.push(date_to + " 23:59:59");
+      paramIndex++;
+    }
+
+    if (search) {
+      query += `
+        AND (
+          t.judul ILIKE $${paramIndex}
+          OR pelapor."Nama" ILIKE $${paramIndex}
+          OR u.ruangan ILIKE $${paramIndex}
+        )
+      `;
+
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+
+    query += ` ORDER BY t.created_at DESC`;
+
+    const { rows } = await db.query(query, params);
+
+    res.json({
+      data: rows,
+    });
+  } catch (error) {
+    console.error("Get print report error:", error);
+
+    res.status(500).json({
+      message: "Gagal mengambil data laporan untuk print",
+      error: error.message,
+    });
   }
 });
 
