@@ -619,7 +619,7 @@ export default function Inventory({ token, user, onBack, onError }) {
     {selectedAsset && <AssetDetailModal asset={selectedAsset} maintenance={data.maintenance.filter((item) => Number(item.id_asset) === Number(selectedAsset.id_asset))} movements={data.movements.filter((item) => Number(item.id_asset) === Number(selectedAsset.id_asset))} onClose={() => setSelectedAsset(null)} />}
     {selectedPart && <PartDetailModal part={selectedPart} onClose={() => setSelectedPart(null)} />}
     {qrAsset && <AssetQrModal asset={qrAsset} onClose={() => setQrAsset(null)} />}
-    {selectedRecord && <RecordDetailModal title={selectedRecord.title} item={selectedRecord.item} onClose={() => setSelectedRecord(null)} />}
+    {selectedRecord && <RecordDetailModal title={selectedRecord.title} item={selectedRecord.item} categories={selectedRecord.title.includes('Sparepart') ? setup.sparepartCategories : setup.categories} onClose={() => setSelectedRecord(null)} />}
   </section>
 }
 
@@ -708,20 +708,344 @@ function displayRecordValue(key, value) {
   return String(value)
 }
 
-function RecordDetailModal({ title, item, onClose }) {
-  const fields = Object.entries(item).filter(([key]) => !['id_pic', 'id_user'].includes(key))
-  return <div className="modal-backdrop" onClick={onClose}>
-    <section onClick={(event) => event.stopPropagation()} style={{ background: '#fff', width: 'min(680px, calc(100vw - 32px))', maxHeight: '85vh', overflowY: 'auto', overflowX: 'hidden', boxSizing: 'border-box', borderRadius: '14px', padding: '24px', position: 'relative' }}>
-      <button type="button" onClick={onClose} aria-label="Tutup detail" style={{ position: 'absolute', top: '12px', right: '16px', border: 0, background: 'none', fontSize: '13px', cursor: 'pointer' }}>Tutup</button>
-      <h2 style={{ margin: '0 0 18px', color: '#0f172a' }}>{title}</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '10px' }}>
-        {fields.map(([key, value]) => <div key={key} style={{ padding: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', boxSizing: 'border-box' }}>
-          <small style={{ display: 'block', color: '#64748b', marginBottom: '4px' }}>{recordLabels[key] || key.replace(/_/g, ' ')}</small>
-          <strong style={{ display: 'block', color: '#1e293b', fontSize: '13px', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{displayRecordValue(key, value)}</strong>
-        </div>)}
-      </div>
-    </section>
-  </div>
+function RecordDetailModal({ title, item, categories = [], onClose }) {
+  const isMasterProduct = /Master Produk|Master Aset/i.test(title)
+  const isMasterSparepart = /Master Sparepart/i.test(title)
+  const isMasterRecord = isMasterProduct || isMasterSparepart
+
+  const parseSpecifications = (value) => {
+    if (!value) return {}
+    if (typeof value === 'object' && !Array.isArray(value)) return value
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value)
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : { detail: value }
+      } catch {
+        return { detail: value }
+      }
+    }
+    return {}
+  }
+
+  const specifications = parseSpecifications(item.specifications)
+  const categoryName = categories.find((category) => String(category.id) === String(item.id_category))?.name
+  const productName = item.product_name || item.sparepart_name || item.name || '-'
+  const skuCode = item.sku_code || '-'
+  const defaultPrice = item.default_price != null && item.default_price !== '' ? rupiah(item.default_price) : '-'
+
+  const specEntries = Object.entries(specifications).filter(([key, value]) => {
+    return !['notes', 'detail'].includes(key) && value != null && String(value).trim() !== ''
+  })
+
+  const extraFields = Object.entries(item).filter(([key, value]) => {
+    const excluded = [
+      'id_pic', 'id_user', 'id_category', 'sku_code', 'product_name', 'sparepart_name',
+      'default_price', 'specifications', 'created_at', 'updated_at', 'notes'
+    ]
+    return !excluded.includes(key) && value != null && value !== ''
+  })
+
+  const masterNotes = specifications.notes || specifications.detail || item.notes || ''
+
+  const renderValue = (key, value) => {
+    if (value == null || value === '') return '-'
+    if (key.includes('date') || key.endsWith('_at')) return formatTableDate(value)
+    if (['price', 'cost', 'total_cost', 'default_price', 'unit_price'].includes(key)) return rupiah(value)
+    if (typeof value === 'object') return displayRecordValue(key, value)
+    return String(value)
+  }
+
+  const DetailCard = ({ label, value, wide = false, accent = false }) => (
+    <div style={{
+      gridColumn: wide ? '1 / -1' : undefined,
+      minWidth: 0,
+      padding: '14px 15px',
+      background: accent ? '#f0fdf4' : '#f8fafc',
+      border: `1px solid ${accent ? '#bbf7d0' : '#e2e8f0'}`,
+      borderRadius: '10px',
+      boxSizing: 'border-box'
+    }}>
+      <span style={{
+        display: 'block',
+        marginBottom: '6px',
+        color: '#64748b',
+        fontSize: '11px',
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.04em'
+      }}>{label}</span>
+      <strong style={{
+        display: 'block',
+        color: accent ? '#047857' : '#1e293b',
+        fontSize: '13px',
+        lineHeight: 1.45,
+        fontWeight: 650,
+        overflowWrap: 'anywhere',
+        whiteSpace: 'pre-wrap'
+      }}>{value || '-'}</strong>
+    </div>
+  )
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="record-detail-title"
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          background: '#fff',
+          width: 'min(760px, calc(100vw - 28px))',
+          maxHeight: '88vh',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          boxSizing: 'border-box',
+          borderRadius: '18px',
+          position: 'relative',
+          boxShadow: '0 24px 70px rgba(15, 23, 42, 0.22)',
+          border: '1px solid rgba(226, 232, 240, 0.95)'
+        }}
+      >
+        <div style={{
+          height: '5px',
+          background: 'linear-gradient(90deg, #047857, #10b981)',
+          borderRadius: '18px 18px 0 0'
+        }} />
+
+        <div style={{ padding: '22px 24px 24px' }}>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup detail"
+            style={{
+              position: 'absolute',
+              top: '18px',
+              right: '18px',
+              width: '34px',
+              height: '34px',
+              border: '1px solid #e2e8f0',
+              borderRadius: '9px',
+              background: '#f8fafc',
+              color: '#64748b',
+              fontSize: '19px',
+              lineHeight: 1,
+              cursor: 'pointer'
+            }}
+          >×</button>
+
+          <div style={{ paddingRight: '48px', marginBottom: '20px' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '7px',
+              padding: '5px 9px',
+              marginBottom: '9px',
+              borderRadius: '999px',
+              background: '#ecfdf5',
+              color: '#047857',
+              border: '1px solid #d1fae5',
+              fontSize: '11px',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em'
+            }}>
+              {isMasterRecord ? 'Master Data' : 'Detail Data'}
+            </div>
+
+            <h2 id="record-detail-title" style={{
+              margin: 0,
+              color: '#0f172a',
+              fontSize: '22px',
+              lineHeight: 1.2,
+              fontWeight: 750
+            }}>{title}</h2>
+
+            {isMasterRecord && (
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                gap: '8px',
+                marginTop: '10px'
+              }}>
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '5px 9px',
+                  borderRadius: '7px',
+                  background: '#f1f5f9',
+                  border: '1px solid #e2e8f0',
+                  color: '#334155',
+                  fontSize: '12px',
+                  fontWeight: 700
+                }}>SKU: {skuCode}</span>
+                <span style={{
+                  color: '#64748b',
+                  fontSize: '13px',
+                  overflowWrap: 'anywhere'
+                }}>{productName}</span>
+              </div>
+            )}
+          </div>
+
+          {isMasterRecord ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <section>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '9px',
+                  marginBottom: '11px'
+                }}>
+                  <div style={{ width: '4px', height: '18px', borderRadius: '999px', background: '#059669' }} />
+                  <h3 style={{ margin: 0, color: '#0f172a', fontSize: '14px' }}>Informasi Produk</h3>
+                </div>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: '10px'
+                }}>
+                  <DetailCard label="ID" value={item.id ?? '-'} />
+                  <DetailCard label="Kode SKU" value={skuCode} />
+                  <DetailCard label={isMasterSparepart ? 'Nama sparepart' : 'Nama produk'} value={productName} />
+                  <DetailCard label="Kategori" value={categoryName || (item.id_category != null ? `ID kategori ${item.id_category}` : '-')} />
+                  <DetailCard label="Harga default" value={defaultPrice} accent />
+                  {isMasterSparepart && <DetailCard label="Satuan" value={item.unit || '-'} />}
+                  {isMasterSparepart && <DetailCard label="Stok minimum" value={item.min_stock ?? 0} />}
+                </div>
+              </section>
+
+              {specEntries.length > 0 && (
+                <section>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '9px',
+                    marginBottom: '11px'
+                  }}>
+                    <div style={{ width: '4px', height: '18px', borderRadius: '999px', background: '#059669' }} />
+                    <h3 style={{ margin: 0, color: '#0f172a', fontSize: '14px' }}>
+                      {isMasterSparepart ? 'Spesifikasi' : 'Spesifikasi Teknis'}
+                    </h3>
+                  </div>
+
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                    gap: '10px'
+                  }}>
+                    {specEntries.map(([key, value]) => (
+                      <DetailCard
+                        key={key}
+                        label={recordLabels[key] || key.replace(/_/g, ' ')}
+                        value={String(value)}
+                        wide={key === 'detail'}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {masterNotes && (
+                <section>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '9px',
+                    marginBottom: '11px'
+                  }}>
+                    <div style={{ width: '4px', height: '18px', borderRadius: '999px', background: '#059669' }} />
+                    <h3 style={{ margin: 0, color: '#0f172a', fontSize: '14px' }}>Catatan</h3>
+                  </div>
+                  <DetailCard label="Informasi tambahan" value={masterNotes} wide />
+                </section>
+              )}
+
+              {extraFields.length > 0 && (
+                <section>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '9px',
+                    marginBottom: '11px'
+                  }}>
+                    <div style={{ width: '4px', height: '18px', borderRadius: '999px', background: '#059669' }} />
+                    <h3 style={{ margin: 0, color: '#0f172a', fontSize: '14px' }}>Informasi Lainnya</h3>
+                  </div>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                    gap: '10px'
+                  }}>
+                    {extraFields.map(([key, value]) => (
+                      <DetailCard
+                        key={key}
+                        label={recordLabels[key] || key.replace(/_/g, ' ')}
+                        value={renderValue(key, value)}
+                        wide={typeof value === 'object'}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {(item.created_at || item.updated_at) && (
+                <section style={{
+                  paddingTop: '16px',
+                  borderTop: '1px solid #e2e8f0'
+                }}>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                    gap: '10px'
+                  }}>
+                    {item.created_at && <DetailCard label="Dibuat" value={formatTableDate(item.created_at)} />}
+                    {item.updated_at && <DetailCard label="Diperbarui" value={formatTableDate(item.updated_at)} />}
+                  </div>
+                </section>
+              )}
+            </div>
+          ) : (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              gap: '10px'
+            }}>
+              {Object.entries(item)
+                .filter(([key]) => !['id_pic', 'id_user'].includes(key))
+                .map(([key, value]) => (
+                  <DetailCard
+                    key={key}
+                    label={recordLabels[key] || key.replace(/_/g, ' ')}
+                    value={renderValue(key, value)}
+                    wide={typeof value === 'object'}
+                  />
+                ))}
+            </div>
+          )}
+
+          <div style={{
+            marginTop: '22px',
+            paddingTop: '15px',
+            borderTop: '1px solid #e2e8f0',
+            display: 'flex',
+            justifyContent: 'flex-end'
+          }}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="secondary-button"
+              style={{
+                minWidth: '90px',
+                justifyContent: 'center'
+              }}
+            >Tutup</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
 }
 
 function RoomSelect({ name, value, onChange, rooms }) { return <Select name={name} value={value} onChange={onChange}><option value="">Tidak berubah</option>{rooms.map((item) => <option key={item.id} value={item.id}>{item.ruangan}</option>)}</Select> }
