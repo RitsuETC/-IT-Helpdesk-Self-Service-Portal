@@ -1060,32 +1060,6 @@ export default function Report({ token, user, onBack, onError }) {
                 '5px'
             }}
           >
-            <div
-              style={{
-                width: '30px',
-                height: '30px',
-                borderRadius: '9px',
-                display:
-                  'grid',
-                placeItems:
-                  'center',
-
-                background:
-                  'rgba(255,255,255,.12)',
-
-                border:
-                  '1px solid rgba(255,255,255,.14)',
-
-                fontSize:
-                  '15px',
-
-                fontWeight:
-                  '800'
-              }}
-            >
-              R
-            </div>
-
             <h2
               style={{
                 margin: 0,
@@ -1313,8 +1287,7 @@ export default function Report({ token, user, onBack, onError }) {
             "
             type="text"
             placeholder="
-              Cari ID, judul, pelapor,
-              tindakan...
+              Cari ID, judul, pelapor,tindakan...
             "
             value={search}
             onChange={(e) =>
