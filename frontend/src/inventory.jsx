@@ -1237,4 +1237,4 @@ function PartDetailModal({ part, onClose }) { 
       </section>
     </div>
   ) 
-}
+}  
