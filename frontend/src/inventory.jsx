@@ -1151,98 +1151,658 @@ function PartTable({ items, isAdmin, remove, onEdit, onView, onUpdateStock }) {�
 }
 
 function AssetDetailModal({ asset, maintenance, movements, onClose }) {
-  const specs = asset.specifications && typeof asset.specifications === 'object' ? asset.specifications : {}; 
-  const purchaseDate = asset.purchase_year ? new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' }).format(new Date(asset.purchase_year)) : '-'
-  const fields = [['Kode Aset', asset.asset_code], ['Kategori', asset.category_name], ['Lokasi', asset.ruangan], ['Pengguna', asset.user_name], ['Merek/Model', asset.brand_model], ['Serial Number', asset.serial_number], ['Tanggal Pembelian', purchaseDate], ['Harga', asset.price ? rupiah(asset.price) : '-'], ['Stok Saat Ini', asset.stock], ['Status', asset.status], ['Kondisi', asset.condition], ['Catatan', asset.notes]]; 
-  
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <section className="asset-detail-modal" onClick={(event) => event.stopPropagation()}>
-        <header className="asset-detail-header">
-          <div>
-            <h2>Detail Aset</h2>
-            <p>{asset.asset_code}</p>
-          </div>
-          <button type="button" className="asset-detail-close" onClick={onClose} aria-label="Tutup detail aset" title="Tutup detail aset">&times;</button>
-        </header>
+  const parseSpecifications = (value) => {
+    if (!value) return {}
+    if (typeof value === 'object' && !Array.isArray(value)) return value
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value)
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : { detail: value }
+      } catch {
+        return { detail: value }
+      }
+    }
+    return {}
+  }
 
-        <div className="asset-detail-grid">
-        </div>
+  const specs = parseSpecifications(asset.specifications)
+  const specEntries = Object.entries(specs).filter(([key, value]) => (
+    value != null && String(value).trim() !== ''
+  ))
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '12px' }}>
-          {fields.map(([label, value]) => (
-            <div key={label} className="asset-detail-field">
-              <small>{label}</small>
-              <strong>{value ?? '-'}</strong>
-            </div>
-          ))}
-        </div>
+  const purchaseDate = asset.purchase_year
+    ? new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' }).format(new Date(asset.purchase_year))
+    : '-'
 
-        {Object.keys(specs).length > 0 && (
-          <section style={{ marginTop: '16px', background: '#f0fdf4', border: '1px solid #a7f3d0', borderRadius: '10px', padding: '14px', boxSizing: 'border-box' }}>
-            <h3 style={{ margin: '0 0 10px', color: '#047857', fontSize: '14px' }}>Spesifikasi Teknis</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              {Object.entries(specs).map(([key, value]) => (
-                <div key={key}>
-                  <b style={{ textTransform: 'capitalize', display: 'block', fontSize: '0.8rem', color: '#065f46' }}>{key.replace(/_/g, ' ')}</b>
-                  <span style={{ fontSize: '0.9rem', color: '#0f172a' }}>{String(value)}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+  const fields = [
+    ['Kode Aset', asset.asset_code],
+    ['Kategori', asset.category_name],
+    ['Lokasi', asset.ruangan],
+    ['Pengguna', asset.user_name],
+    ['Merek/Model', asset.brand_model],
+    ['Serial Number', asset.serial_number],
+    ['Tanggal Pembelian', purchaseDate],
+    ['Harga', asset.price ? rupiah(asset.price) : '-'],
+    ['Stok Saat Ini', asset.stock ?? 0],
+    ['Status', asset.status],
+    ['Kondisi', asset.condition]
+  ]
 
-        <section style={{ marginTop: '24px' }}>
-          <h3 style={{ margin: '0 0 12px', color: '#0f172a', fontSize: '15px', borderBottom: '2px solid #f1f5f9', paddingBottom: '6px' }}>Riwayat Maintenance</h3>
-          {maintenance.length ? maintenance.map((item) => (
-            <div key={item.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', marginBottom: '8px', fontSize: '13px', boxSizing: 'border-box' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <strong style={{ color: '#1e293b' }}>{item.maintenance_type}</strong>
-                <span style={{ color: '#64748b', fontSize: '12px' }}>{item.start_date ? formatTableDate(item.start_date) : 'Tanggal tidak dicatat'}</span>
-              </div>
-              <div style={{ marginBottom: '4px', color: '#475569' }}>Status: <b style={{ textTransform: 'capitalize', color: item.status === 'completed' ? '#059669' : '#0f172a' }}>{item.status}</b></div>
-              <div style={{ color: '#64748b', fontStyle: 'italic' }}>{item.result || item.complaint || 'Tanpa keterangan'}</div>
-            </div>
-          )) : <p style={{ color: '#64748b', fontSize: '13px', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>Belum ada riwayat maintenance.</p>}
-        </section>
+  const statusLabel = {
+    available: 'Tersedia',
+    in_use: 'Digunakan',
+    repair: 'Perbaikan',
+    retired: 'Tidak digunakan'
+  }
 
-        <section style={{ marginTop: '24px' }}>
-          <h3 style={{ margin: '0 0 12px', color: '#0f172a', fontSize: '15px', borderBottom: '2px solid #f1f5f9', paddingBottom: '6px' }}>Riwayat Mutasi</h3>
-          {movements.length ? movements.map((item) => (
-            <div key={item.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', marginBottom: '8px', fontSize: '13px', boxSizing: 'border-box' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <strong style={{ color: '#1e293b' }}>{item.movement_type}</strong>
-                <span style={{ color: '#64748b', fontSize: '12px' }}>{item.movement_date ? formatTableDate(item.movement_date) : 'Tanggal tidak dicatat'}</span>
-              </div>
-              <div style={{ color: '#475569' }}>
-                {item.from_room || '-'} &rarr; {item.to_room || '-'} <span style={{ margin: '0 6px', color: '#cbd5e1' }}>|</span> <b>{item.quantity || 0} unit</b>
-              </div>
-            </div>
-          )) : <p style={{ color: '#64748b', fontSize: '13px', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>Belum ada riwayat mutasi.</p>}
-        </section>
+  const conditionLabel = {
+    good: 'Baik',
+    fair: 'Cukup',
+    broken: 'Rusak'
+  }
 
-      </section>
-    </div>
-  ) 
+  const specLabel = {
+    processor: 'Processor',
+    ram: 'RAM',
+    storage: 'Penyimpanan',
+    operating_system: 'Sistem Operasi',
+    gpu: 'GPU / VGA',
+    display: 'Layar',
+    detail: 'Detail'
+  }
+
+  const DetailCard = ({ label, value, wide = false, accent = false }) => (
+    <div style={{
+      gridColumn: wide ? '1 / -1' : undefined,
+      minWidth: 0,
+      padding: '14px 15px',
+      background: accent ? '#f0fdf4' : '#f8fafc',
+      border: `1px solid ${accent ? '#bbf7d0' : '#e2e8f0'}`,
+      borderRadius: '10px',
+      boxSizing: 'border-box'
+    }}>
+      <span style={{
+        display: 'block',
+        marginBottom: '6px',
+        color: '#64748b',
+        fontSize: '11px',
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.04em'
+      }}>{label}</span>
+      <strong style={{
+        display: 'block',
+        color: accent ? '#047857' : '#1e293b',
+        fontSize: '13px',
+        lineHeight: 1.45,
+        fontWeight: 650,
+        overflowWrap: 'anywhere',
+        whiteSpace: 'pre-wrap'
+      }}>{value ?? '-'}</strong>
+    </div>
+  )
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="asset-detail-title"
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          background: '#fff',
+          width: 'min(760px, calc(100vw - 28px))',
+          maxHeight: '88vh',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          boxSizing: 'border-box',
+          borderRadius: '18px',
+          position: 'relative',
+          boxShadow: '0 24px 70px rgba(15, 23, 42, 0.22)',
+          border: '1px solid rgba(226, 232, 240, 0.95)'
+        }}
+      >
+        <div style={{
+          height: '5px',
+          background: 'linear-gradient(90deg, #047857, #10b981)',
+          borderRadius: '18px 18px 0 0'
+        }} />
+
+        <div style={{ padding: '22px 24px 24px' }}>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup detail aset"
+            title="Tutup detail aset"
+            style={{
+              position: 'absolute',
+              top: '18px',
+              right: '18px',
+              width: '34px',
+              height: '34px',
+              border: '1px solid #e2e8f0',
+              borderRadius: '9px',
+              background: '#f8fafc',
+              color: '#64748b',
+              fontSize: '19px',
+              lineHeight: 1,
+              cursor: 'pointer'
+            }}
+          >×</button>
+
+          <div style={{ paddingRight: '48px', marginBottom: '20px' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '7px',
+              padding: '5px 9px',
+              marginBottom: '9px',
+              borderRadius: '999px',
+              background: '#ecfdf5',
+              color: '#047857',
+              border: '1px solid #d1fae5',
+              fontSize: '11px',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em'
+            }}>
+              Data Aset
+            </div>
+
+            <h2 id="asset-detail-title" style={{
+              margin: 0,
+              color: '#0f172a',
+              fontSize: '22px',
+              lineHeight: 1.2,
+              fontWeight: 750
+            }}>Detail Aset</h2>
+
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: '8px',
+              marginTop: '10px'
+            }}>
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '5px 9px',
+                borderRadius: '7px',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                color: '#047857',
+                fontSize: '12px',
+                fontWeight: 750
+              }}>
+                {asset.asset_code || '-'}
+              </span>
+              <span style={{
+                color: '#64748b',
+                fontSize: '13px',
+                fontWeight: 600
+              }}>
+                {asset.brand_model || 'Aset IT'}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gap: '22px' }}>
+            <section>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '9px',
+                marginBottom: '11px'
+              }}>
+                <div style={{ width: '4px', height: '18px', borderRadius: '999px', background: '#059669' }} />
+                <h3 style={{ margin: 0, color: '#0f172a', fontSize: '14px' }}>Informasi Aset</h3>
+              </div>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: '10px'
+              }}>
+                {fields.map(([label, value]) => {
+                  let displayValue = value ?? '-'
+                  if (label === 'Status') displayValue = statusLabel[value] || value || '-'
+                  if (label === 'Kondisi') displayValue = conditionLabel[value] || value || '-'
+
+                  return (
+                    <DetailCard
+                      key={label}
+                      label={label}
+                      value={displayValue}
+                      accent={label === 'Stok Saat Ini'}
+                    />
+                  )
+                })}
+              </div>
+            </section>
+
+            {(asset.notes || specEntries.length > 0) && (
+              <section>
+                {specEntries.length > 0 && (
+                  <>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '9px',
+                      marginBottom: '11px'
+                    }}>
+                      <div style={{ width: '4px', height: '18px', borderRadius: '999px', background: '#059669' }} />
+                      <h3 style={{ margin: 0, color: '#0f172a', fontSize: '14px' }}>Spesifikasi Teknis</h3>
+                    </div>
+
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                      gap: '10px'
+                    }}>
+                      {specEntries.map(([key, value]) => (
+                        <DetailCard
+                          key={key}
+                          label={specLabel[key] || key.replace(/_/g, ' ')}
+                          value={typeof value === 'object' ? displayRecordValue(key, value) : String(value)}
+                          wide={typeof value === 'object'}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {asset.notes && (
+                  <div style={{ marginTop: specEntries.length ? '14px' : 0 }}>
+                    <DetailCard label="Catatan" value={asset.notes} wide />
+                  </div>
+                )}
+              </section>
+            )}
+
+            <section>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '9px',
+                marginBottom: '11px'
+              }}>
+                <div style={{ width: '4px', height: '18px', borderRadius: '999px', background: '#059669' }} />
+                <h3 style={{ margin: 0, color: '#0f172a', fontSize: '14px' }}>Riwayat Maintenance</h3>
+              </div>
+
+              {maintenance.length ? maintenance.map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '10px',
+                    padding: '13px 14px',
+                    marginBottom: '8px',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    marginBottom: '5px',
+                    flexWrap: 'wrap'
+                  }}>
+                    <strong style={{ color: '#1e293b', fontSize: '13px' }}>
+                      {item.maintenance_type || 'Maintenance'}
+                    </strong>
+                    <span style={{ color: '#64748b', fontSize: '12px' }}>
+                      {item.start_date ? formatTableDate(item.start_date) : 'Tanggal tidak dicatat'}
+                    </span>
+                  </div>
+
+                  <div style={{ marginBottom: '5px', color: '#475569', fontSize: '12px' }}>
+                    Status:{' '}
+                    <b style={{
+                      textTransform: 'capitalize',
+                      color: item.status === 'completed' ? '#059669' : '#0f172a'
+                    }}>
+                      {item.status || '-'}
+                    </b>
+                  </div>
+
+                  <div style={{
+                    color: '#64748b',
+                    fontSize: '12px',
+                    fontStyle: 'italic',
+                    overflowWrap: 'anywhere',
+                    whiteSpace: 'pre-wrap'
+                  }}>
+                    {item.result || item.complaint || 'Tanpa keterangan'}
+                  </div>
+                </div>
+              )) : (
+                <p style={{
+                  color: '#64748b',
+                  fontSize: '13px',
+                  background: '#f8fafc',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1px dashed #cbd5e1',
+                  margin: 0
+                }}>
+                  Belum ada riwayat maintenance.
+                </p>
+              )}
+            </section>
+
+            <section>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '9px',
+                marginBottom: '11px'
+              }}>
+                <div style={{ width: '4px', height: '18px', borderRadius: '999px', background: '#059669' }} />
+                <h3 style={{ margin: 0, color: '#0f172a', fontSize: '14px' }}>Riwayat Mutasi</h3>
+              </div>
+
+              {movements.length ? movements.map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '10px',
+                    padding: '13px 14px',
+                    marginBottom: '8px',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    marginBottom: '5px',
+                    flexWrap: 'wrap'
+                  }}>
+                    <strong style={{ color: '#1e293b', fontSize: '13px' }}>
+                      {item.movement_type || 'Mutasi'}
+                    </strong>
+                    <span style={{ color: '#64748b', fontSize: '12px' }}>
+                      {item.movement_date ? formatTableDate(item.movement_date) : 'Tanggal tidak dicatat'}
+                    </span>
+                  </div>
+
+                  <div style={{
+                    color: '#475569',
+                    fontSize: '12px',
+                    overflowWrap: 'anywhere'
+                  }}>
+                    {item.from_room || '-'} &rarr; {item.to_room || '-'}
+                    <span style={{ margin: '0 7px', color: '#cbd5e1' }}>|</span>
+                    <b>{item.quantity ?? item.asset_quantity ?? 0} unit</b>
+                  </div>
+
+                  {item.notes && (
+                    <div style={{
+                      marginTop: '6px',
+                      color: '#64748b',
+                      fontSize: '12px',
+                      whiteSpace: 'pre-wrap',
+                      overflowWrap: 'anywhere'
+                    }}>
+                      {item.notes}
+                    </div>
+                  )}
+                </div>
+              )) : (
+                <p style={{
+                  color: '#64748b',
+                  fontSize: '13px',
+                  background: '#f8fafc',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1px dashed #cbd5e1',
+                  margin: 0
+                }}>
+                  Belum ada riwayat mutasi.
+                </p>
+              )}
+            </section>
+          </div>
+
+          <div style={{
+            marginTop: '22px',
+            paddingTop: '15px',
+            borderTop: '1px solid #e2e8f0',
+            display: 'flex',
+            justifyContent: 'flex-end'
+          }}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="secondary-button"
+              style={{ minWidth: '90px', justifyContent: 'center' }}
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
 }
 
-function PartDetailModal({ part, onClose }) { 
-  const fields = [['Nama Sparepart', part.name], ['Kategori', part.category_name], ['Stok Saat Ini', `${part.stock} ${part.unit}`], ['Stok Minimum', part.min_stock], ['Harga', part.price ? `Rp ${Number(part.price).toLocaleString('id-ID')}` : '-'], ['Supplier', part.supplier], ['Catatan', part.notes]]; 
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <section onClick={(event) => event.stopPropagation()} style={{ background: '#fff', width: 'min(620px, calc(100vw - 32px))', maxHeight: '85vh', overflowY: 'auto', overflowX: 'hidden', boxSizing: 'border-box', borderRadius: '14px', padding: '24px', position: 'relative' }}>
-        <button type="button" onClick={onClose} aria-label="Tutup detail" style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'none', fontSize: '13px', cursor: 'pointer', color: '#64748b' }}>Tutup</button>
-        <h2 style={{ margin: '0 0 4px', color: '#0f172a' }}>Detail Sparepart</h2>
-        <p style={{ margin: '0 0 18px', color: '#64748b', fontWeight: 'bold' }}>{part.name}</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '12px' }}>
-          {fields.map(([label, value]) => (
-            <div key={label} style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px', border: '1px solid #e2e8f0', boxSizing: 'border-box' }}>
-              <small style={{ display: 'block', color: '#64748b', marginBottom: '4px' }}>{label}</small>
-              <strong style={{ color: '#1e293b', fontSize: '13px', overflowWrap: 'anywhere' }}>{value || '-'}</strong>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
-  ) 
-}  
+function PartDetailModal({ part, onClose }) {
+  const categoryName = part.category_name || '-'
+  const stock = Number(part.stock ?? 0)
+  const minStock = Number(part.min_stock ?? 0)
+  const isLowStock = stock <= minStock
+
+  const DetailCard = ({ label, value, wide = false, accent = false, warning = false }) => (
+    <div style={{
+      gridColumn: wide ? '1 / -1' : undefined,
+      minWidth: 0,
+      padding: '14px 15px',
+      background: warning ? '#fff7ed' : accent ? '#f0fdf4' : '#f8fafc',
+      border: `1px solid ${warning ? '#fed7aa' : accent ? '#bbf7d0' : '#e2e8f0'}`,
+      borderRadius: '10px',
+      boxSizing: 'border-box'
+    }}>
+      <span style={{
+        display: 'block',
+        marginBottom: '6px',
+        color: '#64748b',
+        fontSize: '11px',
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.04em'
+      }}>{label}</span>
+      <strong style={{
+        display: 'block',
+        color: warning ? '#c2410c' : accent ? '#047857' : '#1e293b',
+        fontSize: '13px',
+        lineHeight: 1.45,
+        fontWeight: 650,
+        overflowWrap: 'anywhere',
+        whiteSpace: 'pre-wrap'
+      }}>{value ?? '-'}</strong>
+    </div>
+  )
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="part-detail-title"
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          background: '#fff',
+          width: 'min(760px, calc(100vw - 28px))',
+          maxHeight: '88vh',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          boxSizing: 'border-box',
+          borderRadius: '18px',
+          position: 'relative',
+          boxShadow: '0 24px 70px rgba(15, 23, 42, 0.22)',
+          border: '1px solid rgba(226, 232, 240, 0.95)'
+        }}
+      >
+        <div style={{
+          height: '5px',
+          background: 'linear-gradient(90deg, #047857, #10b981)',
+          borderRadius: '18px 18px 0 0'
+        }} />
+
+        <div style={{ padding: '22px 24px 24px' }}>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup detail sparepart"
+            title="Tutup detail sparepart"
+            style={{
+              position: 'absolute',
+              top: '18px',
+              right: '18px',
+              width: '34px',
+              height: '34px',
+              border: '1px solid #e2e8f0',
+              borderRadius: '9px',
+              background: '#f8fafc',
+              color: '#64748b',
+              fontSize: '19px',
+              lineHeight: 1,
+              cursor: 'pointer'
+            }}
+          >×</button>
+
+          <div style={{ paddingRight: '48px', marginBottom: '20px' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '7px',
+              padding: '5px 9px',
+              marginBottom: '9px',
+              borderRadius: '999px',
+              background: '#ecfdf5',
+              color: '#047857',
+              border: '1px solid #d1fae5',
+              fontSize: '11px',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em'
+            }}>
+              Master Data
+            </div>
+
+            <h2 id="part-detail-title" style={{
+              margin: 0,
+              color: '#0f172a',
+              fontSize: '22px',
+              lineHeight: 1.2,
+              fontWeight: 750
+            }}>Detail Sparepart</h2>
+
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: '8px',
+              marginTop: '10px'
+            }}>
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '5px 9px',
+                borderRadius: '7px',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                color: '#047857',
+                fontSize: '12px',
+                fontWeight: 750
+              }}>
+                {part.name || '-'}
+              </span>
+              <span style={{
+                color: '#64748b',
+                fontSize: '13px',
+                fontWeight: 600
+              }}>
+                {categoryName}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gap: '22px' }}>
+            <section>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '9px',
+                marginBottom: '11px'
+              }}>
+                <div style={{ width: '4px', height: '18px', borderRadius: '999px', background: '#059669' }} />
+                <h3 style={{ margin: 0, color: '#0f172a', fontSize: '14px' }}>Informasi Sparepart</h3>
+              </div>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: '10px'
+              }}>
+                <DetailCard label="Nama Sparepart" value={part.name || '-'} />
+                <DetailCard label="Kategori" value={categoryName} />
+                <DetailCard
+                  label="Stok Saat Ini"
+                  value={`${stock} ${part.unit || 'pcs'}`}
+                  accent={!isLowStock}
+                  warning={isLowStock}
+                />
+                <DetailCard label="Stok Minimum" value={`${minStock} ${part.unit || 'pcs'}`} />
+                <DetailCard
+                  label="Harga"
+                  value={part.price != null && part.price !== '' ? rupiah(part.price) : '-'}
+                  accent
+                />
+                <DetailCard label="Supplier" value={part.supplier || '-'} />
+              </div>
+            </section>
+
+            {part.notes && (
+              <section>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '9px',
+                  marginBottom: '11px'
+                }}>
+                  <div style={{ width: '4px', height: '18px', borderRadius: '999px', background: '#059669' }} />
+                  <h3 style={{ margin: 0, color: '#0f172a', fontSize: '14px' }}>Catatan</h3>
+                </div>
+
+                <DetailCard label="Informasi tambahan" value={part.notes} wide />
+              </section>
+            )}
+          </div>
+
+          <div style={{
+            marginTop: '22px',
+            paddingTop: '15px',
+            borderTop: '1px solid #e2e8f0',
+            display: 'flex',
+            justifyContent: 'flex-end'
+          }}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="secondary-button"
+              style={{ minWidth: '90px', justifyContent: 'center' }}
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
