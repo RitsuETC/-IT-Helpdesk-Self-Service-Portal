@@ -3336,6 +3336,94 @@ td {
 
 /* ---------- DETAIL MODAL ---------- */
 
+.modal-backdrop > section.asset-detail-modal {
+  width: min(760px, calc(100vw - 32px));
+  max-height: min(88dvh, 860px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0;
+  scrollbar-gutter: stable;
+}
+
+.asset-detail-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px 14px;
+  border-bottom: 1px solid #e4ebe7;
+  background: #fff;
+}
+
+.asset-detail-header h2 {
+  margin: 0 0 4px;
+}
+
+.asset-detail-header p {
+  margin: 0;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.modal-backdrop button.asset-detail-close[aria-label] {
+  display: inline-grid;
+  flex: 0 0 36px;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px !important;
+  background: #f8fafc !important;
+  color: #475569 !important;
+  font-size: 24px !important;
+  line-height: 1;
+}
+
+.modal-backdrop button.asset-detail-close[aria-label]:hover {
+  background: #eaf0ec !important;
+  color: #173d2b !important;
+}
+
+.asset-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 20px 24px 0;
+}
+
+.asset-detail-field {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid #e0e8e3;
+  border-radius: 8px;
+  background: #f8fbf9;
+}
+
+.asset-detail-field small {
+  display: block;
+  margin-bottom: 4px;
+  color: #64748b;
+}
+
+.asset-detail-field strong {
+  color: #1e293b;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.asset-detail-modal > section {
+  margin-right: 24px !important;
+  margin-left: 24px !important;
+}
+
+.asset-detail-modal > section:last-child {
+  margin-bottom: 24px !important;
+}
+
 .modal-backdrop section[style*="gridTemplateColumns"] > div {
   border-color: #e0e8e3 !important;
   background: #f8fbf9 !important;
@@ -3502,6 +3590,20 @@ td {
 
   .inventory-filters {
     grid-template-columns: 1fr;
+  }
+
+  .asset-detail-grid {
+    grid-template-columns: 1fr;
+    padding: 16px 16px 0;
+  }
+
+  .asset-detail-header {
+    padding: 18px 16px 12px;
+  }
+
+  .asset-detail-modal > section {
+    margin-right: 16px !important;
+    margin-left: 16px !important;
   }
 
   .inventory-form-actions {

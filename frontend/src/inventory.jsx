@@ -1147,25 +1147,28 @@ function PartTable({ items, isAdmin, remove, onEdit, onView, onUpdateStock }) {�
 
 function AssetDetailModal({ asset, maintenance, movements, onClose }) {
   const specs = asset.specifications && typeof asset.specifications === 'object' ? asset.specifications : {}; 
-  const fields = [['Kode Aset', asset.asset_code], ['Kategori', asset.category_name], ['Lokasi', asset.ruangan], ['Pengguna', asset.user_name], ['Merek/Model', asset.brand_model], ['Serial Number', asset.serial_number], ['Tanggal Pembelian', asset.purchase_year], ['Harga', asset.price ? `Rp ${Number(asset.price).toLocaleString('id-ID')}` : '-'], ['Stok Saat Ini', asset.stock], ['Status', asset.status], ['Kondisi', asset.condition], ['Catatan', asset.notes]]; 
+  const purchaseDate = asset.purchase_year ? new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' }).format(new Date(asset.purchase_year)) : '-'
+  const fields = [['Kode Aset', asset.asset_code], ['Kategori', asset.category_name], ['Lokasi', asset.ruangan], ['Pengguna', asset.user_name], ['Merek/Model', asset.brand_model], ['Serial Number', asset.serial_number], ['Tanggal Pembelian', purchaseDate], ['Harga', asset.price ? rupiah(asset.price) : '-'], ['Stok Saat Ini', asset.stock], ['Status', asset.status], ['Kondisi', asset.condition], ['Catatan', asset.notes]]; 
   
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <section onClick={(event) => event.stopPropagation()} style={{ background: '#fff', width: 'min(620px, calc(100vw - 32px))', maxHeight: '85vh', overflowY: 'auto', overflowX: 'hidden', boxSizing: 'border-box', borderRadius: '14px', padding: '24px', position: 'relative' }}>
-        
-        {/* Tombol Tutup dirapikan dengan background dan margin agar tidak menabrak scrollbar */}
-        <button type="button" onClick={onClose} aria-label="Tutup detail" style={{ position: 'absolute', top: '16px', right: '20px', border: 'none', background: '#f1f5f9', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', color: '#475569', fontWeight: 'bold', zIndex: 10 }}>Tutup</button>
-        
-        <div style={{ paddingRight: '40px' }}> {/* Memberi jarak agar judul tidak tertutup tombol */}
-          <h2 style={{ margin: '0 0 4px', color: '#0f172a' }}>Detail Aset</h2>
-          <p style={{ margin: '0 0 18px', color: '#64748b', fontWeight: 'bold' }}>{asset.asset_code}</p>
+      <section className="asset-detail-modal" onClick={(event) => event.stopPropagation()}>
+        <header className="asset-detail-header">
+          <div>
+            <h2>Detail Aset</h2>
+            <p>{asset.asset_code}</p>
+          </div>
+          <button type="button" className="asset-detail-close" onClick={onClose} aria-label="Tutup detail aset" title="Tutup detail aset">&times;</button>
+        </header>
+
+        <div className="asset-detail-grid">
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '12px' }}>
           {fields.map(([label, value]) => (
-            <div key={label} style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px', border: '1px solid #e2e8f0', boxSizing: 'border-box' }}>
-              <small style={{ display: 'block', color: '#64748b', marginBottom: '4px' }}>{label}</small>
-              <strong style={{ color: '#1e293b', fontSize: '13px', overflowWrap: 'anywhere' }}>{value || '-'}</strong>
+            <div key={label} className="asset-detail-field">
+              <small>{label}</small>
+              <strong>{value ?? '-'}</strong>
             </div>
           ))}
         </div>
