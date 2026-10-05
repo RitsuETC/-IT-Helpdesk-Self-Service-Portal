@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import QRCode from 'qrcode'
+import { CirclePlus, Search, X } from 'lucide-react'
 import { api } from './api.js'
 
 const tabs = [
@@ -8,10 +9,10 @@ const tabs = [
   ['maintenance', 'Maintenance'], ['procurement', 'Pengadaan'], ['master-products', 'Master Aset'], ['master-spareparts', 'Master Sparepart']
 ]
 
-const blankAsset = { asset_code: '', id_category: '', id_ruangan: '', id_user: '', brand_model: '', serial_number: '', purchase_year: '', price: '', stock: 0, status: 'available', condition: 'good', notes: '', specifications: '' }
+const blankAsset = { asset_code: '', id_category: '', id_master_product: '', id_ruangan: '', id_user: '', brand_model: '', serial_number: '', purchase_year: '', price: '', stock: 0, status: 'available', condition: 'good', notes: '', specifications: '' }
 const blankTechnicalSpecs = { processor: '', ram: '', storage: '', operating_system: '', gpu: '', display: '' }
-const blankPart = { name: '', id_category: '', stock: 0, min_stock: 0, unit: 'pcs', price: '', supplier: '', notes: '' }
-const blankMovement = { id_asset: '', id_sparepart: '', asset_quantity: 1, sparepart_quantity: 1, id_user: '', from_location: '', to_location: '', movement_type: 'TRANSFER', movement_date: '', condition: '', notes: '' }
+const blankPart = { name: '', id_category: '', id_master_sparepart: '', stock: 0, min_stock: 0, unit: 'pcs', price: '', supplier: '', notes: '' }
+const blankMovement = { id_asset: '', id_sparepart: '', id_tiket: '', asset_quantity: 1, sparepart_quantity: 1, id_user: '', from_location: '', to_location: '', movement_type: 'TRANSFER', movement_date: '', condition: '', notes: '' }
 const blankTransaction = { id_sparepart: '', transaction_type: 'MASUK', quantity: 1, transaction_date: '', id_tiket: '', notes: '' }
 const blankMaintenance = { id_asset: '', id_tiket: '', maintenance_type: 'Preventive', start_date: '', end_date: '', complaint: '', action: '', result: '', cost: 0, status: 'scheduled', vendor: '', notes: '' }
 const blankProcurement = { po_number: '', request_date: '', approval_date: '', received_date: '', supplier: '', status: 'draft', notes: '', details: [{ id_asset: '', id_sparepart: '', item_name: '', quantity: 1, unit_price: 0 }] }
@@ -303,9 +304,12 @@ export default function Inventory({ token, user, onBack, onError }) {
             <h3>Data Aset</h3>
             <span>{assets.length} data tercatat</span>
           </div>
-          <div className="inventory-toolbar">
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari..." />
-            {isAdmin && <button onClick={handleOpenAddAsset} className="primary-button">+ Tambah Aset</button>}
+          <div className="inventory-toolbar">
+            <label className="asset-search-control flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-600">
+              <Search size={16} aria-hidden="true" />
+              <input className="min-w-0 flex-1 bg-transparent outline-none" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari kode atau model aset" aria-label="Cari aset" />
+            </label>
+            {isAdmin && <button onClick={handleOpenAddAsset} className="primary-button inline-flex items-center justify-center gap-2"><CirclePlus size={16} aria-hidden="true" />Tambah Aset</button>}
           </div>
         </div>
 
@@ -427,12 +431,12 @@ export default function Inventory({ token, user, onBack, onError }) {
             <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: '12px', padding: '24px', width: '90%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
                     <h2 style={{ margin: '0', color: '#0f172a' }}>{assetEditingId ? 'Edit Data Aset' : 'Tambah Aset Baru'}</h2>
-                    <button onClick={() => setShowAssetModal(false)} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', color: '#64748b' }}>&times;</button>
+                    <button type="button" onClick={() => setShowAssetModal(false)} aria-label="Tutup form aset" title="Tutup" className="inventory-modal-close"><X size={18} aria-hidden="true" /></button>
                 </div>
                 <form className="inventory-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }} onSubmit={(event) => submit(event, assetEditingId ? `/inventory/assets/${assetEditingId}` : '/inventory/assets', assetEditingId ? 'PUT' : 'POST', { ...asset, id_category: asset.id_category || null, id_ruangan: Number(asset.id_ruangan), id_user: asset.id_user || null, serial_number: asset.serial_number?.trim() || null, purchase_year: asset.purchase_year || null, price: asset.price || null, stock: Number(asset.stock), specifications: asset.specifications ? { detail: asset.specifications } : null }, () => { setAsset(blankAsset); setAssetEditingId(null) })}>
                     <div style={{ gridColumn: '1 / -1', background: '#e0f2fe', padding: '16px', borderRadius: '8px', border: '1px solid #bae6fd' }}>
                         <Field label="Isi Otomatis dari Master Produk / SKU (Opsional)">
-                            <Select name="master_sku" onChange={(e) => { const selectedId = e.target.value; if (!selectedId) return; const master = setup.masterProducts?.find(m => String(m.id) === String(selectedId)); if (master) { setAsset(prev => ({ ...prev, id_category: master.id_category || prev.id_category, brand_model: master.product_name || prev.brand_model, price: master.default_price || prev.price })); if (master.specifications) { setTechnicalSpecs(typeof master.specifications === 'string' ? JSON.parse(master.specifications) : master.specifications); } } }}>
+                            <Select name="id_master_product" value={asset.id_master_product || ''} onChange={(e) => { const selectedId = e.target.value; const master = setup.masterProducts?.find(m => String(m.id) === String(selectedId)); setAsset(prev => ({ ...prev, id_master_product: selectedId, ...(master ? { id_category: master.id_category || prev.id_category, brand_model: master.product_name || prev.brand_model, price: master.default_price || prev.price } : {}) })); if (master?.specifications) { setTechnicalSpecs(typeof master.specifications === 'string' ? JSON.parse(master.specifications) : master.specifications); } }}>
                                 <option value="">-- Ketik manual atau pilih SKU dari Master Data --</option>
                                 {setup.masterProducts?.map(master => <option key={master.id} value={master.id}>[{master.sku_code}] - {master.product_name}</option>)}
                             </Select>
@@ -463,12 +467,12 @@ export default function Inventory({ token, user, onBack, onError }) {
             <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: '12px', padding: '24px', width: '90%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
                     <h2 style={{ margin: '0', color: '#0f172a' }}>{partEditingId ? 'Edit Data Sparepart' : 'Tambah Sparepart Baru'}</h2>
-                    <button onClick={() => setShowPartModal(false)} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', color: '#64748b' }}>&times;</button>
+                    <button type="button" onClick={() => setShowPartModal(false)} aria-label="Tutup form sparepart" title="Tutup" className="inventory-modal-close"><X size={18} aria-hidden="true" /></button>
                 </div>
                 <form className="inventory-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }} onSubmit={(event) => submit(event, partEditingId ? `/inventory/spareparts/${partEditingId}` : '/inventory/spareparts', partEditingId ? 'PUT' : 'POST', { ...part, id_category: part.id_category || null, stock: Number(part.stock), min_stock: Number(part.min_stock) }, () => { setPart(blankPart); setPartEditingId(null) })}>
                     <div style={{ gridColumn: '1 / -1', background: '#e0f2fe', padding: '16px', borderRadius: '8px', border: '1px solid #bae6fd' }}>
                       <Field label="Isi dari Master Sparepart (opsional)">
-                        <Select value="" onChange={(event) => { const master = (setup.masterSpareparts || []).find((item) => String(item.id) === event.target.value); if (master) setPart((current) => ({ ...current, name: master.sparepart_name, id_category: master.id_category || '', price: master.default_price || '', unit: master.unit || 'pcs', min_stock: master.min_stock || 0, notes: master.specifications?.notes || current.notes })) }}>
+                        <Select name="id_master_sparepart" value={part.id_master_sparepart || ''} onChange={(event) => { const selectedId = event.target.value; const master = (setup.masterSpareparts || []).find((item) => String(item.id) === selectedId); setPart((current) => ({ ...current, id_master_sparepart: selectedId, ...(master ? { name: master.sparepart_name, id_category: master.id_category || '', price: master.default_price || '', unit: master.unit || 'pcs', min_stock: master.min_stock || 0, notes: (typeof master.specifications === 'string' ? JSON.parse(master.specifications || '{}') : master.specifications)?.notes || current.notes } : {}) })) }}>
                           <option value="">-- Pilih SKU untuk isi otomatis --</option>
                           {(setup.masterSpareparts || []).map((item) => <option key={item.id} value={item.id}>[{item.sku_code}] - {item.sparepart_name}</option>)}
                         </Select>
@@ -501,6 +505,7 @@ export default function Inventory({ token, user, onBack, onError }) {
             <Field label="Pengguna"><Select name="id_user" value={movement.id_user} onChange={update(setMovement)}><option value="">Tidak berubah</option>{userOptions}</Select></Field>
             <Field label="Lokasi asal"><RoomSelect value={movement.from_location} onChange={update(setMovement)} name="from_location" rooms={setup.rooms} /></Field>
             <Field label="Lokasi tujuan"><RoomSelect value={movement.to_location} onChange={update(setMovement)} name="to_location" rooms={setup.rooms} /></Field>
+            <Field label="Referensi tiket"><Select name="id_tiket" value={movement.id_tiket} onChange={update(setMovement)}><option value="">Tidak ada</option>{setup.tickets.map((item) => <option key={item.id} value={item.id}>HD-{item.id} · {item.judul}</option>)}</Select></Field>
             <Field label="Jenis pergerakan"><Input name="movement_type" value={movement.movement_type} onChange={update(setMovement)} required /></Field>
             {movement.id_asset && <Field label="Kondisi Aset"><Select name="condition" value={movement.condition} onChange={update(setMovement)}><option value="">Tidak berubah</option><option value="good">Baik</option><option value="fair">Cukup</option><option value="broken">Rusak</option></Select></Field>}
             <Field label="Tanggal Pergerakan"><Input name="movement_date" type="datetime-local" value={movement.movement_date} onChange={update(setMovement)} /></Field>
@@ -537,7 +542,7 @@ export default function Inventory({ token, user, onBack, onError }) {
           <form className="inventory-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }} onSubmit={(event) => submit(event, maintenanceEditingId ? `/inventory/maintenance/${maintenanceEditingId}` : '/inventory/maintenance', maintenanceEditingId ? 'PUT' : 'POST', { ...maintenance, id_asset: Number(maintenance.id_asset), id_tiket: maintenance.id_tiket || null, end_date: maintenance.end_date || null, cost: Number(maintenance.cost || 0) }, () => { setMaintenance(blankMaintenance); setMaintenanceEditingId(null) })}>
             <Field label="Aset *"><Select name="id_asset" value={maintenance.id_asset} onChange={update(setMaintenance)} required><option value="">Pilih aset</option>{assetOptions}</Select></Field>
             <Field label="Referensi Tiket"><Select name="id_tiket" value={maintenance.id_tiket} onChange={update(setMaintenance)}><option value="">Tidak ada</option>{setup.tickets.map((item) => <option key={item.id} value={item.id}>#{item.id} {item.judul}</option>)}</Select></Field>
-            <Field label="Jenis maintenance *"><Input name="maintenance_type" value={maintenance.maintenance_type} onChange={update(setMaintenance)} required /></Field>
+            <Field label="Jenis maintenance *"><Select name="maintenance_type" value={maintenance.maintenance_type} onChange={update(setMaintenance)} required><option value="Preventive">Preventive</option><option value="Corrective">Corrective</option><option value="Inspection">Inspection</option></Select></Field>
             <Field label="Tanggal mulai *"><Input name="start_date" value={maintenance.start_date} onChange={update(setMaintenance)} type="datetime-local" required /></Field>
             <Field label="Tanggal selesai"><Input name="end_date" value={maintenance.end_date} onChange={update(setMaintenance)} type="datetime-local" /></Field>
             <Field label="Status"><Select name="status" value={maintenance.status} onChange={update(setMaintenance)}><option value="scheduled">Terjadwal</option><option value="in_progress">Berjalan</option><option value="completed">Selesai</option><option value="cancelled">Dibatalkan</option></Select></Field>

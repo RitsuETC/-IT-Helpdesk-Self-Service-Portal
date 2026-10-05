@@ -11,6 +11,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   const [tindakanVal, setTindakanVal] = useState('')
   const [hasilVal, setHasilVal] = useState('')
   const [technicians, setTechnicians] = useState([])
+  const relatedAssets = Array.isArray(ticket?.related_assets) ? ticket.related_assets : []
   const [selectedStatus, setSelectedStatus] = useState('NEW')
   const [comments, setComments] = useState([])
   const [timeline, setTimeline] = useState([])
@@ -262,7 +263,21 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
       </div>
 
       <section style={{ marginTop: '24px', background: '#ffffff', border: '1px solid #a7f3d0', borderRadius: '14px', padding: '16px' }}>
-        <h3 style={{ margin: '0 0 12px', color: '#065f46', fontSize: '15px' }}>Aset yang Diperbaiki</h3>
+        <h3 style={{ margin: '0 0 12px', color: '#065f46', fontSize: '15px' }}>Aset Terkait Tiket</h3>
+        {relatedAssets.length ? (
+          <div style={{ display: 'grid', gap: '8px' }}>
+            {relatedAssets.map((asset) => (
+              <div key={asset.id_asset} style={{ padding: '10px 12px', border: '1px solid #bbf7d0', borderRadius: '8px', background: '#f0fdf4', fontSize: '12px' }}>
+                <strong>{asset.asset_code}</strong>{asset.brand_model ? ` · ${asset.brand_model}` : ''}
+                <span style={{ color: '#64748b' }}> · {asset.status} · {asset.condition}</span>
+              </div>
+            ))}
+          </div>
+        ) : <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: '12px' }}>Tidak ada aset yang dipilih pada tiket ini.</p>}
+      </section>
+
+      <section style={{ marginTop: '16px', background: '#ffffff', border: '1px solid #a7f3d0', borderRadius: '14px', padding: '16px' }}>
+        <h3 style={{ margin: '0 0 12px', color: '#065f46', fontSize: '15px' }}>Riwayat Maintenance</h3>
         {maintenanceRecords.length === 0 ? (
           <p style={{ margin: 0, color: '#64748b', fontSize: '12px' }}>Belum ada aset yang dihubungkan ke tiket ini.</p>
         ) : (
@@ -454,6 +469,7 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
   const [showCreateForm, setShowCreateForm] = useState(initialOpenCreate || createOnly)
   const [priorityFilter, setPriorityFilter] = useState('ALL')
   const [rooms, setRooms] = useState([])
+  const [assets, setAssets] = useState([])
   const [ticketDraft, setTicketDraft] = useState({ judul: '', deskripsi: '' })
   const [suggestionDismissed, setSuggestionDismissed] = useState(false)
   
@@ -491,6 +507,7 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
     try {
       const res = await api('/tickets/meta/options', { token })
       setRooms(res.data?.rooms || [])
+      setAssets(res.data?.assets || [])
     } catch (err) {
       console.error('Failed to load meta options', err)
       setRooms([])
@@ -521,7 +538,8 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
           judul: form.get('judul'),
           kategori: form.get('kategori'),
           ruangan: form.get('ruangan'),
-          deskripsi: form.get('deskripsi')
+          deskripsi: form.get('deskripsi'),
+          asset_ids: form.getAll('asset_ids')
         }
       })
       setShowCreateForm(false)
@@ -616,6 +634,7 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
           <label>Judul Kendala<input name="judul" required value={ticketDraft.judul} onChange={updateDraft('judul')} placeholder="Contoh: Printer Rusak" /></label>
           <label>Kategori<select name="kategori"><option value="Hardware">Hardware</option><option value="Software">Software</option><option value="Jaringan">Jaringan</option><option value="Lainnya">Lainnya</option></select></label>
           <label>Lokasi / Ruangan<select name="ruangan" required defaultValue=""><option value="" disabled>-- Pilih Ruangan --</option>{rooms.map((room) => <option key={room.id} value={room.id}>{room.ruangan}</option>)}</select></label>
+          <label>Aset terkait (opsional)<select name="asset_ids" multiple size="4" aria-label="Pilih aset terkait tiket" style={{ minHeight: '96px' }}>{assets.map((asset) => <option key={asset.id_asset} value={asset.id_asset}>{asset.asset_code}{asset.brand_model ? ` · ${asset.brand_model}` : ''}</option>)}</select><small>Pilih satu atau beberapa aset yang mengalami kendala.</small></label>
           <label>Deskripsi Masalah<textarea name="deskripsi" required value={ticketDraft.deskripsi} onChange={updateDraft('deskripsi')} placeholder="Jelaskan kendala secara rinci..." rows="3" /></label>
           {!suggestionDismissed && <SmartKnowledgeSuggestion articles={suggestions} onResolved={closeCreateForm} onContinue={() => setSuggestionDismissed(true)} onOpenArticle={(article) => { closeCreateForm(); onOpenArticle?.(article) }} />}
           <button type="submit">Kirim Laporan Tiket</button>

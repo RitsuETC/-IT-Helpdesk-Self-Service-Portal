@@ -12,10 +12,23 @@ const adminOnly = workRoles;
 
 const positiveInt = (value) => Number.isInteger(Number(value)) && Number(value) > 0;
 const nonNegativeNumber = (value) => value === '' || value == null || (Number.isFinite(Number(value)) && Number(value) >= 0);
+const maintenanceTypes = new Set(['Preventive', 'Corrective', 'Inspection']);
+const maintenanceStatuses = new Set(['scheduled', 'in_progress', 'completed', 'cancelled']);
 const validateNonNegative = (res, values, label = 'Harga') => {
   if (values.every(nonNegativeNumber)) return true;
   res.status(400).json({ message: `${label} tidak boleh bernilai negatif atau tidak valid` });
   return false;
+};
+const validateMaintenanceValues = (res, body) => {
+  if (!maintenanceTypes.has(body.maintenance_type)) {
+    res.status(400).json({ message: 'Jenis maintenance tidak valid' });
+    return false;
+  }
+  if (body.status && !maintenanceStatuses.has(body.status)) {
+    res.status(400).json({ message: 'Status maintenance tidak valid' });
+    return false;
+  }
+  return true;
 };
 const dateValue = (value) => value || null;
 const changedValues = (before, after, fields) => Object.fromEntries(fields.filter((field) => JSON.stringify(before[field] ?? null) !== JSON.stringify(after[field] ?? null)).map((field) => [field, { before: before[field] ?? null, after: after[field] ?? null }]));
@@ -169,13 +182,14 @@ router.get('/assets', async (req, res) => {
     if (req.query.status) add('a.status = ?', req.query.status);
     if (req.query.condition) add('a.condition = ?', req.query.condition);
     const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
-    const result = await db.query(`SELECT a.*, c.name AS category_name, u.ruangan, l."Nama" AS user_name FROM asset a LEFT JOIN asset_category c ON c.id = a.id_category LEFT JOIN unit u ON u.id = a.id_ruangan LEFT JOIN login l ON l.id = a.id_user ${where} ORDER BY a.id_asset DESC`, values);
+    const result = await db.query(`SELECT a.*, c.name AS category_name, u.ruangan, l."Nama" AS user_name, mp.sku_code AS master_sku FROM asset a LEFT JOIN asset_category c ON c.id = a.id_category LEFT JOIN unit u ON u.id = a.id_ruangan LEFT JOIN login l ON l.id = a.id_user LEFT JOIN master_product mp ON mp.id = a.id_master_product ${where} ORDER BY a.id_asset DESC`, values);
     res.json({ data: result.rows });
   } catch (error) { res.status(500).json({ message: 'Gagal mengambil aset', error: error.message }); }
 });
 
-const assetFields = ['asset_code', 'id_ruangan', 'id_category', 'id_user', 'brand_model', 'serial_number', 'purchase_year', 'price', 'stock', 'status', 'condition', 'notes', 'specifications'];
+const assetFields = ['asset_code', 'id_ruangan', 'id_category', 'id_master_product', 'id_user', 'brand_model', 'serial_number', 'purchase_year', 'price', 'stock', 'status', 'condition', 'notes', 'specifications'];
 router.post('/assets', adminOnly, async (req, res) => {
+  const client = await db.connect();
   try {
     const { asset_code, id_ruangan } = req.body;
     if (!asset_code?.trim() || !positiveInt(id_ruangan)) return res.status(400).json({ message: 'Kode aset dan lokasi wajib diisi' });
@@ -186,26 +200,61 @@ router.post('/assets', adminOnly, async (req, res) => {
       if (field === 'status') return value || 'available';
       if (field === 'condition') return value || 'good';
       if (field === 'stock') return value === '' || value == null ? 0 : Number(value);
-      if (['id_category', 'id_user', 'serial_number', 'purchase_year', 'price', 'brand_model', 'notes'].includes(field)) return value || null;
+      if (['id_category', 'id_master_product', 'id_user', 'serial_number', 'purchase_year', 'price', 'brand_model', 'notes'].includes(field)) return value || null;
       return value ?? null;
     });
 
-    const { rows } = await db.query(`INSERT INTO asset (${assetFields.join(', ')}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`, values);
-    await logAudit(db, req, { action: 'CREATE_ASSET', detail: `Menambahkan aset ${rows[0].asset_code}`, entityType: 'asset', entityId: rows[0].id_asset });
+    await client.query('BEGIN');
+    const { rows } = await client.query(`INSERT INTO asset (${assetFields.join(', ')}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`, values);
+    if (Number(rows[0].stock) > 0) {
+      await client.query(
+        `INSERT INTO asset_movement (id_asset, to_location, movement_type, notes, id_pic, quantity, asset_quantity)
+         VALUES ($1, $2, 'INITIAL_STOCK', $3, $4, $5, $5)`,
+        [rows[0].id_asset, rows[0].id_ruangan, 'Pencatatan stok awal aset', req.user.id, Number(rows[0].stock)]
+      );
+    }
+    await logAudit(client, req, { action: 'CREATE_ASSET', detail: `Menambahkan aset ${rows[0].asset_code}`, entityType: 'asset', entityId: rows[0].id_asset });
+    await client.query('COMMIT');
     res.status(201).json({ data: rows[0] });
-  } catch (error) { res.status(error.code === '23505' ? 409 : 500).json({ message: error.code === '23505' ? 'Kode atau serial number aset sudah digunakan' : 'Gagal menambah aset', error: error.message }); }
+  } catch (error) { await client.query('ROLLBACK'); res.status(error.code === '23505' ? 409 : 500).json({ message: error.code === '23505' ? 'Kode atau serial number aset sudah digunakan' : 'Gagal menambah aset', error: error.message }); }
+  finally { client.release(); }
 });
 
 router.put('/assets/:id', adminOnly, async (req, res) => {
+  const client = await db.connect();
   try {
     if (!validateNonNegative(res, [req.body.price, req.body.stock], 'Harga atau stok')) return;
+    await client.query('BEGIN');
+    const previous = await client.query('SELECT * FROM asset WHERE id_asset = $1 FOR UPDATE', [req.params.id]);
+    if (!previous.rowCount) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Aset tidak ditemukan' });
+    }
     const values = assetFields.map((field) => req.body[field] ?? null);
     values.push(req.params.id);
-    const { rows } = await db.query(`UPDATE asset SET ${assetFields.map((field, i) => `${field} =$${i + 1}`).join(', ')}, updated_at = NOW() WHERE id_asset = $${values.length} RETURNING *`, values);
-    if (!rows.length) return res.status(404).json({ message: 'Aset tidak ditemukan' });
-    await logAudit(db, req, { action: 'UPDATE_ASSET', detail: `Memperbarui aset ${rows[0].asset_code}`, entityType: 'asset', entityId: rows[0].id_asset });
+    const { rows } = await client.query(`UPDATE asset SET ${assetFields.map((field, i) => `${field} = $${i + 1}`).join(', ')}, updated_at = NOW() WHERE id_asset = $${values.length} RETURNING *`, values);
+    const stockBefore = Number(previous.rows[0].stock);
+    const stockAfter = Number(rows[0].stock);
+    const stockDelta = stockAfter - stockBefore;
+    if (stockDelta !== 0) {
+      await client.query(
+        `INSERT INTO asset_movement (id_asset, from_location, to_location, movement_type, notes, id_pic, quantity, asset_quantity)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $7)`,
+        [rows[0].id_asset, previous.rows[0].id_ruangan, rows[0].id_ruangan, stockDelta > 0 ? 'STOCK_ADJUSTMENT_IN' : 'STOCK_ADJUSTMENT_OUT', 'Penyesuaian stok melalui edit aset', req.user.id, Math.abs(stockDelta)]
+      );
+    }
+    if (Number(previous.rows[0].id_ruangan) !== Number(rows[0].id_ruangan)) {
+      await client.query(
+        `INSERT INTO asset_movement (id_asset, from_location, to_location, movement_type, notes, id_pic, quantity, asset_quantity)
+         VALUES ($1, $2, $3, 'TRANSFER', $4, $5, 0, 0)`,
+        [rows[0].id_asset, previous.rows[0].id_ruangan, rows[0].id_ruangan, 'Perubahan lokasi melalui edit aset', req.user.id]
+      );
+    }
+    await logAudit(client, req, { action: 'UPDATE_ASSET', detail: `Memperbarui aset ${rows[0].asset_code}`, entityType: 'asset', entityId: rows[0].id_asset });
+    await client.query('COMMIT');
     res.json({ data: rows[0] });
-  } catch (error) { res.status(500).json({ message: 'Gagal mengubah aset', error: error.message }); }
+  } catch (error) { await client.query('ROLLBACK'); res.status(500).json({ message: 'Gagal mengubah aset', error: error.message }); }
+  finally { client.release(); }
 });
 
 router.delete('/assets/:id', adminOnly, async (req, res) => {
@@ -223,12 +272,12 @@ router.get('/spareparts', async (req, res) => {
     let where = '';
     if (req.query.search) { values.push(`%${req.query.search}%`); where = 'WHERE s.name ILIKE $1 OR s.supplier ILIKE $1'; }
     if (req.query.category) { values.push(req.query.category); where += `${where ? ' AND' : 'WHERE'} s.id_category = $${values.length}`; }
-    const { rows } = await db.query(`SELECT s.*, c.name AS category_name, s.stock <= s.min_stock AS low_stock FROM sparepart s LEFT JOIN sparepart_category c ON c.id = s.id_category ${where} ORDER BY s.id DESC`, values);
+    const { rows } = await db.query(`SELECT s.*, c.name AS category_name, ms.sku_code AS master_sku FROM sparepart s LEFT JOIN sparepart_category c ON c.id = s.id_category LEFT JOIN master_sparepart ms ON ms.id = s.id_master_sparepart ${where} ORDER BY s.id DESC`, values);
     res.json({ data: rows });
   } catch (error) { res.status(500).json({ message: 'Gagal mengambil sparepart', error: error.message }); }
 });
 
-const sparepartFields = ['name', 'id_category', 'stock', 'min_stock', 'unit', 'price', 'supplier', 'notes'];
+const sparepartFields = ['name', 'id_category', 'id_master_sparepart', 'stock', 'min_stock', 'unit', 'price', 'supplier', 'notes'];
 router.post('/spareparts', adminOnly, async (req, res) => {
   const client = await db.connect();
   try { 
@@ -239,25 +288,41 @@ router.post('/spareparts', adminOnly, async (req, res) => {
       if (field === 'name') return value.trim();
       if (field === 'unit') return value || 'pcs';
       if (field === 'stock' || field === 'min_stock') return value === '' || value == null ? 0 : Number(value);
-      if (['id_category', 'price', 'supplier', 'notes'].includes(field)) return value || null;
+      if (['id_category', 'id_master_sparepart', 'price', 'supplier', 'notes'].includes(field)) return value || null;
       return value ?? null;
     });
     await client.query('BEGIN');
-    const existing = await client.query(
-      'SELECT * FROM sparepart WHERE LOWER(name) = LOWER($1) AND id_category IS NOT DISTINCT FROM $2 FOR UPDATE',
-      [values[0], values[1]]
-    );
+    const existing = values[2]
+      ? await client.query('SELECT * FROM sparepart WHERE id_master_sparepart = $1 FOR UPDATE', [values[2]])
+      : await client.query(
+        'SELECT * FROM sparepart WHERE LOWER(name) = LOWER($1) AND id_category IS NOT DISTINCT FROM $2 FOR UPDATE',
+        [values[0], values[1]]
+      );
     if (existing.rowCount) {
       const previous = existing.rows[0];
       const { rows } = await client.query(
         `UPDATE sparepart SET stock = stock + $1, min_stock = $2, unit = $3, price = COALESCE($4, price), supplier = COALESCE($5, supplier), notes = COALESCE($6, notes), updated_at = NOW() WHERE id = $7 RETURNING *`,
-        [values[2], values[3], values[4], values[5], values[6], values[7], previous.id]
+        [values[3], values[4], values[5], values[6], values[7], values[8], previous.id]
       );
+      if (Number(values[3]) > 0) {
+        await client.query(
+          `INSERT INTO sparepart_transaction (id_sparepart, transaction_type, quantity, notes, id_pic, stock_before, stock_after)
+           VALUES ($1, 'MASUK', $2, $3, $4, $5, $6)`,
+          [rows[0].id, Number(values[3]), 'Penambahan stok melalui form inventaris', req.user.id, Number(previous.stock), Number(rows[0].stock)]
+        );
+      }
       await logAudit(client, req, { action: 'UPDATE_SPAREPART', detail: `Menambah stok sparepart ${rows[0].name}: ${previous.stock} → ${rows[0].stock}`, entityType: 'sparepart', entityId: rows[0].id, metadata: { changes: { stock: { before: previous.stock, after: rows[0].stock } } } });
       await client.query('COMMIT');
       return res.json({ data: rows[0], message: 'Stok sparepart yang sudah ada berhasil ditambahkan' });
     }
-    const { rows } = await client.query(`INSERT INTO sparepart (${sparepartFields.join(', ')}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`, values); 
+    const { rows } = await client.query(`INSERT INTO sparepart (${sparepartFields.join(', ')}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`, values);
+    if (Number(rows[0].stock) > 0) {
+      await client.query(
+        `INSERT INTO sparepart_transaction (id_sparepart, transaction_type, quantity, notes, id_pic, stock_before, stock_after)
+         VALUES ($1, 'MASUK', $2, $3, $4, 0, $2)`,
+        [rows[0].id, Number(rows[0].stock), 'Stok awal sparepart', req.user.id]
+      );
+    }
     await logAudit(client, req, { action: 'CREATE_SPAREPART', detail: `Menambahkan sparepart ${rows[0].name}`, entityType: 'sparepart', entityId: rows[0].id });
     await client.query('COMMIT');
     res.status(201).json({ data: rows[0] }); 
@@ -267,22 +332,40 @@ router.post('/spareparts', adminOnly, async (req, res) => {
 });
 
 router.put('/spareparts/:id', adminOnly, async (req, res) => {
-  try { 
+  const client = await db.connect();
+  try {
     if (!validateNonNegative(res, [req.body.price, req.body.stock, req.body.min_stock], 'Harga atau stok')) return;
     const values = sparepartFields.map((field) => {
       const value = req.body[field];
       if (field === 'unit') return value || 'pcs';
       if (field === 'stock' || field === 'min_stock') return value === '' || value == null ? 0 : Number(value);
-      if (['id_category', 'price', 'supplier', 'notes'].includes(field)) return value || null;
+      if (['id_category', 'id_master_sparepart', 'price', 'supplier', 'notes'].includes(field)) return value || null;
       return value ?? null;
     });
-    values.push(req.params.id); 
-    const { rows } = await db.query(`UPDATE sparepart SET ${sparepartFields.map((field, i) => `${field} =$${i + 1}`).join(', ')}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`, values); 
-    if (!rows.length) return res.status(404).json({ message: 'Sparepart tidak ditemukan' }); 
-    await logAudit(db, req, { action: 'UPDATE_SPAREPART', detail: `Memperbarui sparepart ${rows[0].name}`, entityType: 'sparepart', entityId: rows[0].id }); 
-    res.json({ data: rows[0] }); 
+    await client.query('BEGIN');
+    const previous = await client.query('SELECT * FROM sparepart WHERE id = $1 FOR UPDATE', [req.params.id]);
+    if (!previous.rowCount) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Sparepart tidak ditemukan' });
+    }
+    values.push(req.params.id);
+    const { rows } = await client.query(`UPDATE sparepart SET ${sparepartFields.map((field, i) => `${field} = $${i + 1}`).join(', ')}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`, values);
+    const stockBefore = Number(previous.rows[0].stock);
+    const stockAfter = Number(rows[0].stock);
+    const delta = stockAfter - stockBefore;
+    if (delta !== 0) {
+      await client.query(
+        `INSERT INTO sparepart_transaction (id_sparepart, transaction_type, quantity, notes, id_pic, stock_before, stock_after)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [rows[0].id, delta > 0 ? 'MASUK' : 'KELUAR', Math.abs(delta), 'Penyesuaian stok melalui edit sparepart', req.user.id, stockBefore, stockAfter]
+      );
+    }
+    await logAudit(client, req, { action: 'UPDATE_SPAREPART', detail: `Memperbarui sparepart ${rows[0].name}`, entityType: 'sparepart', entityId: rows[0].id });
+    await client.query('COMMIT');
+    res.json({ data: rows[0] });
   }
-  catch (error) { res.status(500).json({ message: 'Gagal mengubah sparepart', error: error.message }); }
+  catch (error) { await client.query('ROLLBACK'); res.status(500).json({ message: 'Gagal mengubah sparepart', error: error.message }); }
+  finally { client.release(); }
 });
 
 router.delete('/spareparts/:id', adminOnly, async (req, res) => {
@@ -294,16 +377,25 @@ router.get('/movements', async (_req, res) => { try { const { rows } = await db.
 router.post('/movements', workRoles, async (req, res) => {
   const client = await db.connect();
   try {
-    const { id_asset, id_sparepart, id_user, from_location, to_location, movement_type, movement_date, condition, notes, id_pic, asset_quantity = 0, sparepart_quantity = 0 } = req.body;
+    const { id_asset, id_sparepart, id_user, from_location, to_location, movement_type, movement_date, condition, notes, id_pic, id_tiket, asset_quantity = 0, sparepart_quantity = 0 } = req.body;
     const assetSelected = positiveInt(id_asset); const sparepartSelected = positiveInt(id_sparepart);
     const assetQty = Number(asset_quantity || 0); const partQty = Number(sparepart_quantity || 0);
     if ((!assetSelected && !sparepartSelected) || !movement_type) return res.status(400).json({ message: 'Pilih aset, sparepart, atau keduanya' });
     if ((assetSelected && !positiveInt(assetQty)) || (sparepartSelected && !positiveInt(partQty))) return res.status(400).json({ message: 'Jumlah setiap item harus lebih dari nol' });
     await client.query('BEGIN');
     let assetName = null; let partName = null;
-    if (assetSelected) { const asset = await client.query('SELECT asset_code, stock FROM asset WHERE id_asset = $1 FOR UPDATE', [id_asset]); if (!asset.rowCount) return res.status(404).json({ message: 'Aset tidak ditemukan' }); if (Number(asset.rows[0].stock) < assetQty) return res.status(400).json({ message: 'Stok aset tidak mencukupi' }); assetName = asset.rows[0].asset_code; await client.query('UPDATE asset SET stock = stock - $1, id_user = COALESCE($2, id_user), id_ruangan = COALESCE($3, id_ruangan), condition = COALESCE($4, condition), updated_at = NOW() WHERE id_asset = $5', [assetQty, id_user || null, to_location || null, condition || null, id_asset]); }
-    if (sparepartSelected) { const part = await client.query('SELECT name, stock FROM sparepart WHERE id = $1 FOR UPDATE', [id_sparepart]); if (!part.rowCount) return res.status(404).json({ message: 'Sparepart tidak ditemukan' }); if (Number(part.rows[0].stock) < partQty) return res.status(400).json({ message: 'Stok sparepart tidak mencukupi' }); partName = part.rows[0].name; await client.query('UPDATE sparepart SET stock = stock - $1, updated_at = NOW() WHERE id = $2', [partQty, id_sparepart]); }
-    const result = await client.query('INSERT INTO asset_movement (id_asset, id_sparepart, id_user, from_location, to_location, movement_type, movement_date, condition, notes, id_pic, quantity, asset_quantity, sparepart_quantity) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *', [assetSelected ? id_asset : null, sparepartSelected ? id_sparepart : null, id_user || null, from_location || null, to_location || null, movement_type, dateValue(movement_date), condition || null, notes || null, id_pic || req.user.id, assetQty + partQty, assetQty, partQty]);
+    if (assetSelected) { const asset = await client.query('SELECT asset_code, stock FROM asset WHERE id_asset = $1 FOR UPDATE', [id_asset]); if (!asset.rowCount) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Aset tidak ditemukan' }); } if (Number(asset.rows[0].stock) < assetQty) { await client.query('ROLLBACK'); return res.status(400).json({ message: 'Stok aset tidak mencukupi' }); } assetName = asset.rows[0].asset_code; await client.query('UPDATE asset SET stock = stock - $1, id_user = COALESCE($2, id_user), id_ruangan = COALESCE($3, id_ruangan), condition = COALESCE($4, condition), updated_at = NOW() WHERE id_asset = $5', [assetQty, id_user || null, to_location || null, condition || null, id_asset]); }
+    let partStockBefore = null;
+    let partStockAfter = null;
+    if (sparepartSelected) { const part = await client.query('SELECT name, stock FROM sparepart WHERE id = $1 FOR UPDATE', [id_sparepart]); if (!part.rowCount) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Sparepart tidak ditemukan' }); } if (Number(part.rows[0].stock) < partQty) { await client.query('ROLLBACK'); return res.status(400).json({ message: 'Stok sparepart tidak mencukupi' }); } partName = part.rows[0].name; partStockBefore = Number(part.rows[0].stock); partStockAfter = partStockBefore - partQty; await client.query('UPDATE sparepart SET stock = $1, updated_at = NOW() WHERE id = $2', [partStockAfter, id_sparepart]); }
+    const result = await client.query('INSERT INTO asset_movement (id_asset, id_sparepart, id_user, from_location, to_location, movement_type, movement_date, condition, notes, id_pic, quantity, asset_quantity, sparepart_quantity, id_tiket) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *', [assetSelected ? id_asset : null, sparepartSelected ? id_sparepart : null, id_user || null, from_location || null, to_location || null, movement_type, dateValue(movement_date), condition || null, notes || null, id_pic || req.user.id, assetQty + partQty, assetQty, partQty, id_tiket || null]);
+    if (sparepartSelected) {
+      await client.query(
+        `INSERT INTO sparepart_transaction (id_sparepart, transaction_type, quantity, id_tiket, notes, id_pic, stock_before, stock_after)
+         VALUES ($1, 'KELUAR', $2, $3, $4, $5, $6, $7)`,
+        [id_sparepart, partQty, id_tiket || null, notes || `Pemakaian pada pergerakan ${movement_type}`, id_pic || req.user.id, partStockBefore, partStockAfter]
+      );
+    }
     const usedItems = [
       assetSelected && { type: 'Aset', id: Number(id_asset), name: assetName, quantity: assetQty },
       sparepartSelected && { type: 'Sparepart', id: Number(id_sparepart), name: partName, quantity: partQty },
@@ -322,10 +414,10 @@ router.post('/transactions', workRoles, async (req, res) => {
     if (!positiveInt(id_sparepart) || !['MASUK', 'KELUAR'].includes(transaction_type) || !positiveInt(quantity)) return res.status(400).json({ message: 'Sparepart, jenis transaksi, dan jumlah wajib valid' });
     await client.query('BEGIN');
     const stock = await client.query('SELECT name, stock FROM sparepart WHERE id = $1 FOR UPDATE', [id_sparepart]);
-    if (!stock.rows.length) return res.status(404).json({ message: 'Sparepart tidak ditemukan' });
+    if (!stock.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Sparepart tidak ditemukan' }); }
     const nextStock = Number(stock.rows[0].stock) + (transaction_type === 'MASUK' ? Number(quantity) : -Number(quantity));
-    if (nextStock < 0) return res.status(400).json({ message: 'Stok tidak mencukupi' });
-    const result = await client.query('INSERT INTO sparepart_transaction (id_sparepart, transaction_type, quantity, transaction_date, id_tiket, notes, id_pic) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *', [id_sparepart, transaction_type, quantity, dateValue(transaction_date), id_tiket || null, notes || null, id_pic || req.user.id]);
+    if (nextStock < 0) { await client.query('ROLLBACK'); return res.status(400).json({ message: 'Stok tidak mencukupi' }); }
+    const result = await client.query('INSERT INTO sparepart_transaction (id_sparepart, transaction_type, quantity, transaction_date, id_tiket, notes, id_pic, stock_before, stock_after) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *', [id_sparepart, transaction_type, quantity, dateValue(transaction_date), id_tiket || null, notes || null, id_pic || req.user.id, Number(stock.rows[0].stock), nextStock]);
     await client.query('UPDATE sparepart SET stock = $1, updated_at = NOW() WHERE id = $2', [nextStock, id_sparepart]);
     await logAudit(client, req, { action: 'UPDATE_STOCK_SPAREPART', detail: `${transaction_type === 'MASUK' ? 'Menambah' : 'Mengurangi'} stok ${stock.rows[0].name} sebanyak ${quantity}`, entityType: 'sparepart', entityId: id_sparepart, metadata: { transaction_type, quantity: Number(quantity), before_stock: Number(stock.rows[0].stock), after_stock: nextStock, ticket_id: id_tiket || null } });
     await client.query('COMMIT');
@@ -344,14 +436,148 @@ async function maintenanceTicketId(value) {
 }
 
 router.get('/maintenance', async (_req, res) => { try { const { rows } = await db.query(`${maintenanceSelect} ORDER BY m.start_date DESC`); res.json({ data: rows }); } catch (error) { res.status(500).json({ message: 'Gagal mengambil maintenance', error: error.message }); } });
-router.post('/maintenance', workRoles, async (req, res) => { try { if (!validateNonNegative(res, [req.body.cost], 'Biaya')) return; const ticketId = await maintenanceTicketId(req.body.id_tiket); if (ticketId === undefined) return res.status(400).json({ message: 'Tiket yang dipilih tidak valid atau tidak ditemukan' }); const values = maintenanceFields.map((field) => field === 'id_tiket' ? ticketId : req.body[field] ?? (field === 'id_pic' ? req.user.id : field === 'status' ? 'scheduled' : field === 'cost' ? 0 : null)); const { rows } = await db.query(`INSERT INTO maintenance (${maintenanceFields.join(', ')}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`, values); await logAudit(db, req, { action: 'CREATE_MAINTENANCE', detail: `Mencatat maintenance aset #${rows[0].id_asset}${ticketId ? ` untuk tiket HD-${ticketId}` : ''}`, entityType: 'maintenance', entityId: rows[0].id, metadata: { ticket_id: ticketId } }); res.status(201).json({ data: rows[0] }); } catch (error) { res.status(500).json({ message: 'Gagal mencatat maintenance', error: error.message }); } });
-router.put('/maintenance/:id', workRoles, async (req, res) => { try { if (!validateNonNegative(res, [req.body.cost], 'Biaya')) return; const ticketId = await maintenanceTicketId(req.body.id_tiket); if (ticketId === undefined) return res.status(400).json({ message: 'Tiket yang dipilih tidak valid atau tidak ditemukan' }); const values = maintenanceFields.map((field) => field === 'id_tiket' ? ticketId : req.body[field] ?? null); values.push(req.params.id); const { rows } = await db.query(`UPDATE maintenance SET ${maintenanceFields.map((field, i) => `${field} =$${i + 1}`).join(', ')}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`, values); if (!rows.length) return res.status(404).json({ message: 'Maintenance tidak ditemukan' }); await logAudit(db, req, { action: 'UPDATE_MAINTENANCE', detail: `Memperbarui maintenance aset #${rows[0].id_asset}`, entityType: 'maintenance', entityId: rows[0].id, metadata: { ticket_id: ticketId } }); res.json({ data: rows[0] }); } catch (error) { res.status(500).json({ message: 'Gagal mengubah maintenance', error: error.message }); } });
+router.post('/maintenance', workRoles, async (req, res) => {
+  const client = await db.connect();
+  try {
+    if (!validateNonNegative(res, [req.body.cost], 'Biaya')) return;
+    if (!validateMaintenanceValues(res, req.body)) return;
+    const ticketId = await maintenanceTicketId(req.body.id_tiket);
+    if (ticketId === undefined) return res.status(400).json({ message: 'Tiket yang dipilih tidak valid atau tidak ditemukan' });
+    const values = maintenanceFields.map((field) => field === 'id_tiket' ? ticketId : req.body[field] ?? (field === 'id_pic' ? req.user.id : field === 'status' ? 'scheduled' : field === 'cost' ? 0 : null));
+    await client.query('BEGIN');
+    const { rows } = await client.query(`INSERT INTO maintenance (${maintenanceFields.join(', ')}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`, values);
+    if (ticketId) {
+      await client.query('INSERT INTO ticket_asset (id_tiket, id_asset) VALUES ($1, $2) ON CONFLICT DO NOTHING', [ticketId, rows[0].id_asset]);
+    }
+    await logAudit(client, req, { action: 'CREATE_MAINTENANCE', detail: `Mencatat maintenance aset #${rows[0].id_asset}${ticketId ? ` untuk tiket HD-${ticketId}` : ''}`, entityType: 'maintenance', entityId: rows[0].id, metadata: { ticket_id: ticketId } });
+    await client.query('COMMIT');
+    res.status(201).json({ data: rows[0] });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ message: 'Gagal mencatat maintenance', error: error.message });
+  } finally { client.release(); }
+});
+
+router.put('/maintenance/:id', workRoles, async (req, res) => {
+  const client = await db.connect();
+  try {
+    if (!validateNonNegative(res, [req.body.cost], 'Biaya')) return;
+    if (!validateMaintenanceValues(res, req.body)) return;
+    const ticketId = await maintenanceTicketId(req.body.id_tiket);
+    if (ticketId === undefined) return res.status(400).json({ message: 'Tiket yang dipilih tidak valid atau tidak ditemukan' });
+    const values = maintenanceFields.map((field) => field === 'id_tiket' ? ticketId : req.body[field] ?? null);
+    values.push(req.params.id);
+    await client.query('BEGIN');
+    const { rows } = await client.query(`UPDATE maintenance SET ${maintenanceFields.map((field, i) => `${field} = $${i + 1}`).join(', ')}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`, values);
+    if (!rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Maintenance tidak ditemukan' });
+    }
+    if (ticketId) {
+      await client.query('INSERT INTO ticket_asset (id_tiket, id_asset) VALUES ($1, $2) ON CONFLICT DO NOTHING', [ticketId, rows[0].id_asset]);
+    }
+    await logAudit(client, req, { action: 'UPDATE_MAINTENANCE', detail: `Memperbarui maintenance aset #${rows[0].id_asset}`, entityType: 'maintenance', entityId: rows[0].id, metadata: { ticket_id: ticketId } });
+    await client.query('COMMIT');
+    res.json({ data: rows[0] });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ message: 'Gagal mengubah maintenance', error: error.message });
+  } finally { client.release(); }
+});
 router.delete('/maintenance/:id', workRoles, async (req, res) => { try { const result = await db.query('DELETE FROM maintenance WHERE id = $1 RETURNING id, id_asset', [req.params.id]); if (!result.rowCount) return res.status(404).json({ message: 'Maintenance tidak ditemukan' }); await logAudit(db, req, { action: 'DELETE_MAINTENANCE', detail: `Menghapus maintenance aset #${result.rows[0].id_asset}`, entityType: 'maintenance', entityId: result.rows[0].id }); res.json({ message: 'Maintenance berhasil dihapus' }); } catch (error) { res.status(500).json({ message: 'Gagal menghapus maintenance', error: error.message }); } });
 
 const procurementFields = ['po_number', 'request_date', 'approval_date', 'received_date', 'supplier', 'status', 'total_cost', 'notes'];
+async function recordProcurementReceipt(client, req, procurementId) {
+  const { rows: details } = await client.query(
+    'SELECT * FROM procurement_detail WHERE id_procurement = $1 ORDER BY id',
+    [procurementId]
+  );
+
+  for (const detail of details) {
+    if (positiveInt(detail.id_sparepart)) {
+      const stock = await client.query(
+        'SELECT name, stock FROM sparepart WHERE id = $1 FOR UPDATE',
+        [detail.id_sparepart]
+      );
+      if (!stock.rowCount) throw new Error(`Sparepart pada detail PO ${detail.id} tidak ditemukan`);
+      const before = Number(stock.rows[0].stock);
+      const after = before + Number(detail.quantity);
+      await client.query('UPDATE sparepart SET stock = $1, updated_at = NOW() WHERE id = $2', [after, detail.id_sparepart]);
+      await client.query(
+        `INSERT INTO sparepart_transaction (id_sparepart, transaction_type, quantity, notes, id_pic, id_procurement, stock_before, stock_after)
+         VALUES ($1, 'MASUK', $2, $3, $4, $5, $6, $7)`,
+        [detail.id_sparepart, Number(detail.quantity), `Penerimaan PO ${procurementId}`, req.user.id, procurementId, before, after]
+      );
+    }
+
+    if (positiveInt(detail.id_asset)) {
+      const asset = await client.query(
+        'SELECT asset_code, stock, id_ruangan FROM asset WHERE id_asset = $1 FOR UPDATE',
+        [detail.id_asset]
+      );
+      if (!asset.rowCount) throw new Error(`Aset pada detail PO ${detail.id} tidak ditemukan`);
+      await client.query(
+        'UPDATE asset SET stock = stock + $1, updated_at = NOW() WHERE id_asset = $2',
+        [Number(detail.quantity), detail.id_asset]
+      );
+      await client.query(
+        `INSERT INTO asset_movement (id_asset, to_location, movement_type, notes, id_pic, quantity, asset_quantity, id_procurement)
+         VALUES ($1, $2, 'RECEIPT', $3, $4, $5, $5, $6)`,
+        [detail.id_asset, asset.rows[0].id_ruangan, `Penerimaan PO ${procurementId} (${asset.rows[0].asset_code})`, req.user.id, Number(detail.quantity), procurementId]
+      );
+    }
+  }
+}
+
 router.get('/procurement', async (_req, res) => { try { const procurements = await db.query('SELECT * FROM procurement ORDER BY request_date DESC'); const details = await db.query('SELECT * FROM procurement_detail ORDER BY id'); res.json({ data: procurements.rows.map((item) => ({ ...item, details: details.rows.filter((detail) => detail.id_procurement === item.id) })) }); } catch (error) { res.status(500).json({ message: 'Gagal mengambil pengadaan', error: error.message }); } });
-router.post('/procurement', adminOnly, async (req, res) => { const client = await db.connect(); try { const { details = [] } = req.body; if (!validateNonNegative(res, [req.body.total_cost, ...details.flatMap((item) => [item.quantity, item.unit_price])], 'Jumlah atau harga')) return; const values = procurementFields.map((field) => req.body[field] ?? (field === 'status' ? 'draft' : field === 'total_cost' ? details.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unit_price || 0), 0) : null)); await client.query('BEGIN'); const procurement = await client.query(`INSERT INTO procurement (${procurementFields.join(', ')}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`, values); for (const detail of details) { await client.query('INSERT INTO procurement_detail (id_procurement, id_asset, id_sparepart, item_name, quantity, unit_price, notes) VALUES ($1,$2,$3,$4,$5,$6,$7)', [procurement.rows[0].id, detail.id_asset || null, detail.id_sparepart || null, detail.item_name, detail.quantity, detail.unit_price, detail.notes || null]); if (procurement.rows[0].status === 'received' && positiveInt(detail.id_sparepart)) await client.query('UPDATE sparepart SET stock = stock + $1, updated_at = NOW() WHERE id = $2', [Number(detail.quantity), detail.id_sparepart]); if (procurement.rows[0].status === 'received' && positiveInt(detail.id_asset)) await client.query('UPDATE asset SET stock = stock + $1, updated_at = NOW() WHERE id_asset = $2', [Number(detail.quantity), detail.id_asset]); } await logAudit(client, req, { action: 'CREATE_PROCUREMENT', detail: `Membuat pengadaan ${procurement.rows[0].po_number}`, entityType: 'procurement', entityId: procurement.rows[0].id }); await client.query('COMMIT'); res.status(201).json({ data: procurement.rows[0] }); } catch (error) { await client.query('ROLLBACK'); res.status(500).json({ message: 'Gagal mencatat pengadaan', error: error.message }); } finally { client.release(); } });
-router.put('/procurement/:id', adminOnly, async (req, res) => { try { if (!validateNonNegative(res, [req.body.total_cost], 'Total biaya')) return; const values = procurementFields.map((field) => req.body[field] ?? null); values.push(req.params.id); const { rows } = await db.query(`UPDATE procurement SET ${procurementFields.map((field, i) => `${field} =$${i + 1}`).join(', ')}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`, values); if (!rows.length) return res.status(404).json({ message: 'Pengadaan tidak ditemukan' }); await logAudit(db, req, { action: 'UPDATE_PROCUREMENT', detail: `Memperbarui pengadaan ${rows[0].po_number}`, entityType: 'procurement', entityId: rows[0].id }); res.json({ data: rows[0] }); } catch (error) { res.status(500).json({ message: 'Gagal mengubah pengadaan', error: error.message }); } });
+router.post('/procurement', adminOnly, async (req, res) => {
+  const client = await db.connect();
+  try {
+    const { details = [] } = req.body;
+    if (!Array.isArray(details) || !validateNonNegative(res, [req.body.total_cost, ...details.flatMap((item) => [item.quantity, item.unit_price])], 'Jumlah atau harga')) return;
+    const values = procurementFields.map((field) => req.body[field] ?? (field === 'status' ? 'draft' : field === 'total_cost' ? details.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unit_price || 0), 0) : null));
+    await client.query('BEGIN');
+    const procurement = await client.query(`INSERT INTO procurement (${procurementFields.join(', ')}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`, values);
+    for (const detail of details) {
+      await client.query(
+        'INSERT INTO procurement_detail (id_procurement, id_asset, id_sparepart, item_name, quantity, unit_price, notes) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        [procurement.rows[0].id, detail.id_asset || null, detail.id_sparepart || null, detail.item_name, detail.quantity, detail.unit_price, detail.notes || null]
+      );
+    }
+    if (procurement.rows[0].status === 'received') await recordProcurementReceipt(client, req, procurement.rows[0].id);
+    await logAudit(client, req, { action: 'CREATE_PROCUREMENT', detail: `Membuat pengadaan ${procurement.rows[0].po_number}`, entityType: 'procurement', entityId: procurement.rows[0].id });
+    await client.query('COMMIT');
+    res.status(201).json({ data: procurement.rows[0] });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ message: 'Gagal mencatat pengadaan', error: error.message });
+  } finally { client.release(); }
+});
+
+router.put('/procurement/:id', adminOnly, async (req, res) => {
+  const client = await db.connect();
+  try {
+    if (!validateNonNegative(res, [req.body.total_cost], 'Total biaya')) return;
+    await client.query('BEGIN');
+    const previous = await client.query('SELECT status FROM procurement WHERE id = $1 FOR UPDATE', [req.params.id]);
+    if (!previous.rowCount) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Pengadaan tidak ditemukan' });
+    }
+    const values = procurementFields.map((field) => req.body[field] ?? null);
+    values.push(req.params.id);
+    const { rows } = await client.query(`UPDATE procurement SET ${procurementFields.map((field, i) => `${field} = $${i + 1}`).join(', ')}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`, values);
+    if (previous.rows[0].status !== 'received' && rows[0].status === 'received') {
+      await recordProcurementReceipt(client, req, rows[0].id);
+    }
+    await logAudit(client, req, { action: 'UPDATE_PROCUREMENT', detail: `Memperbarui pengadaan ${rows[0].po_number}`, entityType: 'procurement', entityId: rows[0].id });
+    await client.query('COMMIT');
+    res.json({ data: rows[0] });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ message: 'Gagal mengubah pengadaan', error: error.message });
+  } finally { client.release(); }
+});
 router.delete('/procurement/:id', adminOnly, async (req, res) => { try { const result = await db.query('DELETE FROM procurement WHERE id = $1 RETURNING id, po_number', [req.params.id]); if (!result.rowCount) return res.status(404).json({ message: 'Pengadaan tidak ditemukan' }); await logAudit(db, req, { action: 'DELETE_PROCUREMENT', detail: `Menghapus pengadaan ${result.rows[0].po_number}`, entityType: 'procurement', entityId: result.rows[0].id }); res.json({ message: 'Pengadaan berhasil dihapus' }); } catch (error) { res.status(500).json({ message: 'Gagal menghapus pengadaan', error: error.message }); } });
 
 module.exports = router;

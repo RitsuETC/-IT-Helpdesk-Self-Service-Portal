@@ -149,7 +149,7 @@ router.get("/", verifyToken, async (req, res) => {
 // GET pilihan kategori, ruangan, dan prioritas
 router.get("/meta/options", verifyToken, async (_req, res) => {
   try {
-    const [categories, rooms, priorities, technicians] = await Promise.all([
+    const [categories, rooms, priorities, technicians, assets] = await Promise.all([
       db.query(
         "SELECT id, nama_kategori FROM knowledge_kategori ORDER BY nama_kategori"
       ),
@@ -163,6 +163,9 @@ router.get("/meta/options", verifyToken, async (_req, res) => {
         'SELECT id, "Nama" AS nama, email FROM login WHERE role = $1 ORDER BY "Nama"',
         ['teknisi']
       ),
+      db.query(
+        "SELECT id_asset, asset_code, brand_model FROM asset WHERE status <> 'retired' ORDER BY asset_code"
+      ),
     ]);
 
     res.json({
@@ -171,6 +174,7 @@ router.get("/meta/options", verifyToken, async (_req, res) => {
         rooms: rooms.rows,
         priorities: priorities.rows,
         technicians: technicians.rows,
+        assets: assets.rows,
       },
     });
   } catch (error) {
@@ -586,6 +590,18 @@ router.get("/:id", verifyToken, async (req, res) => {
           JOIN asset a ON a.id_asset = m.id_asset
           WHERE m.id_tiket = t.id
         ), '[]'::json) AS maintenance
+        ,COALESCE((
+          SELECT json_agg(json_build_object(
+            'id_asset', a.id_asset,
+            'asset_code', a.asset_code,
+            'brand_model', a.brand_model,
+            'status', a.status,
+            'condition', a.condition
+          ) ORDER BY a.asset_code)
+          FROM ticket_asset ta
+          JOIN asset a ON a.id_asset = ta.id_asset
+          WHERE ta.id_tiket = t.id
+        ), '[]'::json) AS related_assets
       FROM tiket t
       JOIN unit u ON u.id = t.ruangan
       JOIN knowledge_kategori k ON k.id = t.categori
@@ -724,6 +740,8 @@ router.patch(
 
 // POST membuat tiket
 router.post("/", verifyToken, async (req, res) => {
+  const client = await db.connect();
+  let ticketTransactionOpen = false;
   try {
     const {
       judul,
@@ -733,6 +751,11 @@ router.post("/", verifyToken, async (req, res) => {
       prioritas,
       deskripsi,
     } = req.body;
+    const rawAssetIds = req.body.asset_ids ?? [];
+    if (!Array.isArray(rawAssetIds) || rawAssetIds.some((id) => !/^\d+$/.test(String(id)) || Number(id) < 1)) {
+      return res.status(400).json({ message: "Daftar aset tiket tidak valid" });
+    }
+    const assetIds = [...new Set(rawAssetIds.map(Number))];
 
     const room = ruangan ?? lokasi;
 
@@ -797,7 +820,19 @@ router.post("/", verifyToken, async (req, res) => {
     `);
     const assignedTechnician = technicianResult.rows[0] || null;
 
-    const { rows } = await db.query(
+    if (assetIds.length) {
+      const selectedAssets = await client.query(
+        'SELECT id_asset FROM asset WHERE id_asset = ANY($1::int[])',
+        [assetIds]
+      );
+      if (selectedAssets.rowCount !== assetIds.length) {
+        return res.status(400).json({ message: "Satu atau lebih aset tidak ditemukan" });
+      }
+    }
+
+    await client.query('BEGIN');
+    ticketTransactionOpen = true;
+    const { rows } = await client.query(
       `INSERT INTO tiket
         (
           judul,
@@ -835,6 +870,14 @@ router.post("/", verifyToken, async (req, res) => {
         assignedTechnician ? 'ASSIGNED' : 'NEW',
       ]
     );
+    for (const assetId of assetIds) {
+      await client.query(
+        'INSERT INTO ticket_asset (id_tiket, id_asset) VALUES ($1, $2)',
+        [rows[0].id, assetId]
+      );
+    }
+    await client.query('COMMIT');
+    ticketTransactionOpen = false;
 
     try {
       const notifMsg = assignedTechnician
@@ -863,12 +906,15 @@ router.post("/", verifyToken, async (req, res) => {
       ticket: rows[0],
     });
   } catch (error) {
+    if (ticketTransactionOpen) await client.query('ROLLBACK');
     console.error("Create ticket error:", error);
 
     res.status(500).json({
       message: `Gagal membuat tiket: ${error.message}`,
       error: error.message,
     });
+  } finally {
+    client.release();
   }
 });
 

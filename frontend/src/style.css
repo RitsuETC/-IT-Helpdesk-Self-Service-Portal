@@ -1,3 +1,5 @@
+@import 'tailwindcss';
+
 :root {
   font-family: Arial, sans-serif;
   color: #172033;
@@ -2972,6 +2974,38 @@ td {
 
 .inventory-section-title input::placeholder {
   color: #9aa6b2;
+}
+
+.asset-search-control {
+  flex: 1 1 280px;
+  min-width: min(280px, 100%);
+}
+
+.asset-search-control input {
+  width: 100%;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.inventory-modal-close {
+  display: inline-grid;
+  flex: 0 0 36px;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #475569;
+}
+
+.inventory-modal-close:hover {
+  background: #eaf0ec;
+  color: #173d2b;
 }
 
 .inventory-section-title input:focus {
