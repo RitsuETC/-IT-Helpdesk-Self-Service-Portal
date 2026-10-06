@@ -251,7 +251,7 @@ function AuditDetailModal({ log, onClose }) {
   const currentData = log.current_data || null
   const usedItems = Array.isArray(metadata.used_items) ? metadata.used_items : []
 
-  const formatValue = (value, type) => {
+const formatValue = (value, type) => {
     if (value == null || value === '') return <span style={{ fontStyle: 'italic', opacity: 0.6 }}>- Kosong -</span>
     
     let parsedValue = value;
@@ -270,14 +270,18 @@ function AuditDetailModal({ log, onClose }) {
       return <span style={{ wordBreak: 'break-word' }}>{String(parsedValue)}</span>
     }
 
-    // Solusi: Tambahkan 'specifications' ke dalam list ignored agar data yang redundant tidak dirender berulang
+    // Bypass 'detail' yang redundant jika strukturnya hanya objek tunggal bersarang
+    if (Object.keys(parsedValue).length === 1 && parsedValue.detail) {
+        parsedValue = parsedValue.detail;
+    }
+
     const ignored = new Set(['id', 'created_at', 'updated_at', 'specifications'])
     const entries = Object.entries(parsedValue).filter(([key]) => !ignored.has(key))
     
     if (entries.length === 0) return <span style={{ fontStyle: 'italic', opacity: 0.6 }}>- Kosong -</span>
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', width: '100%' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12.5px', width: '100%' }}>
         {entries.map(([k, v]) => {
           const isNested = typeof v === 'object' || (typeof v === 'string' && v.includes('{'))
           
@@ -286,11 +290,11 @@ function AuditDetailModal({ log, onClose }) {
               display: 'flex', 
               flexDirection: isNested ? 'column' : 'row', 
               gap: isNested ? '4px' : '10px',
-              borderBottom: type === 'before' ? '1px solid rgba(254, 202, 202, 0.4)' : '1px solid rgba(187, 247, 208, 0.4)', 
-              paddingBottom: '6px',
+              borderBottom: 'none', // Menghapus border ganda per item nested agar lebih rapi
+              paddingBottom: '2px',
               paddingTop: '2px'
             }}>
-              <span style={{ fontWeight: '700', minWidth: '95px', textTransform: 'capitalize', color: type === 'before' ? '#991b1b' : '#166534', flexShrink: 0 }}>
+              <span style={{ fontWeight: '700', minWidth: '100px', textTransform: 'capitalize', color: type === 'before' ? '#991b1b' : '#166534', flexShrink: 0 }}>
                 {k.replace(/_/g, ' ')}
               </span>
               <div style={{ flex: 1, paddingLeft: isNested ? '12px' : '0', borderLeft: isNested ? (type === 'before' ? '2px solid rgba(254, 202, 202, 0.8)' : '2px solid rgba(187, 247, 208, 0.8)') : 'none' }}>
