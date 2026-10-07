@@ -44,7 +44,109 @@ function downloadCsv(fileName, headers, rows) {
 }
 function printReport(title, headers, rows) {
   const escape = (value) => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
-  printDocument(`<!doctype html><html><head><title>${escape(title)}</title><style>body{font:12px Arial;padding:28px;color:#1e293b}h1{font-size:20px;margin:0 0 6px}p{color:#64748b;margin:0 0 20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #cbd5e1;padding:8px;text-align:left}th{background:#ecfdf5;color:#065f46}@media print{body{padding:0}}</style></head><body><h1>${escape(title)}</h1><p>Dicetak ${escape(new Date().toLocaleString('id-ID'))}</p><table><thead><tr>${headers.map((header) => `<th>${escape(header)}</th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${escape(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></body></html>`)
+  
+  const htmlContent = `
+    <!doctype html>
+    <html>
+      <head>
+        <title>${escape(title)}</title>
+        <style>
+          /* Set margin 0 untuk menyembunyikan header/footer bawaan browser secara otomatis */
+          @page { size: A4 landscape; margin: 0; }
+          
+          body { 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+            /* Jarak tepi kertas dipindah ke padding body */
+            padding: 15mm; 
+            margin: 0;
+            color: #1e293b; 
+            line-height: 1.4;
+          }
+          .report-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #065f46;
+          }
+          .report-header h1 {
+            font-size: 20px;
+            margin: 0 0 6px 0;
+            color: #065f46;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+          .report-header p {
+            font-size: 11px;
+            color: #64748b;
+            margin: 0;
+          }
+          table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 11px;
+            margin-bottom: 20px;
+            table-layout: fixed; 
+          }
+          th, td {
+            border: 1px solid #cbd5e1;
+            padding: 8px 6px;
+            text-align: left;
+            vertical-align: top;
+            word-wrap: break-word; 
+            overflow-wrap: break-word;
+          }
+          th {
+            background-color: #ecfdf5;
+            color: #065f46;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 10px;
+          }
+          tbody tr:nth-child(even) {
+            background-color: #f8fafc;
+          }
+          .footer {
+            margin-top: 20px;
+            font-size: 10px;
+            color: #94a3b8;
+            text-align: right;
+            border-top: 1px dashed #cbd5e1;
+            padding-top: 8px;
+          }
+          @media print {
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="report-header">
+          <h1>${escape(title)}</h1>
+          <p>Sistem Informasi Inventaris IT Helpdesk</p>
+        </div>
+        
+        <table>
+          <thead>
+            <tr>
+              ${headers.map((header) => `<th>${escape(header)}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((row) => `
+              <tr>
+                ${row.map((cell) => `<td>${escape(cell)}</td>`).join('')}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        
+        <div class="footer">
+          Dicetak pada: ${escape(new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' }))}
+        </div>
+      </body>
+    </html>
+  `;
+  
+  printDocument(htmlContent);
 }
 function printDocument(html) {
   const frame = document.createElement('iframe')
