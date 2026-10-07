@@ -284,8 +284,9 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           <div style={{ display: 'grid', gap: '10px' }}>
             {maintenanceRecords.map((record) => (
               <article key={record.id} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '12px', fontSize: '12px', color: '#1f2937' }}>
-                <strong style={{ color: '#065f46' }}>{record.asset_code}{record.brand_model ? ` — ${record.brand_model}` : ''}</strong>
+                <strong style={{ color: '#065f46' }}>{record.asset_code ? `${record.asset_code}${record.brand_model ? ` — ${record.brand_model}` : ''}` : record.sparepart_name || 'Item maintenance'}</strong>
                 <div style={{ marginTop: '6px', display: 'grid', gap: '3px' }}>
+                  {record.sparepart_name && <span><b>Sparepart:</b> {record.sparepart_name} · {record.sparepart_quantity || 1} unit</span>}
                   <span><b>Maintenance:</b> {record.maintenance_type || '-'}</span>
                   <span><b>Status:</b> {record.status || '-'}</span>
                   <span><b>Mulai:</b> {record.start_date ? new Date(record.start_date).toLocaleString('id-ID') : '-'}</span>

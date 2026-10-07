@@ -14,12 +14,26 @@ const positiveInt = (value) => Number.isInteger(Number(value)) && Number(value) 
 const nonNegativeNumber = (value) => value === '' || value == null || (Number.isFinite(Number(value)) && Number(value) >= 0);
 const maintenanceTypes = new Set(['Preventive', 'Corrective', 'Inspection']);
 const maintenanceStatuses = new Set(['scheduled', 'in_progress', 'completed', 'cancelled']);
+function maintenanceTargets(body) {
+  const idAsset = body.id_asset === '' || body.id_asset == null ? null : Number(body.id_asset);
+  const idSparepart = body.id_sparepart === '' || body.id_sparepart == null ? null : Number(body.id_sparepart);
+  const sparepartQuantity = Number(body.sparepart_quantity || 1);
+  if ((idAsset != null && !positiveInt(idAsset)) || (idSparepart != null && !positiveInt(idSparepart))) return null;
+  if (idAsset == null && idSparepart == null) return null;
+  if (idSparepart != null && !positiveInt(sparepartQuantity)) return null;
+  return { idAsset, idSparepart, sparepartQuantity };
+}
+
 const validateNonNegative = (res, values, label = 'Harga') => {
   if (values.every(nonNegativeNumber)) return true;
   res.status(400).json({ message: `${label} tidak boleh bernilai negatif atau tidak valid` });
   return false;
 };
 const validateMaintenanceValues = (res, body) => {
+  if (!maintenanceTargets(body)) {
+    res.status(400).json({ message: 'Pilih minimal satu aset atau sparepart dan isi jumlah sparepart dengan benar' });
+    return false;
+  }
   if (!maintenanceTypes.has(body.maintenance_type)) {
     res.status(400).json({ message: 'Jenis maintenance tidak valid' });
     return false;
@@ -425,8 +439,40 @@ router.post('/transactions', workRoles, async (req, res) => {
   } catch (error) { await client.query('ROLLBACK'); res.status(500).json({ message: 'Gagal mencatat transaksi sparepart', error: error.message }); } finally { client.release(); }
 });
 
-const maintenanceFields = ['id_asset', 'id_tiket', 'maintenance_type', 'start_date', 'end_date', 'complaint', 'action', 'result', 'cost', 'status', 'vendor', 'id_pic', 'notes'];
-const maintenanceSelect = `SELECT m.*, a.asset_code, a.brand_model, l."Nama" AS pic_name, tk.judul AS ticket_title FROM maintenance m JOIN asset a ON a.id_asset = m.id_asset LEFT JOIN login l ON l.id = m.id_pic LEFT JOIN tiket tk ON tk.id = m.id_tiket`;
+const maintenanceFields = ['id_asset', 'id_sparepart', 'sparepart_quantity', 'id_tiket', 'maintenance_type', 'start_date', 'end_date', 'complaint', 'action', 'result', 'cost', 'status', 'vendor', 'id_pic', 'notes'];
+const maintenanceSelect = `SELECT m.*, a.asset_code, a.brand_model, s.name AS sparepart_name, l."Nama" AS pic_name, tk.judul AS ticket_title FROM maintenance m LEFT JOIN asset a ON a.id_asset = m.id_asset LEFT JOIN sparepart s ON s.id = m.id_sparepart LEFT JOIN login l ON l.id = m.id_pic LEFT JOIN tiket tk ON tk.id = m.id_tiket`;
+
+async function applyMaintenanceSparepartDelta(client, req, { oldPartId, oldQuantity = 0, newPartId, newQuantity = 0, ticketId, maintenanceId }) {
+  const deltas = new Map();
+  if (positiveInt(oldPartId)) deltas.set(Number(oldPartId), Number(oldQuantity));
+  if (positiveInt(newPartId)) deltas.set(Number(newPartId), (deltas.get(Number(newPartId)) || 0) - Number(newQuantity));
+  const partIds = [...deltas.keys()].sort((left, right) => left - right);
+  if (!partIds.length) return;
+
+  const { rows } = await client.query(
+    'SELECT id, name, stock FROM sparepart WHERE id = ANY($1::int[]) ORDER BY id FOR UPDATE',
+    [partIds]
+  );
+  if (rows.length !== partIds.length) throw new Error('Sparepart maintenance tidak ditemukan');
+
+  for (const part of rows) {
+    const delta = deltas.get(Number(part.id));
+    if (!delta) continue;
+    const before = Number(part.stock);
+    const after = before + delta;
+    if (after < 0) {
+      const error = new Error(`Stok ${part.name} tidak mencukupi`);
+      error.code = 'INSUFFICIENT_SPAREPART_STOCK';
+      throw error;
+    }
+    await client.query('UPDATE sparepart SET stock = $1, updated_at = NOW() WHERE id = $2', [after, part.id]);
+    await client.query(
+      `INSERT INTO sparepart_transaction (id_sparepart, transaction_type, quantity, id_tiket, notes, id_pic, stock_before, stock_after)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [part.id, delta > 0 ? 'MASUK' : 'KELUAR', Math.abs(delta), ticketId || null, `Penyesuaian pemakaian maintenance #${maintenanceId}`, req.user.id, before, after]
+    );
+  }
+}
 
 async function maintenanceTicketId(value) {
   if (value === '' || value == null) return null;
@@ -441,20 +487,28 @@ router.post('/maintenance', workRoles, async (req, res) => {
   try {
     if (!validateNonNegative(res, [req.body.cost], 'Biaya')) return;
     if (!validateMaintenanceValues(res, req.body)) return;
+    const targets = maintenanceTargets(req.body);
     const ticketId = await maintenanceTicketId(req.body.id_tiket);
     if (ticketId === undefined) return res.status(400).json({ message: 'Tiket yang dipilih tidak valid atau tidak ditemukan' });
-    const values = maintenanceFields.map((field) => field === 'id_tiket' ? ticketId : req.body[field] ?? (field === 'id_pic' ? req.user.id : field === 'status' ? 'scheduled' : field === 'cost' ? 0 : null));
+    const values = maintenanceFields.map((field) => {
+      if (field === 'id_asset') return targets.idAsset;
+      if (field === 'id_sparepart') return targets.idSparepart;
+      if (field === 'sparepart_quantity') return targets.sparepartQuantity;
+      if (field === 'id_tiket') return ticketId;
+      return req.body[field] ?? (field === 'id_pic' ? req.user.id : field === 'status' ? 'scheduled' : field === 'cost' ? 0 : null);
+    });
     await client.query('BEGIN');
     const { rows } = await client.query(`INSERT INTO maintenance (${maintenanceFields.join(', ')}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`, values);
-    if (ticketId) {
+    await applyMaintenanceSparepartDelta(client, req, { newPartId: targets.idSparepart, newQuantity: targets.sparepartQuantity, ticketId, maintenanceId: rows[0].id });
+    if (ticketId && targets.idAsset) {
       await client.query('INSERT INTO ticket_asset (id_tiket, id_asset) VALUES ($1, $2) ON CONFLICT DO NOTHING', [ticketId, rows[0].id_asset]);
     }
-    await logAudit(client, req, { action: 'CREATE_MAINTENANCE', detail: `Mencatat maintenance aset #${rows[0].id_asset}${ticketId ? ` untuk tiket HD-${ticketId}` : ''}`, entityType: 'maintenance', entityId: rows[0].id, metadata: { ticket_id: ticketId } });
+    await logAudit(client, req, { action: 'CREATE_MAINTENANCE', detail: `Mencatat maintenance${targets.idAsset ? ` aset #${targets.idAsset}` : ''}${targets.idSparepart ? ` sparepart #${targets.idSparepart} sejumlah ${targets.sparepartQuantity}` : ''}${ticketId ? ` untuk tiket HD-${ticketId}` : ''}`, entityType: 'maintenance', entityId: rows[0].id, metadata: { ticket_id: ticketId, id_asset: targets.idAsset, id_sparepart: targets.idSparepart, sparepart_quantity: targets.sparepartQuantity } });
     await client.query('COMMIT');
     res.status(201).json({ data: rows[0] });
   } catch (error) {
     await client.query('ROLLBACK');
-    res.status(500).json({ message: 'Gagal mencatat maintenance', error: error.message });
+    res.status(error.code === 'INSUFFICIENT_SPAREPART_STOCK' ? 400 : 500).json({ message: error.code === 'INSUFFICIENT_SPAREPART_STOCK' ? error.message : 'Gagal mencatat maintenance', error: error.message });
   } finally { client.release(); }
 });
 
@@ -465,26 +519,54 @@ router.put('/maintenance/:id', workRoles, async (req, res) => {
     if (!validateMaintenanceValues(res, req.body)) return;
     const ticketId = await maintenanceTicketId(req.body.id_tiket);
     if (ticketId === undefined) return res.status(400).json({ message: 'Tiket yang dipilih tidak valid atau tidak ditemukan' });
-    const values = maintenanceFields.map((field) => field === 'id_tiket' ? ticketId : req.body[field] ?? null);
-    values.push(req.params.id);
+    const targets = maintenanceTargets(req.body);
     await client.query('BEGIN');
-    const { rows } = await client.query(`UPDATE maintenance SET ${maintenanceFields.map((field, i) => `${field} = $${i + 1}`).join(', ')}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`, values);
-    if (!rows.length) {
+    const previous = await client.query('SELECT * FROM maintenance WHERE id = $1 FOR UPDATE', [req.params.id]);
+    if (!previous.rowCount) {
       await client.query('ROLLBACK');
       return res.status(404).json({ message: 'Maintenance tidak ditemukan' });
     }
-    if (ticketId) {
+    const values = maintenanceFields.map((field) => {
+      if (field === 'id_asset') return targets.idAsset;
+      if (field === 'id_sparepart') return targets.idSparepart;
+      if (field === 'sparepart_quantity') return targets.sparepartQuantity;
+      if (field === 'id_tiket') return ticketId;
+      return req.body[field] ?? null;
+    });
+    values.push(req.params.id);
+    await applyMaintenanceSparepartDelta(client, req, { oldPartId: previous.rows[0].id_sparepart, oldQuantity: previous.rows[0].sparepart_quantity, newPartId: targets.idSparepart, newQuantity: targets.sparepartQuantity, ticketId, maintenanceId: req.params.id });
+    const { rows } = await client.query(`UPDATE maintenance SET ${maintenanceFields.map((field, i) => `${field} = $${i + 1}`).join(', ')}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`, values);
+    if (ticketId && targets.idAsset) {
       await client.query('INSERT INTO ticket_asset (id_tiket, id_asset) VALUES ($1, $2) ON CONFLICT DO NOTHING', [ticketId, rows[0].id_asset]);
     }
-    await logAudit(client, req, { action: 'UPDATE_MAINTENANCE', detail: `Memperbarui maintenance aset #${rows[0].id_asset}`, entityType: 'maintenance', entityId: rows[0].id, metadata: { ticket_id: ticketId } });
+    await logAudit(client, req, { action: 'UPDATE_MAINTENANCE', detail: `Memperbarui maintenance #${rows[0].id}`, entityType: 'maintenance', entityId: rows[0].id, metadata: { ticket_id: ticketId, id_asset: targets.idAsset, id_sparepart: targets.idSparepart, sparepart_quantity: targets.sparepartQuantity } });
     await client.query('COMMIT');
     res.json({ data: rows[0] });
   } catch (error) {
     await client.query('ROLLBACK');
-    res.status(500).json({ message: 'Gagal mengubah maintenance', error: error.message });
+    res.status(error.code === 'INSUFFICIENT_SPAREPART_STOCK' ? 400 : 500).json({ message: error.code === 'INSUFFICIENT_SPAREPART_STOCK' ? error.message : 'Gagal mengubah maintenance', error: error.message });
   } finally { client.release(); }
 });
-router.delete('/maintenance/:id', workRoles, async (req, res) => { try { const result = await db.query('DELETE FROM maintenance WHERE id = $1 RETURNING id, id_asset', [req.params.id]); if (!result.rowCount) return res.status(404).json({ message: 'Maintenance tidak ditemukan' }); await logAudit(db, req, { action: 'DELETE_MAINTENANCE', detail: `Menghapus maintenance aset #${result.rows[0].id_asset}`, entityType: 'maintenance', entityId: result.rows[0].id }); res.json({ message: 'Maintenance berhasil dihapus' }); } catch (error) { res.status(500).json({ message: 'Gagal menghapus maintenance', error: error.message }); } });
+router.delete('/maintenance/:id', workRoles, async (req, res) => {
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    const previous = await client.query('SELECT * FROM maintenance WHERE id = $1 FOR UPDATE', [req.params.id]);
+    if (!previous.rowCount) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Maintenance tidak ditemukan' });
+    }
+    const record = previous.rows[0];
+    await applyMaintenanceSparepartDelta(client, req, { oldPartId: record.id_sparepart, oldQuantity: record.sparepart_quantity, ticketId: record.id_tiket, maintenanceId: record.id });
+    await client.query('DELETE FROM maintenance WHERE id = $1', [req.params.id]);
+    await logAudit(client, req, { action: 'DELETE_MAINTENANCE', detail: `Menghapus maintenance #${record.id}`, entityType: 'maintenance', entityId: record.id });
+    await client.query('COMMIT');
+    res.json({ message: 'Maintenance berhasil dihapus' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ message: 'Gagal menghapus maintenance', error: error.message });
+  } finally { client.release(); }
+});
 
 const procurementFields = ['po_number', 'request_date', 'approval_date', 'received_date', 'supplier', 'status', 'total_cost', 'notes'];
 async function recordProcurementReceipt(client, req, procurementId) {

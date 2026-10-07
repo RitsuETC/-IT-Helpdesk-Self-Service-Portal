@@ -574,6 +574,9 @@ router.get("/:id", verifyToken, async (req, res) => {
               'id_asset', m.id_asset,
               'asset_code', a.asset_code,
               'brand_model', a.brand_model,
+              'id_sparepart', m.id_sparepart,
+              'sparepart_name', s.name,
+              'sparepart_quantity', m.sparepart_quantity,
               'maintenance_type', m.maintenance_type,
               'start_date', m.start_date,
               'end_date', m.end_date,
@@ -587,7 +590,8 @@ router.get("/:id", verifyToken, async (req, res) => {
             ) ORDER BY m.start_date DESC
           )
           FROM maintenance m
-          JOIN asset a ON a.id_asset = m.id_asset
+            LEFT JOIN asset a ON a.id_asset = m.id_asset
+            LEFT JOIN sparepart s ON s.id = m.id_sparepart
           WHERE m.id_tiket = t.id
         ), '[]'::json) AS maintenance
         ,COALESCE((
