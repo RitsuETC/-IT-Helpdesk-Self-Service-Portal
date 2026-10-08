@@ -15,12 +15,38 @@ const auditRoutes = require("./routes/audit");
 
 const app = express();
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://192.168.100.13:5173",
-  "http://192.168.100.13:5174",
-];
+const configuredOrigins = [process.env.FRONTEND_URL, process.env.CORS_ORIGINS]
+  .filter(Boolean)
+  .flatMap((value) => value.split(','))
+  .map((value) => {
+    try {
+      return new URL(value.trim()).origin;
+    } catch {
+      console.error('Origin frontend tidak valid di konfigurasi CORS:', value.trim());
+      return null;
+    }
+  })
+  .filter(Boolean);
+
+const allowedOrigins = new Set([
+  'http://localhost:5173',
+  'http://localhost:5174',
+  ...configuredOrigins,
+]);
+
+function isLocalOrigin(origin) {
+  try {
+    const { hostname } = new URL(origin);
+    if (['localhost', '127.0.0.1', '::1', '[::1]', '0.0.0.0'].includes(hostname) || hostname.endsWith('.localhost') || hostname.endsWith('.local')) return true;
+    const octets = hostname.split('.').map(Number);
+    if (octets.length !== 4 || octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)) return false;
+    return octets[0] === 10 ||
+      (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) ||
+      (octets[0] === 192 && octets[1] === 168);
+  } catch {
+    return false;
+  }
+}
 
 app.use(
   cors({
@@ -31,23 +57,8 @@ app.use(
       }
 
    
-      if (allowedOrigins.includes(origin)) {
+      if (allowedOrigins.has(origin) || isLocalOrigin(origin)) {
         return callback(null, true);
-      }
-
-   
-      try {
-        const url = new URL(origin);
-
-        if (
-          url.hostname === "localhost" ||
-          url.hostname === "127.0.0.1" ||
-          url.hostname === "192.168.100.13"
-        ) {
-          return callback(null, true);
-        }
-      } catch (error) {
-        console.error("Origin tidak valid:", origin);
       }
 
       return callback(new Error("Origin tidak diizinkan oleh CORS"));

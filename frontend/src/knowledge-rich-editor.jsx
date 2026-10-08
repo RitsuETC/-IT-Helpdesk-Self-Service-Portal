@@ -28,11 +28,41 @@ export default function KnowledgeRichEditor({ value, onChange }) {
 
   const addLink = () => {
     if (!editor) return
+    const { from, to } = editor.state.selection
+    const selectedText = editor.state.doc.textBetween(from, to, ' ').trim()
+    const activeLink = editor.isActive('link')
     const existing = editor.getAttributes('link').href || ''
     const url = window.prompt('Masukkan URL tautan', existing)
     if (url === null) return
-    if (!url.trim()) editor.chain().focus().extendMarkRange('link').unsetLink().run()
-    else editor.chain().focus().extendMarkRange('link').setLink({ href: url.trim() }).run()
+    const value = url.trim()
+    if (!value) {
+      if (activeLink || selectedText) editor.chain().focus().extendMarkRange('link').unsetLink().run()
+      return
+    }
+
+    const href = /^[a-z][a-z\d+.-]*:/i.test(value) ? value : `https://${value}`
+    let parsedUrl
+    try {
+      parsedUrl = new URL(href)
+    } catch {
+      window.alert('URL tidak valid. Gunakan alamat seperti https://contoh.com.')
+      return
+    }
+    if (!['http:', 'https:', 'mailto:'].includes(parsedUrl.protocol)) {
+      window.alert('Tipe URL ini tidak didukung.')
+      return
+    }
+
+    if (activeLink || selectedText) {
+      editor.chain().focus().extendMarkRange('link').setLink({ href: parsedUrl.href }).run()
+      return
+    }
+
+    editor.chain().focus().insertContent({
+      type: 'text',
+      text: value,
+      marks: [{ type: 'link', attrs: { href: parsedUrl.href } }],
+    }).run()
   }
 
   if (!editor) return <div className="kb-editor-loading">Memuat editor artikel...</div>
