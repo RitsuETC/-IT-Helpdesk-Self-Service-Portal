@@ -1,6 +1,20 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { api } from './api.js'
 import { confirmAction } from './confirm.js'
+
+const KnowledgeRichEditor = lazy(() => import('./knowledge-rich-editor.jsx'))
+
+function escapeHtml(value) {
+  return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;')
+}
+
+function plainTextToHtml(value = '') {
+  return String(value).split(/\n{2,}/).map((paragraph) => `<p>${escapeHtml(paragraph).replaceAll('\n', '<br>') || '<br>'}</p>`).join('')
+}
+
+function normalizeEditorContent(value = '') {
+  return /<\/?[a-z][\s\S]*>/i.test(value) ? value : plainTextToHtml(value)
+}
 
 const emptyKnowledge = {
   tags: [], // Disimpan dalam bentuk array tag
@@ -79,10 +93,11 @@ function Admin({ token, articles, onChanged, onError, user }) {
     }
 
     const formattedStepsText = validSteps.map((step, idx) => `Langkah ${idx + 1}: ${step}`).join('\n')
+    const stepsHtml = plainTextToHtml(formattedStepsText)
     
     setKnowledge(prev => ({
       ...prev,
-      content: prev.content ? `${prev.content}\n\n${formattedStepsText}` : formattedStepsText
+      content: prev.content ? `${normalizeEditorContent(prev.content)}<p></p>${stepsHtml}` : stepsHtml
     }))
 
     setStepsList([''])
@@ -97,6 +112,10 @@ function Admin({ token, articles, onChanged, onError, user }) {
 
     if (!tagsString.trim()) {
       onError('Pilih minimal 1 tag/kategori untuk artikel ini.')
+      return
+    }
+    if (!knowledge.content.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim()) {
+      onError('Isi artikel wajib diisi.')
       return
     }
 
@@ -505,13 +524,9 @@ function Admin({ token, articles, onChanged, onError, user }) {
               </button>
             </div>
 
-            <textarea
-              value={knowledge.content}
-              onChange={(e) => setKnowledge({ ...knowledge, content: e.target.value })}
-              placeholder="Tuliskan solusi atau langkah troubleshooting..."
-              rows="5"
-              required
-            />
+            <Suspense fallback={<div className="kb-editor-loading">Memuat editor artikel...</div>}>
+              <KnowledgeRichEditor value={knowledge.content} onChange={(content) => setKnowledge((current) => ({ ...current, content }))} />
+            </Suspense>
 
             {/* POP-UP / MODAL GENERATOR LANGKAH DINAMIS */}
             {showStepModal && (

@@ -13,6 +13,7 @@
   "migrate:inventory-links": "node migrations/010_link_inventory_tickets_and_masters.js",
   "migrate:maintenance-enums": "node migrations/011_constrain_maintenance_values.js",
   "migrate:maintenance-targets": "node migrations/012_maintenance_asset_sparepart_targets.js",
+  "migrate:maintenance-ledger": "node migrations/013_link_sparepart_transactions_to_maintenance.js",
   "test": "echo \"Error: no test specified\" && exit 1"
 },
   "keywords": [],

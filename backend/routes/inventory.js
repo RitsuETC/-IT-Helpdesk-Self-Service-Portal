@@ -467,9 +467,9 @@ async function applyMaintenanceSparepartDelta(client, req, { oldPartId, oldQuant
     }
     await client.query('UPDATE sparepart SET stock = $1, updated_at = NOW() WHERE id = $2', [after, part.id]);
     await client.query(
-      `INSERT INTO sparepart_transaction (id_sparepart, transaction_type, quantity, id_tiket, notes, id_pic, stock_before, stock_after)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [part.id, delta > 0 ? 'MASUK' : 'KELUAR', Math.abs(delta), ticketId || null, `Penyesuaian pemakaian maintenance #${maintenanceId}`, req.user.id, before, after]
+      `INSERT INTO sparepart_transaction (id_sparepart, transaction_type, quantity, id_tiket, id_maintenance, notes, id_pic, stock_before, stock_after)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [part.id, delta > 0 ? 'MASUK' : 'KELUAR', Math.abs(delta), ticketId || null, maintenanceId, `Penyesuaian pemakaian maintenance #${maintenanceId}`, req.user.id, before, after]
     );
   }
 }

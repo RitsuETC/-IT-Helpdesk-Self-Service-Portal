@@ -474,7 +474,7 @@ export default function Inventory({ token, user, onBack, onError }) {
         if (column === 'target_item') {
           const parts = []
           if (item.asset_code) parts.push(`Aset: ${item.asset_code}`)
-          if (item.sparepart_name) parts.push(`Part: ${item.sparepart_name}`)
+          if (item.sparepart_name) parts.push(`Part: ${item.sparepart_name} × ${item.sparepart_quantity || 1}`)
           return parts.join(' & ') || '-'
         }
         return column === 'ticket_title' ? (item.id_tiket ? `HD-${item.id_tiket} ${item.ticket_title || '-'}` : '-') : undefined

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import searchImage from './assets/search.png'
+import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, ChevronLeft, ChevronRight, Play, Search, X } from 'lucide-react'
+import DOMPurify from 'dompurify'
 
 function youtubeThumbnail(url) {
   const id = url?.match(/(?:youtu\.be\/|v=|embed\/)([^?&/]+)/)?.[1]
@@ -8,6 +9,24 @@ function youtubeThumbnail(url) {
 
 function youtubeId(url) {
   return url?.match(/(?:youtu\.be\/|v=|embed\/)([^?&/]+)/)?.[1] || null
+}
+
+function articleExcerpt(content = '') {
+  const text = /<\/?[a-z][\s\S]*>/i.test(content)
+    ? DOMPurify.sanitize(content, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })
+    : String(content)
+  return text.replace(/^\s*\d+\.\s*/gm, '').replace(/\s+/g, ' ').trim()
+}
+
+function articleBody(content = '') {
+  if (/<\/?[a-z][\s\S]*>/i.test(content)) {
+    return <div className="kb-prose" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
+  }
+  return <div className="knowledge-detail-text-list">{formatNumberedSteps(content)}</div>
+}
+
+function readingMinutes(content = '') {
+  return Math.max(1, Math.ceil(articleExcerpt(content).split(/\s+/).filter(Boolean).length / 180))
 }
 
 // Fungsi inovatif untuk memecah teks bernomor menjadi list rapi berurutan ke bawah
@@ -93,7 +112,7 @@ function Knowledge({ articles = [], initialArticle }) {
 
       const matchQuery =
         article.judul?.toLowerCase().includes(query.toLowerCase()) ||
-        article.content?.toLowerCase().includes(query.toLowerCase())
+        articleExcerpt(article.content).toLowerCase().includes(query.toLowerCase())
 
       return matchTags && matchQuery
     }), [query, selectedTags, articles]
@@ -119,17 +138,18 @@ function Knowledge({ articles = [], initialArticle }) {
 
   return (
     <section className="knowledge-page">
-      
-      {/* Header Halaman */}
-      <div className="knowledge-header-box">
-        <h2 className="knowledge-heading">Knowledge Base & Solusi Mandiri</h2>
-        <p className="knowledge-subheading">Temukan panduan, solusi cepat, dan video troubleshooting kendala IT Anda di sini.</p>
-      </div>
-      
-      {/* Toolbar Pencarian & Filter Multi-Tag */}
-      <div className="knowledge-filter">
+      <header className="kb-heading-row">
+        <div>
+          <span className="kb-eyebrow"><BookOpen size={15} aria-hidden="true" /> PUSAT PANDUAN</span>
+          <h2 className="knowledge-heading">Knowledge Base</h2>
+          <p className="knowledge-subheading">Panduan praktis untuk menyelesaikan kendala IT dan kembali bekerja.</p>
+        </div>
+        <span className="kb-article-count">{visibleArticles.length} artikel</span>
+      </header>
+
+      <div className="knowledge-filter kb-filter-bar">
         <div className="knowledge-search-wrapper">
-          <img src={searchImage} alt="Cari" />
+          <Search size={18} aria-hidden="true" />
           <input 
             value={query} 
             onChange={(event) => setQuery(event.target.value)} 
@@ -165,111 +185,79 @@ function Knowledge({ articles = [], initialArticle }) {
         </div>
       </div>
 
-      {/* Grid Kartu Artikel */}
       <div className="article-grid">
         {paginatedArticles.length === 0 ? (
           <div className="knowledge-empty-state">
-            <p>Tidak ada artikel panduan yang sesuai dengan pencarian atau filter Anda.</p>
+            <BookOpen size={24} aria-hidden="true" />
+            <p>Tidak ada artikel yang sesuai dengan pencarian atau filter.</p>
           </div>
         ) : (
           paginatedArticles.map((article) => (
-            <div 
-              className="knowledge-card" 
+            <article
+              className="knowledge-card kb-article-card"
               key={article.id}
-              onClick={() => setSelectedArticle(article)}
             >
-              <div className="knowledge-card-header">
-                <div className="knowledge-card-tags">
-                  {(article.tags || article.nama_kategori || 'Umum').split(',').map((t, idx) => {
-                    const trimmed = t.trim()
-                    if (!trimmed) return null
-                    return (
-                      <span key={idx} className="card-tag-badge">
-                        #{trimmed}
-                      </span>
-                    )
-                  })}
-                </div>
-              </div>
-
-              <div className="knowledge-card-body">
-                <h3 className="knowledge-card-title">{article.judul}</h3>
-                <div className="knowledge-card-snippet">
-                  {formatNumberedSteps(article.content)}
-                </div>
-              </div>
-
-              {/* Tombol Baca Solusi Tetap Ada dan Berfungsi */}
+              <button className="kb-article-open" type="button" onClick={() => setSelectedArticle(article)} aria-label={`Baca artikel ${article.judul}`}>
+                <span className="kb-article-cover" aria-hidden="true">
+                  {youtubeId(article.video_url) ? (
+                    <img src={youtubeThumbnail(article.video_url)} alt="" loading="lazy" />
+                  ) : <BookOpen size={30} strokeWidth={1.5} />}
+                  {article.video_url && <span className="kb-video-badge"><Play size={12} fill="currentColor" /> Video</span>}
+                </span>
+                <span className="knowledge-card-body">
+                  <span className="knowledge-card-header">
+                    <span className="knowledge-card-tags">
+                      {(article.tags || article.nama_kategori || 'Umum').split(',').map((t, idx) => {
+                        const trimmed = t.trim()
+                        if (!trimmed) return null
+                        return <span key={idx} className="card-tag-badge">#{trimmed}</span>
+                      })}
+                    </span>
+                  </span>
+                  <span className="knowledge-card-title">{article.judul}</span>
+                  <span className="knowledge-card-snippet">{articleExcerpt(article.content)}</span>
+                  <span className="kb-reading-time">{readingMinutes(article.content)} menit membaca</span>
+                </span>
+              </button>
               <div className="knowledge-card-footer">
-                <button 
-                  type="button" 
-                  className="read-more-btn"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setSelectedArticle(article)
-                  }}
-                >
-                  Baca Solusi Lengkap &rarr;
+                <button type="button" className="read-more-btn" onClick={() => setSelectedArticle(article)}>
+                  Baca artikel <ArrowUpRight size={15} aria-hidden="true" />
                 </button>
               </div>
-            </div>
+            </article>
           ))
         )}
       </div>
 
       {/* Kontrol Pagination */}
       {visibleArticles.length > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', padding: '12px 16px', background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-          <div style={{ fontSize: '12px', color: '#64748b' }}>
+        <div className="kb-pagination">
+          <div>
             Menampilkan {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, visibleArticles.length)} dari total {visibleArticles.length} artikel
           </div>
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <button 
-              onClick={() => handlePageChange(1)} 
-              disabled={currentPage === 1}
-              style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: currentPage === 1 ? '#f8fafc' : '#ffffff', color: currentPage === 1 ? '#94a3b8' : '#334155', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }}
-            >
-              «
-            </button>
-            <button 
-              onClick={() => handlePageChange(currentPage - 1)} 
-              disabled={currentPage === 1}
-              style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: currentPage === 1 ? '#f8fafc' : '#ffffff', color: currentPage === 1 ? '#94a3b8' : '#334155', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }}
-            >
-              ‹
-            </button>
-            <span style={{ fontSize: '12px', fontWeight: '700', padding: '0 10px', color: '#0f172a' }}>
+          <div className="kb-page-actions">
+            <button aria-label="Halaman pertama" onClick={() => handlePageChange(1)} disabled={currentPage === 1}><ArrowLeft size={15} /><ArrowLeft size={15} className="kb-double-icon" /></button>
+            <button aria-label="Halaman sebelumnya" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}><ChevronLeft size={17} /></button>
+            <span>
               Hal {currentPage} / {totalPages}
             </span>
-            <button 
-              onClick={() => handlePageChange(currentPage + 1)} 
-              disabled={currentPage === totalPages}
-              style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: currentPage === totalPages ? '#f8fafc' : '#ffffff', color: currentPage === totalPages ? '#94a3b8' : '#334155', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }}
-            >
-              ›
-            </button>
-            <button 
-              onClick={() => handlePageChange(totalPages)} 
-              disabled={currentPage === totalPages}
-              style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: currentPage === totalPages ? '#f8fafc' : '#ffffff', color: currentPage === totalPages ? '#94a3b8' : '#334155', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }}
-            >
-              »
-            </button>
+            <button aria-label="Halaman berikutnya" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}><ChevronRight size={17} /></button>
+            <button aria-label="Halaman terakhir" onClick={() => handlePageChange(totalPages)} disabled={currentPage === totalPages}><ArrowRight size={15} /><ArrowRight size={15} className="kb-double-icon" /></button>
           </div>
         </div>
       )}
 
       {/* Modal Detail Artikel */}
       {selectedArticle && (
-        <div className="knowledge-modal-backdrop">
-          <div className="knowledge-detail">
+        <div className="knowledge-modal-backdrop" onClick={() => setSelectedArticle(null)}>
+          <article className="knowledge-detail" role="dialog" aria-modal="true" aria-labelledby="knowledge-detail-title" onClick={(event) => event.stopPropagation()}>
             <button 
               className="knowledge-close-btn" 
               onClick={() => setSelectedArticle(null)} 
               aria-label="Tutup"
               type="button"
             >
-              ✕
+              <X size={18} aria-hidden="true" />
             </button>
 
             <div className="knowledge-detail-header">
@@ -284,17 +272,15 @@ function Knowledge({ articles = [], initialArticle }) {
                   )
                 })}
               </div>
-              <h2 className="knowledge-detail-title">{selectedArticle.judul}</h2>
+              <h2 className="knowledge-detail-title" id="knowledge-detail-title">{selectedArticle.judul}</h2>
             </div>
             
             <div className="knowledge-detail-content">
               {/* Kotak Teks Langkah-langkah (Teks Diperbesar & Jelas) */}
               <div className="knowledge-detail-text-box">
-                <h4 className="box-section-title">Langkah-Langkah Solusi</h4>
+                <h4 className="box-section-title">Panduan Solusi</h4>
                 <div className="box-content-scroll">
-                  <div className="knowledge-detail-text-list">
-                    {formatNumberedSteps(selectedArticle.content)}
-                  </div>
+                  {articleBody(selectedArticle.content)}
                 </div>
               </div>
 
@@ -338,7 +324,7 @@ function Knowledge({ articles = [], initialArticle }) {
                 </div>
               </div>
             </div>
-          </div>
+          </article>
         </div>
       )}
     </section>
