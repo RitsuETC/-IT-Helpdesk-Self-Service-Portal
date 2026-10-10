@@ -182,9 +182,11 @@ export default function Inventory({ token, user, onBack, onError }) {
   const [showPartModal, setShowPartModal] = useState(false)
 
   const [movement, setMovement] = useState(blankMovement)
+  const [movementEditingId, setMovementEditingId] = useState(null)
   const [showMovementModal, setShowMovementModal] = useState(false)
 
   const [transaction, setTransaction] = useState(blankTransaction)
+  const [transactionEditingId, setTransactionEditingId] = useState(null)
   const [showTransactionModal, setShowTransactionModal] = useState(false)
 
   const [maintenance, setMaintenance] = useState(blankMaintenance)
@@ -192,6 +194,7 @@ export default function Inventory({ token, user, onBack, onError }) {
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false)
 
   const [procurement, setProcurement] = useState(blankProcurement)
+  const [procurementEditingId, setProcurementEditingId] = useState(null)
   const [showProcurementModal, setShowProcurementModal] = useState(false)
 
   const [masterProduct, setMasterProduct] = useState(blankMasterProduct)
@@ -348,6 +351,52 @@ export default function Inventory({ token, user, onBack, onError }) {
       setShowMaintenanceModal(true); 
   }
 
+  const handleEditMovement = (item) => {
+    setMovement({
+      ...blankMovement,
+      ...item,
+      id_asset: item.id_asset || '',
+      id_sparepart: item.id_sparepart || '',
+      id_tiket: item.id_tiket || '',
+      id_user: item.id_user || '',
+      from_location: item.from_location || '',
+      to_location: item.to_location || '',
+      movement_date: toDateTimeLocal(item.movement_date),
+      asset_quantity: item.asset_quantity || 1,
+      sparepart_quantity: item.sparepart_quantity || 1,
+    })
+    setMovementEditingId(item.id)
+    setShowMovementModal(true)
+  }
+
+  const handleEditTransaction = (item) => {
+    setTransaction({
+      ...blankTransaction,
+      ...item,
+      id_sparepart: String(item.id_sparepart),
+      id_tiket: item.id_tiket || '',
+      transaction_date: toDateTimeLocal(item.transaction_date),
+    })
+    setTransactionEditingId(item.id)
+    setShowTransactionModal(true)
+  }
+
+  const handleEditProcurement = (item) => {
+    if (item.status === 'received') return
+    setProcurement({
+      ...blankProcurement,
+      ...item,
+      request_date: toDateOnly(item.request_date),
+      approval_date: toDateOnly(item.approval_date),
+      received_date: toDateOnly(item.received_date),
+      details: item.details?.length
+        ? item.details.map((detail) => ({ ...detail, id_asset: detail.id_asset || '', id_sparepart: detail.id_sparepart || '' }))
+        : blankProcurement.details,
+    })
+    setProcurementEditingId(item.id)
+    setShowProcurementModal(true)
+  }
+
   const handleEditMasterProduct = (item) => {
     const specs = typeof item.specifications === 'string' ? JSON.parse(item.specifications || '{}') : (item.specifications || {})
     setMasterProduct({ ...blankMasterProduct, sku_code: item.sku_code || '', product_name: item.product_name || '', id_category: item.id_category || '', default_price: item.default_price || '', processor: specs.processor || '', ram: specs.ram || '', storage: specs.storage || '', operating_system: specs.operating_system || '', notes: specs.notes || item.notes || '' })
@@ -462,11 +511,11 @@ export default function Inventory({ token, user, onBack, onError }) {
 
     {/* ===================== TAB: TABEL LAINNYA (NON-MODAL CONTENT) ===================== */}
     {tab === 'movements' && (
-      <WorkSection title="Pergerakan Inventaris" items={data.movements} itemsPerPage={ITEMS_PER_PAGE} columns={['item_name', 'movement_type', 'quantity', 'from_room', 'to_room', 'movement_date']} labels={['Item', 'Jenis', 'Jumlah', 'Asal', 'Tujuan', 'Tanggal']} renderActions={(item) => <button type="button" className="secondary-button" onClick={() => setSelectedRecord({ title: 'Detail Pergerakan Inventaris', item })}>Detail</button>} onAdd={isAdmin ? () => { setMovement(blankMovement); setShowMovementModal(true); } : null} addLabel="+ Tambah Pergerakan" />
+      <WorkSection title="Pergerakan Inventaris" items={data.movements} itemsPerPage={ITEMS_PER_PAGE} columns={['item_name', 'movement_type', 'quantity', 'from_room', 'to_room', 'movement_date']} labels={['Item', 'Jenis', 'Jumlah', 'Asal', 'Tujuan', 'Tanggal']} renderActions={(item) => <div className="inventory-action-group"><button type="button" className="secondary-button" onClick={() => setSelectedRecord({ title: 'Detail Pergerakan Inventaris', item })}>Detail</button>{isAdmin && !['INITIAL_STOCK', 'STOCK_ADJUSTMENT_IN', 'STOCK_ADJUSTMENT_OUT', 'RECEIPT'].includes(item.movement_type) && <button type="button" className="secondary-button" onClick={() => handleEditMovement(item)}>Edit</button>}</div>} onAdd={isAdmin ? () => { setMovement(blankMovement); setMovementEditingId(null); setShowMovementModal(true); } : null} addLabel="+ Tambah Pergerakan" />
     )}
     
     {tab === 'transactions' && (
-      <WorkSection title="Transaksi Sparepart" items={data.transactions} itemsPerPage={ITEMS_PER_PAGE} columns={['sparepart_name', 'transaction_type', 'quantity', 'transaction_date', 'ticket_title', 'pic_name']} labels={['Sparepart', 'Jenis', 'Jumlah', 'Tanggal', 'Referensi tiket', 'PIC']} renderActions={(item) => <button type="button" className="secondary-button" onClick={() => setSelectedRecord({ title: 'Detail Transaksi Sparepart', item })}>Detail</button>} onAdd={isAdmin ? () => { setTransaction(blankTransaction); setShowTransactionModal(true); } : null} addLabel="+ Tambah Transaksi" />
+      <WorkSection title="Transaksi Sparepart" items={data.transactions} itemsPerPage={ITEMS_PER_PAGE} columns={['sparepart_name', 'transaction_type', 'quantity', 'transaction_date', 'ticket_title', 'pic_name']} labels={['Sparepart', 'Jenis', 'Jumlah', 'Tanggal', 'Referensi tiket', 'PIC']} renderActions={(item) => <div className="inventory-action-group"><button type="button" className="secondary-button" onClick={() => setSelectedRecord({ title: 'Detail Transaksi Sparepart', item })}>Detail</button>{isAdmin && !item.id_maintenance && !item.id_procurement && !item.id_movement && !/Penerimaan PO|pemakaian maintenance|pemakaian pada pergerakan|stok awal|penyesuaian stok/i.test(item.notes || '') && <button type="button" className="secondary-button" onClick={() => handleEditTransaction(item)}>Edit</button>}</div>} onAdd={isAdmin ? () => { setTransaction(blankTransaction); setTransactionEditingId(null); setShowTransactionModal(true); } : null} addLabel="+ Tambah Transaksi" />
     )}
     
     {tab === 'maintenance' && (
@@ -482,7 +531,7 @@ export default function Inventory({ token, user, onBack, onError }) {
     )}
     
     {tab === 'procurement' && (
-      <WorkSection title="Pengadaan" items={data.procurement} itemsPerPage={ITEMS_PER_PAGE} columns={['po_number', 'request_date', 'supplier', 'status', 'total_cost']} labels={['Nomor PO', 'Pengajuan', 'Supplier', 'Status', 'Total biaya']} renderActions={(item) => <button type="button" className="secondary-button" onClick={() => setSelectedRecord({ title: 'Detail Pengadaan', item })}>Detail</button>} onAdd={isAdmin ? () => { setProcurement(blankProcurement); setShowProcurementModal(true); } : null} addLabel="+ Tambah Pengadaan" />
+      <WorkSection title="Pengadaan" items={data.procurement} itemsPerPage={ITEMS_PER_PAGE} columns={['po_number', 'request_date', 'supplier', 'status', 'total_cost']} labels={['Nomor PO', 'Pengajuan', 'Supplier', 'Status', 'Total biaya']} renderActions={(item) => <div className="inventory-action-group"><button type="button" className="secondary-button" onClick={() => setSelectedRecord({ title: 'Detail Pengadaan', item })}>Detail</button>{isAdmin && <button type="button" className="secondary-button" disabled={item.status === 'received'} title={item.status === 'received' ? 'Pengadaan received dikunci agar stok dan ledger tetap konsisten' : 'Edit pengadaan'} onClick={() => handleEditProcurement(item)}>Edit</button>}</div>} onAdd={isAdmin ? () => { setProcurement(blankProcurement); setProcurementEditingId(null); setShowProcurementModal(true); } : null} addLabel="+ Tambah Pengadaan" />
     )}
 
     {tab === 'master-products' && (
@@ -609,12 +658,13 @@ export default function Inventory({ token, user, onBack, onError }) {
     {showMovementModal && (
       <div className="modal-backdrop" onClick={() => setShowMovementModal(false)}>
         <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: '12px', padding: '24px', width: '90%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}><h2 style={{ margin: '0' }}>Catat Pergerakan</h2><button onClick={() => setShowMovementModal(false)} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', color: '#64748b' }}>&times;</button></div>
-          <form className="inventory-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }} onSubmit={(event) => submit(event, '/inventory/movements', 'POST', { ...movement, id_asset: movement.id_asset || null, id_sparepart: movement.id_sparepart || null, asset_quantity: Number(movement.asset_quantity || 0), sparepart_quantity: Number(movement.sparepart_quantity || 0), id_user: movement.id_user || null, from_location: movement.from_location || null, to_location: movement.to_location || null, movement_date: movement.movement_date || new Date().toISOString().slice(0, 16) }, () => setMovement(blankMovement))}>
-            <Field label="Aset (opsional)"><Select name="id_asset" value={movement.id_asset} onChange={update(setMovement)}><option value="">Tidak ada aset</option>{assetOptions}</Select></Field>
-            {movement.id_asset && <Field label="Jumlah aset *"><Input name="asset_quantity" value={movement.asset_quantity} onChange={update(setMovement)} type="number" min="1" required /></Field>}
-            <Field label="Sparepart (opsional)"><Select name="id_sparepart" value={movement.id_sparepart} onChange={update(setMovement)}><option value="">Tidak ada sparepart</option>{partOptions}</Select></Field>
-            {movement.id_sparepart && <Field label="Jumlah sparepart *"><Input name="sparepart_quantity" value={movement.sparepart_quantity} onChange={update(setMovement)} type="number" min="1" required /></Field>}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}><h2 style={{ margin: '0' }}>{movementEditingId ? 'Edit Pergerakan' : 'Catat Pergerakan'}</h2><button onClick={() => { setShowMovementModal(false); setMovementEditingId(null) }} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', color: '#64748b' }}>&times;</button></div>
+          {movementEditingId && <p role="note">Jumlah dan target dikunci agar saldo stok serta histori tetap konsisten.</p>}
+          <form className="inventory-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }} onSubmit={(event) => submit(event, movementEditingId ? `/inventory/movements/${movementEditingId}` : '/inventory/movements', movementEditingId ? 'PUT' : 'POST', { ...movement, id_asset: movement.id_asset || null, id_sparepart: movement.id_sparepart || null, asset_quantity: Number(movement.asset_quantity || 0), sparepart_quantity: Number(movement.sparepart_quantity || 0), id_user: movement.id_user || null, from_location: movement.from_location || null, to_location: movement.to_location || null, movement_date: movement.movement_date || new Date().toISOString().slice(0, 16) }, () => { setMovement(blankMovement); setMovementEditingId(null) })}>
+            <Field label="Aset (opsional)"><Select name="id_asset" value={movement.id_asset} onChange={update(setMovement)} disabled={Boolean(movementEditingId)}><option value="">Tidak ada aset</option>{assetOptions}</Select></Field>
+            {movement.id_asset && <Field label="Jumlah aset *"><Input name="asset_quantity" value={movement.asset_quantity} onChange={update(setMovement)} type="number" min="1" required disabled={Boolean(movementEditingId)} /></Field>}
+            <Field label="Sparepart (opsional)"><Select name="id_sparepart" value={movement.id_sparepart} onChange={update(setMovement)} disabled={Boolean(movementEditingId)}><option value="">Tidak ada sparepart</option>{partOptions}</Select></Field>
+            {movement.id_sparepart && <Field label="Jumlah sparepart *"><Input name="sparepart_quantity" value={movement.sparepart_quantity} onChange={update(setMovement)} type="number" min="1" required disabled={Boolean(movementEditingId)} /></Field>}
             <Field label="Pengguna"><Select name="id_user" value={movement.id_user} onChange={update(setMovement)}><option value="">Tidak berubah</option>{userOptions}</Select></Field>
             <Field label="Lokasi asal"><RoomSelect value={movement.from_location} onChange={update(setMovement)} name="from_location" rooms={setup.rooms} /></Field>
             <Field label="Lokasi tujuan"><RoomSelect value={movement.to_location} onChange={update(setMovement)} name="to_location" rooms={setup.rooms} /></Field>
@@ -623,7 +673,7 @@ export default function Inventory({ token, user, onBack, onError }) {
             {movement.id_asset && <Field label="Kondisi Aset"><Select name="condition" value={movement.condition} onChange={update(setMovement)}><option value="">Tidak berubah</option><option value="good">Baik</option><option value="fair">Cukup</option><option value="broken">Rusak</option></Select></Field>}
             <Field label="Tanggal Pergerakan"><Input name="movement_date" type="datetime-local" value={movement.movement_date} onChange={update(setMovement)} /></Field>
             <div style={{ gridColumn: '1 / -1' }}><Field label="Keterangan"><Textarea name="notes" value={movement.notes} onChange={update(setMovement)} /></Field></div>
-            <div style={{ gridColumn: '1 / -1' }}><FormActions label="Catat pergerakan" onCancel={() => setShowMovementModal(false)} /></div>
+            <div style={{ gridColumn: '1 / -1' }}><FormActions label={movementEditingId ? 'Simpan perubahan' : 'Catat pergerakan'} onCancel={() => { setShowMovementModal(false); setMovementEditingId(null) }} /></div>
           </form>
         </div>
       </div>
@@ -633,15 +683,16 @@ export default function Inventory({ token, user, onBack, onError }) {
     {showTransactionModal && (
       <div className="modal-backdrop" onClick={() => setShowTransactionModal(false)}>
         <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: '12px', padding: '24px', width: '90%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}><h2 style={{ margin: '0' }}>Catat Transaksi</h2><button onClick={() => setShowTransactionModal(false)} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', color: '#64748b' }}>&times;</button></div>
-          <form className="inventory-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }} onSubmit={(event) => submit(event, '/inventory/transactions', 'POST', { ...transaction, id_sparepart: Number(transaction.id_sparepart), quantity: Number(transaction.quantity), id_tiket: transaction.id_tiket || null, transaction_date: transaction.transaction_date || new Date().toISOString().slice(0, 16) }, () => setTransaction(blankTransaction))}>
-            <Field label="Sparepart *"><Select name="id_sparepart" value={transaction.id_sparepart} onChange={update(setTransaction)} required><option value="">Pilih sparepart</option>{partOptions}</Select></Field>
-            <Field label="Jenis transaksi"><Select name="transaction_type" value={transaction.transaction_type} onChange={update(setTransaction)}><option value="MASUK">MASUK</option><option value="KELUAR">KELUAR</option></Select></Field>
-            <Field label="Jumlah *"><Input name="quantity" value={transaction.quantity} onChange={update(setTransaction)} type="number" min="1" required /></Field>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}><h2 style={{ margin: '0' }}>{transactionEditingId ? 'Edit Transaksi Sparepart' : 'Catat Transaksi'}</h2><button onClick={() => { setShowTransactionModal(false); setTransactionEditingId(null) }} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', color: '#64748b' }}>&times;</button></div>
+          {transactionEditingId && <p role="note">Sparepart, jenis, dan jumlah dikunci karena memengaruhi saldo. Untuk koreksi saldo, catat transaksi baru.</p>}
+          <form className="inventory-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }} onSubmit={(event) => submit(event, transactionEditingId ? `/inventory/transactions/${transactionEditingId}` : '/inventory/transactions', transactionEditingId ? 'PUT' : 'POST', { ...transaction, id_sparepart: Number(transaction.id_sparepart), quantity: Number(transaction.quantity), id_tiket: transaction.id_tiket || null, transaction_date: transaction.transaction_date || new Date().toISOString().slice(0, 16) }, () => { setTransaction(blankTransaction); setTransactionEditingId(null) })}>
+            <Field label="Sparepart *"><Select name="id_sparepart" value={transaction.id_sparepart} onChange={update(setTransaction)} required disabled={Boolean(transactionEditingId)}><option value="">Pilih sparepart</option>{partOptions}</Select></Field>
+            <Field label="Jenis transaksi"><Select name="transaction_type" value={transaction.transaction_type} onChange={update(setTransaction)} disabled={Boolean(transactionEditingId)}><option value="MASUK">MASUK</option><option value="KELUAR">KELUAR</option></Select></Field>
+            <Field label="Jumlah *"><Input name="quantity" value={transaction.quantity} onChange={update(setTransaction)} type="number" min="1" required disabled={Boolean(transactionEditingId)} /></Field>
             <Field label="Tanggal Transaksi"><Input name="transaction_date" type="datetime-local" value={transaction.transaction_date} onChange={update(setTransaction)} /></Field>
             <Field label="Referensi tiket"><Select name="id_tiket" value={transaction.id_tiket} onChange={update(setTransaction)}><option value="">Tidak ada</option>{setup.tickets.map((item) => <option key={item.id} value={item.id}>#{item.id} {item.judul}</option>)}</Select></Field>
             <div style={{ gridColumn: '1 / -1' }}><Field label="Keterangan"><Textarea name="notes" value={transaction.notes} onChange={update(setTransaction)} /></Field></div>
-            <div style={{ gridColumn: '1 / -1' }}><FormActions label="Catat transaksi" onCancel={() => setShowTransactionModal(false)} /></div>
+            <div style={{ gridColumn: '1 / -1' }}><FormActions label={transactionEditingId ? 'Simpan perubahan' : 'Catat transaksi'} onCancel={() => { setShowTransactionModal(false); setTransactionEditingId(null) }} /></div>
           </form>
         </div>
       </div>
@@ -676,8 +727,8 @@ export default function Inventory({ token, user, onBack, onError }) {
     {showProcurementModal && (
       <div className="modal-backdrop" onClick={() => setShowProcurementModal(false)}>
         <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: '12px', padding: '24px', width: '90%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}><h2 style={{ margin: '0' }}>Catat Pengadaan</h2><button onClick={() => setShowProcurementModal(false)} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', color: '#64748b' }}>&times;</button></div>
-          <form className="inventory-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }} onSubmit={(event) => submit(event, '/inventory/procurement', 'POST', { ...procurement, details: procurement.details.filter((item) => item.item_name.trim()) }, () => setProcurement(blankProcurement))}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}><h2 style={{ margin: '0' }}>{procurementEditingId ? 'Edit Pengadaan' : 'Catat Pengadaan'}</h2><button onClick={() => { setShowProcurementModal(false); setProcurementEditingId(null) }} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', color: '#64748b' }}>&times;</button></div>
+          <form className="inventory-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }} onSubmit={(event) => submit(event, procurementEditingId ? `/inventory/procurement/${procurementEditingId}` : '/inventory/procurement', procurementEditingId ? 'PUT' : 'POST', { ...procurement, total_cost: procurement.details.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unit_price || 0), 0), details: procurement.details.filter((item) => item.item_name.trim()) }, () => { setProcurement(blankProcurement); setProcurementEditingId(null) })}>
             <Field label="Nomor PO *"><Input name="po_number" value={procurement.po_number} onChange={update(setProcurement)} required /></Field>
             <Field label="Tanggal pengajuan"><Input name="request_date" value={procurement.request_date} onChange={update(setProcurement)} type="date" /></Field>
             <Field label="Tanggal persetujuan"><Input name="approval_date" value={procurement.approval_date} onChange={update(setProcurement)} type="date" /></Field>
@@ -690,7 +741,7 @@ export default function Inventory({ token, user, onBack, onError }) {
             <Field label="Jumlah"><Input type="number" min="1" value={procurement.details[0].quantity} onChange={(event) => setProcurement((previous) => ({ ...previous, details: [{ ...previous.details[0], quantity: event.target.value }] }))} /></Field>
             <Field label="Harga satuan"><Input type="number" min="0" value={procurement.details[0].unit_price} onChange={(event) => setProcurement((previous) => ({ ...previous, details: [{ ...previous.details[0], unit_price: event.target.value }] }))} /></Field>
             <div style={{ gridColumn: '1 / -1' }}><Field label="Keterangan"><Textarea name="notes" value={procurement.notes} onChange={update(setProcurement)} /></Field></div>
-            <div style={{ gridColumn: '1 / -1' }}><FormActions label="Simpan pengadaan" onCancel={() => setShowProcurementModal(false)} /></div>
+            <div style={{ gridColumn: '1 / -1' }}><FormActions label={procurementEditingId ? 'Simpan perubahan' : 'Simpan pengadaan'} onCancel={() => { setShowProcurementModal(false); setProcurementEditingId(null) }} /></div>
           </form>
         </div>
       </div>
