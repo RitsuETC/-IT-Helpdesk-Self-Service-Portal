@@ -570,7 +570,6 @@ function App() {
                   'translateY(-1px)'
               }}
             >
-              <span>👤</span>
               <span>Akun</span>
             </button>
           ) : (
