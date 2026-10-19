@@ -1225,63 +1225,332 @@ function TechnicalSpecsForm({ categoryName, values, onChange }) { return <sectio
 
 function AssetTable({ items, isAdmin, remove, onEdit, onView, onPrintQr, onUpdateStock }) {
   return (
-    <table className="inventory-table">
-      <thead><tr><th>Kode</th><th>Kategori</th><th>Lokasi</th><th>Pengguna</th><th>Merek/Model</th><th>Stok</th><th>Status</th><th>Kondisi</th><th>Aksi</th></tr></thead>
-      <tbody>
-        {items.map((item) => (
-          <tr key={item.id_asset}>
-            <td style={{ fontWeight: 'bold' }}>{item.asset_code}</td>
-            <td>{item.category_name || '-'}</td>
-            <td>{item.ruangan || '-'}</td>
-            <td>{item.user_name || '-'}</td>
-            <td>{item.brand_model || '-'}</td>
-            <td className={Number(item.stock) <= 0 ? 'low-stock' : ''}>{item.stock ?? 0}</td>
-            <td>{item.status}</td>
-            <td>{item.condition}</td>
-            <td>
-              <div className="inventory-action-group">
-                <button className="secondary-button" onClick={() => onView(item)}>Detail</button>
-                <button className="secondary-button" onClick={() => onPrintQr(item)}>QR</button>
-                {isAdmin && (
-                  <>
-                    <button className="secondary-button" style={{ background: '#f0fdf4', borderColor: '#bbf7d0', color: '#059669' }} onClick={() => onUpdateStock(item)}>Stok</button>
-                    <button className="secondary-button" onClick={() => onEdit(item)}>Edit</button>
-                    <button className="danger-button" onClick={() => remove(`/inventory/assets/${item.id_asset}`)}>Hapus</button>
-                  </>
-                )}
-              </div>
-            </td>
+    <div
+      className="asset-table-scroll"
+      style={{
+        width: '100%',
+        overflowX: 'auto',
+        border: '1px solid #e2e8f0',
+        borderRadius: '10px',
+        background: '#ffffff'
+      }}
+    >
+      <table
+        className="inventory-table asset-data-table"
+        style={{
+          width: '100%',
+          minWidth: '1120px',
+          borderCollapse: 'separate',
+          borderSpacing: 0,
+          margin: 0
+        }}
+      >
+        <thead>
+          <tr>
+            <th style={{ minWidth: '110px' }}>Kode</th>
+            <th style={{ minWidth: '120px' }}>Kategori</th>
+            <th style={{ minWidth: '130px' }}>Lokasi</th>
+            <th style={{ minWidth: '130px' }}>Pengguna</th>
+            <th style={{ minWidth: '160px' }}>Merek/Model</th>
+            <th style={{ minWidth: '65px', textAlign: 'center' }}>Stok</th>
+            <th style={{ minWidth: '110px' }}>Status</th>
+            <th style={{ minWidth: '100px' }}>Kondisi</th>
+            <th
+              style={{
+                minWidth: isAdmin ? '250px' : '150px',
+                width: isAdmin ? '250px' : '150px',
+                textAlign: 'center',
+                position: 'sticky',
+                right: 0,
+                zIndex: 2,
+                background: '#f0fdf4',
+                boxShadow: '-5px 0 8px rgba(15, 23, 42, 0.04)'
+              }}
+            >
+              Aksi
+            </th>
           </tr>
-        ))}
-      </tbody>
-    </table>
-  ) 
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.id_asset}>
+              <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{item.asset_code || '-'}</td>
+              <td>{item.category_name || '-'}</td>
+              <td>{item.ruangan || '-'}</td>
+              <td>{item.user_name || '-'}</td>
+              <td style={{ maxWidth: '190px', overflowWrap: 'anywhere' }}>{item.brand_model || '-'}</td>
+              <td
+                className={Number(item.stock) <= 0 ? 'low-stock' : ''}
+                style={{ textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}
+              >
+                {item.stock ?? 0}
+              </td>
+              <td>
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '4px 9px',
+                    borderRadius: '999px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    color: item.status === 'available' ? '#047857' : item.status === 'repair' ? '#b45309' : item.status === 'retired' ? '#64748b' : '#1d4ed8',
+                    background: item.status === 'available' ? '#d1fae5' : item.status === 'repair' ? '#fef3c7' : item.status === 'retired' ? '#f1f5f9' : '#dbeafe'
+                  }}
+                >
+                  {item.status === 'available' ? 'Tersedia' : item.status === 'in_use' ? 'Digunakan' : item.status === 'repair' ? 'Perbaikan' : item.status === 'retired' ? 'Tidak digunakan' : item.status || '-'}
+                </span>
+              </td>
+              <td>
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '4px 9px',
+                    borderRadius: '999px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    color: item.condition === 'good' ? '#047857' : item.condition === 'fair' ? '#a16207' : '#b91c1c',
+                    background: item.condition === 'good' ? '#d1fae5' : item.condition === 'fair' ? '#fef3c7' : '#fee2e2'
+                  }}
+                >
+                  {item.condition === 'good' ? 'Baik' : item.condition === 'fair' ? 'Cukup' : item.condition === 'broken' ? 'Rusak' : item.condition || '-'}
+                </span>
+              </td>
+              <td
+                style={{
+                  position: 'sticky',
+                  right: 0,
+                  zIndex: 1,
+                  background: '#ffffff',
+                  boxShadow: '-5px 0 8px rgba(15, 23, 42, 0.04)',
+                  padding: '10px 12px'
+                }}
+              >
+                <div
+                  className="asset-action-group"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexWrap: 'wrap',
+                    gap: '6px',
+                    minWidth: isAdmin ? '225px' : '125px'
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    title="Lihat detail aset"
+                    onClick={() => onView(item)}
+                    style={{ padding: '6px 10px', minHeight: '30px', fontSize: '12px', whiteSpace: 'nowrap' }}
+                  >
+                    Detail
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    title="Tampilkan label QR"
+                    onClick={() => onPrintQr(item)}
+                    style={{ padding: '6px 10px', minHeight: '30px', fontSize: '12px', whiteSpace: 'nowrap' }}
+                  >
+                    QR
+                  </button>
+                  {isAdmin && (
+                    <>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        title="Perbarui stok aset"
+                        onClick={() => onUpdateStock(item)}
+                        style={{ padding: '6px 10px', minHeight: '30px', fontSize: '12px', whiteSpace: 'nowrap', background: '#ecfdf5', borderColor: '#a7f3d0', color: '#047857' }}
+                      >
+                        Stok
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        title="Edit data aset"
+                        onClick={() => onEdit(item)}
+                        style={{ padding: '6px 10px', minHeight: '30px', fontSize: '12px', whiteSpace: 'nowrap' }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="danger-button"
+                        title="Hapus data aset"
+                        onClick={() => remove(`/inventory/assets/${item.id_asset}`)}
+                        style={{ padding: '6px 10px', minHeight: '30px', fontSize: '12px', whiteSpace: 'nowrap' }}
+                      >
+                        Hapus
+                      </button>
+                    </>
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
+          {!items.length && (
+            <tr>
+              <td colSpan={9} style={{ padding: '32px 16px', textAlign: 'center', color: '#64748b' }}>
+                Belum ada data aset yang sesuai dengan pencarian atau filter.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  )
 }
 
 function AssetQrModal({ asset, onClose }) {
   const [qrImage, setQrImage] = useState('')
   const assetUrl = `${window.location.origin}${window.location.pathname}?asset=${encodeURIComponent(asset.asset_code)}`
+
   useEffect(() => {
     let active = true
     QRCode.toDataURL(assetUrl, { width: 260, margin: 2, errorCorrectionLevel: 'M' })
       .then((image) => { if (active) setQrImage(image) })
+      .catch(() => { if (active) setQrImage('') })
     return () => { active = false }
   }, [assetUrl])
 
   const printLabel = () => {
-    printDocument(`<!doctype html><html><head><title>Label ${asset.asset_code}</title><style>body{font-family:Arial;text-align:center;padding:20px}.label{display:inline-block;border:1px solid #111;padding:16px}img{width:220px;height:220px}h1{font-size:17px;margin:0 0 6px}p{margin:4px 0;font-size:12px}</style></head><body><section class="label"><h1>IT Helpdesk — Aset</h1><p><b>${asset.asset_code}</b></p><p>${asset.brand_model || ''}</p><img src="${qrImage}" alt="QR ${asset.asset_code}" /><p>Scan untuk melihat detail dan riwayat aset</p></section></body></html>`)
+    printDocument(`<!doctype html><html><head><title>Label ${asset.asset_code}</title><style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;text-align:center;padding:24px;color:#0f172a}.label{display:inline-block;border:1px solid #d1d5db;border-radius:12px;padding:22px;width:290px}.brand{color:#047857;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase}h1{font-size:20px;margin:10px 0 6px}p{margin:5px 0;font-size:12px;color:#475569}img{display:block;width:220px;height:220px;margin:16px auto}</style></head><body><section class="label"><div class="brand">IT Helpdesk</div><h1>Label QR Aset</h1><p><b>${asset.asset_code}</b></p><p>${asset.brand_model || 'Aset IT'}</p><img src="${qrImage}" alt="QR ${asset.asset_code}" /><p>Scan untuk melihat detail dan riwayat aset</p></section></body></html>`)
   }
 
-  return <div className="modal-backdrop" onClick={onClose}>
-    <section onClick={(event) => event.stopPropagation()} style={{ background: '#fff', width: 'min(380px, calc(100vw - 32px))', borderRadius: '14px', padding: '24px', textAlign: 'center', position: 'relative' }}>
-      <button type="button" onClick={onClose} aria-label="Tutup QR" style={{ position: 'absolute', top: '12px', right: '16px', border: 0, background: 'none', fontSize: '13px', cursor: 'pointer' }}>Tutup</button>
-      <h2 style={{ margin: 0, color: '#065f46' }}>Label QR Aset</h2>
-      <p style={{ margin: '8px 0', color: '#475569' }}><b>{asset.asset_code}</b><br />{asset.brand_model || 'Aset IT'}</p>
-      {qrImage ? <img src={qrImage} alt={`QR code ${asset.asset_code}`} style={{ width: '260px', height: '260px', maxWidth: '100%' }} /> : <p>Membuat QR code…</p>}
-      <p style={{ fontSize: '12px', color: '#64748b' }}>Scan QR untuk membuka detail aset dan riwayatnya.</p>
-      <button className="primary-button" type="button" disabled={!qrImage} onClick={printLabel}>Cetak Label QR</button>
-    </section>
-  </div>
+  return (
+    <div
+      className="modal-backdrop"
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center',
+        justifyContent: 'center', padding: '20px', background: 'rgba(8, 25, 19, 0.58)',
+        backdropFilter: 'blur(7px)', WebkitBackdropFilter: 'blur(7px)', overflowY: 'auto'
+      }}
+    >
+      <section
+        className="asset-qr-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="asset-qr-title"
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          background: '#ffffff', width: 'min(440px, 100%)', borderRadius: '22px',
+          overflow: 'hidden', position: 'relative', boxShadow: '0 24px 80px rgba(0,0,0,0.28)',
+          border: '1px solid rgba(255,255,255,0.8)', animation: 'assetQrAppear 180ms ease-out'
+        }}
+      >
+        <div style={{
+          background: 'linear-gradient(135deg, #064e3b 0%, #047857 58%, #059669 100%)',
+          padding: '22px 24px 25px', color: '#ffffff', position: 'relative'
+        }}>
+          <button
+            type="button" onClick={onClose} aria-label="Tutup QR"
+            style={{
+              position: 'absolute', top: '16px', right: '16px', width: '34px', height: '34px',
+              display: 'grid', placeItems: 'center', border: '1px solid rgba(255,255,255,0.28)',
+              borderRadius: '10px', background: 'rgba(255,255,255,0.12)', color: '#ffffff',
+              fontSize: '21px', lineHeight: 1, cursor: 'pointer'
+            }}
+          >
+            ×
+          </button>
+          <div style={{
+            width: '42px', height: '42px', borderRadius: '13px', display: 'grid', placeItems: 'center',
+            background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', marginBottom: '14px'
+          }}>
+            <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v2M17 20h4M20 18v3"/>
+            </svg>
+          </div>
+          <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#a7f3d0', marginBottom: '5px' }}>
+            Manajemen Inventaris
+          </div>
+          <h2 id="asset-qr-title" style={{ margin: 0, fontSize: '23px', lineHeight: 1.25, fontWeight: 800, color: '#ffffff' }}>
+            Label QR Aset
+          </h2>
+          <p style={{ margin: '7px 0 0', color: '#d1fae5', fontSize: '13px', lineHeight: 1.5 }}>
+            Pindai kode untuk membuka informasi aset
+          </p>
+        </div>
+
+        <div style={{ padding: '22px 24px 24px', textAlign: 'center' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left', padding: '13px 15px',
+            border: '1px solid #e2e8f0', borderRadius: '14px', background: '#f8fafc', marginBottom: '18px'
+          }}>
+            <div style={{
+              flexShrink: 0, width: '42px', height: '42px', borderRadius: '12px', display: 'grid', placeItems: 'center',
+              color: '#047857', background: '#d1fae5'
+            }}>
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3M7 8h10M7 12h5"/>
+              </svg>
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ color: '#64748b', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '4px' }}>Kode aset</div>
+              <div style={{ color: '#0f172a', fontWeight: 800, fontSize: '16px', overflowWrap: 'anywhere' }}>{asset.asset_code}</div>
+              <div style={{ color: '#475569', fontSize: '13px', marginTop: '3px', overflowWrap: 'anywhere' }}>{asset.brand_model || 'Aset IT'}</div>
+            </div>
+            <span style={{
+              flexShrink: 0, alignSelf: 'flex-start', borderRadius: '999px', padding: '5px 8px',
+              background: '#dcfce7', color: '#166534', fontSize: '10px', fontWeight: 700
+            }}>ASET</span>
+          </div>
+
+          <div style={{
+            background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)', border: '1px solid #e2e8f0',
+            borderRadius: '18px', padding: '17px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '250px'
+          }}>
+            {qrImage ? (
+              <div style={{ background: '#ffffff', padding: '10px', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(15,23,42,0.06)', lineHeight: 0 }}>
+                <img src={qrImage} alt={`QR code ${asset.asset_code}`} style={{ display: 'block', width: '220px', height: '220px', maxWidth: '100%', objectFit: 'contain', imageRendering: 'pixelated' }} />
+              </div>
+            ) : (
+              <div style={{ color: '#64748b', fontSize: '13px', padding: '30px' }}>Menyiapkan kode QR…</div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '9px', textAlign: 'left', margin: '15px 0 19px', padding: '11px 12px', borderRadius: '11px', background: '#ecfdf5', color: '#065f46' }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0, marginTop: '1px' }}>
+              <circle cx="12" cy="12" r="10"/><path d="M12 11v5M12 8h.01"/>
+            </svg>
+            <p style={{ margin: 0, fontSize: '12px', lineHeight: 1.6 }}>Scan QR ini untuk membuka detail aset dan melihat riwayatnya.</p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              type="button" onClick={onClose}
+              style={{
+                flex: '0 0 auto', padding: '12px 17px', borderRadius: '11px', border: '1px solid #cbd5e1',
+                background: '#ffffff', color: '#334155', fontSize: '13px', fontWeight: 700, cursor: 'pointer'
+              }}
+            >Tutup</button>
+            <button
+              className="primary-button" type="button" disabled={!qrImage} onClick={printLabel}
+              style={{
+                flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                minHeight: '44px', padding: '12px 16px', borderRadius: '11px', border: 'none',
+                background: qrImage ? 'linear-gradient(135deg, #047857, #059669)' : '#94a3b8',
+                color: '#ffffff', fontSize: '13px', fontWeight: 800, cursor: qrImage ? 'pointer' : 'not-allowed',
+                boxShadow: qrImage ? '0 5px 12px rgba(4,120,87,0.2)' : 'none'
+              }}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/><path d="M18 12h.01"/>
+              </svg>
+              Cetak Label QR
+            </button>
+          </div>
+        </div>
+      </section>
+      <style>{`@keyframes assetQrAppear { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } } @media (max-width: 480px) { .asset-qr-dialog { max-height: calc(100vh - 24px); overflow-y: auto; } }`}</style>
+    </div>
+  )
 }
 
 function PartTable({ items, isAdmin, remove, onEdit, onView, onUpdateStock }) { 
