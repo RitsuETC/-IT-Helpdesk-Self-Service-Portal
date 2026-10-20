@@ -1235,6 +1235,41 @@ function AssetTable({ items, isAdmin, remove, onEdit, onView, onPrintQr, onUpdat
         background: '#ffffff'
       }}
     >
+      <style>{`
+        .asset-action-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex: 1 1 0;
+          min-width: 0;
+          min-height: 32px;
+          padding: 7px 8px;
+          border: 1px solid transparent;
+          border-radius: 7px;
+          font: inherit;
+          font-size: 11px;
+          font-weight: 700;
+          line-height: 1;
+          white-space: nowrap;
+          cursor: pointer;
+          user-select: none;
+          transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 120ms ease;
+        }
+        .asset-action-btn:hover { box-shadow: 0 3px 8px rgba(15, 23, 42, 0.14); transform: translateY(-1px); }
+        .asset-action-btn:active { transform: scale(0.94); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15); }
+        .asset-action-btn:focus-visible { outline: 2px solid #047857; outline-offset: 2px; }
+        .action-detail { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+        .action-detail:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
+        .action-qr { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+        .action-qr:hover { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+        .action-stock { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+        .action-stock:hover { background: #059669; color: #fff; border-color: #059669; }
+        .action-edit { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+        .action-edit:hover { background: #ea580c; color: #fff; border-color: #ea580c; }
+        .action-delete { background: #fff1f2; color: #be123c; border-color: #fecdd3; }
+        .action-delete:hover { background: #e11d48; color: #fff; border-color: #e11d48; }
+        @media (prefers-reduced-motion: reduce) { .asset-action-btn { transition: none; } }
+      `}</style>
       <table
         className="inventory-table asset-data-table"
         style={{
@@ -1257,8 +1292,8 @@ function AssetTable({ items, isAdmin, remove, onEdit, onView, onPrintQr, onUpdat
             <th style={{ minWidth: '100px' }}>Kondisi</th>
             <th
               style={{
-                minWidth: isAdmin ? '250px' : '150px',
-                width: isAdmin ? '250px' : '150px',
+                minWidth: isAdmin ? '330px' : '150px',
+                width: isAdmin ? '330px' : '150px',
                 textAlign: 'center',
                 position: 'sticky',
                 right: 0,
@@ -1333,28 +1368,27 @@ function AssetTable({ items, isAdmin, remove, onEdit, onView, onPrintQr, onUpdat
                   className="asset-action-group"
                   style={{
                     display: 'flex',
+                    flexWrap: 'nowrap',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    flexWrap: 'wrap',
-                    gap: '6px',
-                    minWidth: isAdmin ? '225px' : '125px'
+                    gap: '5px',
+                    minWidth: isAdmin ? '310px' : '125px',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   <button
                     type="button"
-                    className="secondary-button"
+                    className="asset-action-btn action-detail"
                     title="Lihat detail aset"
                     onClick={() => onView(item)}
-                    style={{ padding: '6px 10px', minHeight: '30px', fontSize: '12px', whiteSpace: 'nowrap' }}
                   >
                     Detail
                   </button>
                   <button
                     type="button"
-                    className="secondary-button"
+                    className="asset-action-btn action-qr"
                     title="Tampilkan label QR"
                     onClick={() => onPrintQr(item)}
-                    style={{ padding: '6px 10px', minHeight: '30px', fontSize: '12px', whiteSpace: 'nowrap' }}
                   >
                     QR
                   </button>
@@ -1362,28 +1396,25 @@ function AssetTable({ items, isAdmin, remove, onEdit, onView, onPrintQr, onUpdat
                     <>
                       <button
                         type="button"
-                        className="secondary-button"
+                        className="asset-action-btn action-stock"
                         title="Perbarui stok aset"
                         onClick={() => onUpdateStock(item)}
-                        style={{ padding: '6px 10px', minHeight: '30px', fontSize: '12px', whiteSpace: 'nowrap', background: '#ecfdf5', borderColor: '#a7f3d0', color: '#047857' }}
                       >
                         Stok
                       </button>
                       <button
                         type="button"
-                        className="secondary-button"
+                        className="asset-action-btn action-edit"
                         title="Edit data aset"
                         onClick={() => onEdit(item)}
-                        style={{ padding: '6px 10px', minHeight: '30px', fontSize: '12px', whiteSpace: 'nowrap' }}
                       >
                         Edit
                       </button>
                       <button
                         type="button"
-                        className="danger-button"
+                        className="asset-action-btn action-delete"
                         title="Hapus data aset"
                         onClick={() => remove(`/inventory/assets/${item.id_asset}`)}
-                        style={{ padding: '6px 10px', minHeight: '30px', fontSize: '12px', whiteSpace: 'nowrap' }}
                       >
                         Hapus
                       </button>
@@ -1439,14 +1470,15 @@ function AssetQrModal({ asset, onClose }) {
         aria-labelledby="asset-qr-title"
         onClick={(event) => event.stopPropagation()}
         style={{
-          background: '#ffffff', width: 'min(440px, 100%)', borderRadius: '22px',
-          overflow: 'hidden', position: 'relative', boxShadow: '0 24px 80px rgba(0,0,0,0.28)',
+          background: '#ffffff', width: 'min(340px, calc(100vw - 32px))', maxHeight: 'calc(100vh - 32px)',
+          overflowY: 'auto', borderRadius: '16px', position: 'relative',
+          boxShadow: '0 16px 48px rgba(0,0,0,0.22)',
           border: '1px solid rgba(255,255,255,0.8)', animation: 'assetQrAppear 180ms ease-out'
         }}
       >
         <div style={{
           background: 'linear-gradient(135deg, #064e3b 0%, #047857 58%, #059669 100%)',
-          padding: '22px 24px 25px', color: '#ffffff', position: 'relative'
+          padding: '16px 18px 18px', color: '#ffffff', position: 'relative'
         }}>
           <button
             type="button" onClick={onClose} aria-label="Tutup QR"
@@ -1460,31 +1492,25 @@ function AssetQrModal({ asset, onClose }) {
             ×
           </button>
           <div style={{
-            width: '42px', height: '42px', borderRadius: '13px', display: 'grid', placeItems: 'center',
-            background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', marginBottom: '14px'
+            width: '34px', height: '34px', borderRadius: '10px', display: 'grid', placeItems: 'center',
+            background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', marginBottom: '9px'
           }}>
             <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v2M17 20h4M20 18v3"/>
             </svg>
           </div>
-          <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#a7f3d0', marginBottom: '5px' }}>
-            Manajemen Inventaris
-          </div>
-          <h2 id="asset-qr-title" style={{ margin: 0, fontSize: '23px', lineHeight: 1.25, fontWeight: 800, color: '#ffffff' }}>
+          <h2 id="asset-qr-title" style={{ margin: 0, fontSize: '20px', lineHeight: 1.25, fontWeight: 800, color: '#ffffff' }}>
             Label QR Aset
           </h2>
-          <p style={{ margin: '7px 0 0', color: '#d1fae5', fontSize: '13px', lineHeight: 1.5 }}>
-            Pindai kode untuk membuka informasi aset
-          </p>
         </div>
 
-        <div style={{ padding: '22px 24px 24px', textAlign: 'center' }}>
+        <div style={{ padding: '14px 16px 16px', textAlign: 'center' }}>
           <div style={{
-            display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left', padding: '13px 15px',
-            border: '1px solid #e2e8f0', borderRadius: '14px', background: '#f8fafc', marginBottom: '18px'
+            display: 'flex', alignItems: 'center', gap: '9px', textAlign: 'left', padding: '10px 12px',
+            border: '1px solid #e2e8f0', borderRadius: '11px', background: '#f8fafc', marginBottom: '12px'
           }}>
             <div style={{
-              flexShrink: 0, width: '42px', height: '42px', borderRadius: '12px', display: 'grid', placeItems: 'center',
+              flexShrink: 0, width: '34px', height: '34px', borderRadius: '10px', display: 'grid', placeItems: 'center',
               color: '#047857', background: '#d1fae5'
             }}>
               <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1492,9 +1518,9 @@ function AssetQrModal({ asset, onClose }) {
               </svg>
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ color: '#64748b', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '4px' }}>Kode aset</div>
-              <div style={{ color: '#0f172a', fontWeight: 800, fontSize: '16px', overflowWrap: 'anywhere' }}>{asset.asset_code}</div>
-              <div style={{ color: '#475569', fontSize: '13px', marginTop: '3px', overflowWrap: 'anywhere' }}>{asset.brand_model || 'Aset IT'}</div>
+              <div style={{ color: '#64748b', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '3px' }}>Kode aset</div>
+              <div style={{ color: '#0f172a', fontWeight: 800, fontSize: '15px', overflowWrap: 'anywhere' }}>{asset.asset_code}</div>
+              <div style={{ color: '#475569', fontSize: '12px', marginTop: '2px', overflowWrap: 'anywhere' }}>{asset.brand_model || 'Aset IT'}</div>
             </div>
             <span style={{
               flexShrink: 0, alignSelf: 'flex-start', borderRadius: '999px', padding: '5px 8px',
@@ -1504,39 +1530,39 @@ function AssetQrModal({ asset, onClose }) {
 
           <div style={{
             background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)', border: '1px solid #e2e8f0',
-            borderRadius: '18px', padding: '17px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '250px'
+            borderRadius: '12px', padding: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '0'
           }}>
             {qrImage ? (
-              <div style={{ background: '#ffffff', padding: '10px', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(15,23,42,0.06)', lineHeight: 0 }}>
-                <img src={qrImage} alt={`QR code ${asset.asset_code}`} style={{ display: 'block', width: '220px', height: '220px', maxWidth: '100%', objectFit: 'contain', imageRendering: 'pixelated' }} />
+              <div style={{ background: '#ffffff', padding: '7px', borderRadius: '9px', border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(15,23,42,0.06)', lineHeight: 0 }}>
+                <img src={qrImage} alt={`QR code ${asset.asset_code}`} style={{ display: 'block', width: '160px', height: '160px', maxWidth: '100%', objectFit: 'contain', imageRendering: 'pixelated' }} />
               </div>
             ) : (
-              <div style={{ color: '#64748b', fontSize: '13px', padding: '30px' }}>Menyiapkan kode QR…</div>
+              <div style={{ color: '#64748b', fontSize: '12px', padding: '20px' }}>Menyiapkan kode QR…</div>
             )}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '9px', textAlign: 'left', margin: '15px 0 19px', padding: '11px 12px', borderRadius: '11px', background: '#ecfdf5', color: '#065f46' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '9px', textAlign: 'left', margin: '10px 0 12px', padding: '8px 10px', borderRadius: '11px', background: '#ecfdf5', color: '#065f46' }}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0, marginTop: '1px' }}>
               <circle cx="12" cy="12" r="10"/><path d="M12 11v5M12 8h.01"/>
             </svg>
-            <p style={{ margin: 0, fontSize: '12px', lineHeight: 1.6 }}>Scan QR ini untuk membuka detail aset dan melihat riwayatnya.</p>
+            <p style={{ margin: 0, fontSize: '11px', lineHeight: 1.5 }}>Scan QR ini untuk membuka detail aset dan melihat riwayatnya.</p>
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
               type="button" onClick={onClose}
               style={{
-                flex: '0 0 auto', padding: '12px 17px', borderRadius: '11px', border: '1px solid #cbd5e1',
-                background: '#ffffff', color: '#334155', fontSize: '13px', fontWeight: 700, cursor: 'pointer'
+                flex: '0 0 auto', padding: '9px 13px', borderRadius: '8px', border: '1px solid #cbd5e1',
+                background: '#ffffff', color: '#334155', fontSize: '12px', fontWeight: 700, cursor: 'pointer'
               }}
             >Tutup</button>
             <button
               className="primary-button" type="button" disabled={!qrImage} onClick={printLabel}
               style={{
                 flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                minHeight: '44px', padding: '12px 16px', borderRadius: '11px', border: 'none',
+                minHeight: '36px', padding: '9px 10px', borderRadius: '8px', border: 'none',
                 background: qrImage ? 'linear-gradient(135deg, #047857, #059669)' : '#94a3b8',
-                color: '#ffffff', fontSize: '13px', fontWeight: 800, cursor: qrImage ? 'pointer' : 'not-allowed',
+                color: '#ffffff', fontSize: '12px', fontWeight: 800, cursor: qrImage ? 'pointer' : 'not-allowed',
                 boxShadow: qrImage ? '0 5px 12px rgba(4,120,87,0.2)' : 'none'
               }}
             >
@@ -1548,7 +1574,7 @@ function AssetQrModal({ asset, onClose }) {
           </div>
         </div>
       </section>
-      <style>{`@keyframes assetQrAppear { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } } @media (max-width: 480px) { .asset-qr-dialog { max-height: calc(100vh - 24px); overflow-y: auto; } }`}</style>
+      <style>{`#asset-qr-title { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; } @keyframes assetQrAppear { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } } @media (max-width: 380px) { .asset-qr-dialog { max-height: calc(100vh - 24px); overflow-y: auto; } } @media (prefers-reduced-motion: reduce) { .asset-qr-dialog { animation: none !important; } }`}</style>
     </div>
   )
 }
