@@ -11,7 +11,6 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   const [tindakanVal, setTindakanVal] = useState('')
   const [hasilVal, setHasilVal] = useState('')
   const [technicians, setTechnicians] = useState([])
-  const relatedAssets = Array.isArray(ticket?.related_assets) ? ticket.related_assets : []
   const [selectedStatus, setSelectedStatus] = useState('NEW')
   const [comments, setComments] = useState([])
   const [timeline, setTimeline] = useState([])
@@ -262,20 +261,6 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
         </div>
       </div>
 
-      <section style={{ marginTop: '24px', background: '#ffffff', border: '1px solid #a7f3d0', borderRadius: '14px', padding: '16px' }}>
-        <h3 style={{ margin: '0 0 12px', color: '#065f46', fontSize: '15px' }}>Aset Terkait Tiket</h3>
-        {relatedAssets.length ? (
-          <div style={{ display: 'grid', gap: '8px' }}>
-            {relatedAssets.map((asset) => (
-              <div key={asset.id_asset} style={{ padding: '10px 12px', border: '1px solid #bbf7d0', borderRadius: '8px', background: '#f0fdf4', fontSize: '12px' }}>
-                <strong>{asset.asset_code}</strong>{asset.brand_model ? ` · ${asset.brand_model}` : ''}
-                <span style={{ color: '#64748b' }}> · {asset.status} · {asset.condition}</span>
-              </div>
-            ))}
-          </div>
-        ) : <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: '12px' }}>Tidak ada aset yang dipilih pada tiket ini.</p>}
-      </section>
-
       <section style={{ marginTop: '16px', background: '#ffffff', border: '1px solid #a7f3d0', borderRadius: '14px', padding: '16px' }}>
         <h3 style={{ margin: '0 0 12px', color: '#065f46', fontSize: '15px' }}>Riwayat Maintenance</h3>
         {maintenanceRecords.length === 0 ? (
@@ -300,9 +285,21 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
         )}
       </section>
 
-      <section style={{ marginTop: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-        <div style={{ background: '#fff', border: '1px solid #a7f3d0', borderRadius: '14px', padding: '16px' }}><h3 style={{ margin: '0 0 10px', color: '#065f46', fontSize: '15px' }}>Komentar & Pembaruan</h3><div style={{ display: 'grid', gap: '9px', maxHeight: '230px', overflowY: 'auto', marginBottom: '12px' }}>{comments.length ? comments.map((item) => <div key={item.id} style={{ background: '#f8fafc', padding: '9px', borderRadius: '8px', fontSize: '12px' }}><b>{item.author_name || 'Pengguna'} <small>({item.author_role || '-'})</small></b><div>{item.message}</div><small>{new Date(item.created_at).toLocaleString('id-ID')}</small></div>) : <small>Belum ada komentar.</small>}</div><form onSubmit={sendComment}><textarea required value={commentText} onChange={(event) => setCommentText(event.target.value)} rows="2" placeholder="Tulis komentar atau informasi tambahan..." style={{ width: '100%', boxSizing: 'border-box', padding: '9px', borderRadius: '8px', border: '1px solid #cbd5e1' }} /><button type="submit" className="primary-button" style={{ marginTop: '7px' }}>Kirim komentar</button></form></div>
-        <div style={{ background: '#fff', border: '1px solid #a7f3d0', borderRadius: '14px', padding: '16px' }}><h3 style={{ margin: '0 0 10px', color: '#065f46', fontSize: '15px' }}>Timeline Tiket</h3><div style={{ display: 'grid', gap: '9px', maxHeight: '300px', overflowY: 'auto' }}>{timeline.length ? timeline.map((item, index) => <div key={`${item.created_at}-${index}`} style={{ borderLeft: '3px solid #34d399', paddingLeft: '10px', fontSize: '12px' }}><b>{item.detail}</b><br /><small>{item.actor_name} · {new Date(item.created_at).toLocaleString('id-ID')}</small></div>) : <small>Timeline akan muncul setelah aktivitas dicatat.</small>}</div></div>
+      <section style={{ marginTop: '24px', background: '#fff', border: '1px solid #a7f3d0', borderRadius: '14px', padding: '16px' }}>
+        <h3 style={{ margin: '0 0 10px', color: '#065f46', fontSize: '15px' }}>Komentar & Pembaruan</h3>
+        <div style={{ display: 'grid', gap: '9px', maxHeight: '230px', overflowY: 'auto', marginBottom: '12px' }}>
+          {comments.length ? comments.map((item) => <div key={item.id} style={{ background: '#f8fafc', padding: '9px', borderRadius: '8px', fontSize: '12px' }}><b>{item.author_name || 'Pengguna'} <small>({item.author_role || '-'})</small></b><div>{item.message}</div><small>{new Date(item.created_at).toLocaleString('id-ID')}</small></div>) : <small>Belum ada komentar.</small>}
+        </div>
+        <form onSubmit={sendComment} style={{ display: 'grid', gap: '8px' }}>
+          <textarea required value={commentText} onChange={(event) => setCommentText(event.target.value)} rows="2" placeholder="Tulis komentar atau informasi tambahan..." style={{ width: '100%', boxSizing: 'border-box', padding: '9px', borderRadius: '8px', border: '1px solid #cbd5e1' }} />
+          <button type="submit" className="primary-button" style={{ marginTop: '7px', minHeight: '40px', background: '#047857', border: '1px solid #047857', color: '#ffffff', boxShadow: '0 4px 10px rgba(7, 83, 51, 0.18)', opacity: 1, visibility: 'visible' }}>Kirim komentar</button>
+        </form>
+        <div style={{ marginTop: '18px', paddingTop: '14px', borderTop: '1px solid #d1fae5' }}>
+          <h3 style={{ margin: '0 0 10px', color: '#065f46', fontSize: '15px' }}>Timeline Tiket</h3>
+          <div style={{ display: 'grid', gap: '9px', maxHeight: '300px', overflowY: 'auto' }}>
+            {timeline.length ? timeline.map((item, index) => <div key={`${item.created_at}-${index}`} style={{ borderLeft: '3px solid #34d399', paddingLeft: '10px', fontSize: '12px' }}><b>{item.detail}</b><br /><small>{item.actor_name} · {new Date(item.created_at).toLocaleString('id-ID')}</small></div>) : <small>Timeline akan muncul setelah aktivitas dicatat.</small>}
+          </div>
+        </div>
       </section>
 
       {user?.role === 'user' && ['RESOLVED', 'CLOSED'].includes(ticket.status) && <section style={{ marginTop: '16px', background: '#90f556', border: '1px solid #f1f0eb', borderRadius: '14px', padding: '16px' }}><h3 style={{ margin: '0 0 8px', color: '#92400e', fontSize: '15px' }}>Penilaian Layanan IT</h3>{rating ? <p style={{ margin: 0 }}>Rating Anda: {'★'.repeat(rating.rating)}{'☆'.repeat(5 - rating.rating)} {rating.comment && `— ${rating.comment}`}</p> : <form onSubmit={saveRating} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}><select value={ratingValue} onChange={(event) => setRatingValue(event.target.value)}>{[5, 4, 3, 2, 1].map((value) => <option key={value} value={value}>{'★'.repeat(value)} ({value}/5)</option>)}</select><input value={ratingComment} onChange={(event) => setRatingComment(event.target.value)} placeholder="Komentar (opsional)" /><button type="submit" className="primary-button">Kirim rating</button></form>}</section>}
@@ -464,13 +461,12 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   )
 }
 
-export default function Tickets({ token, user, articles = [], onError, onRequireLogin, onOpenArticle, createOnly = false, onCloseCreate, initialOpenCreate = false }) {
+export default function Tickets({ token, user, articles = [], onError, onRequireLogin, onOpenArticle, createOnly = false, inlineCreate = false, onCloseCreate, initialOpenCreate = false }) {
   const [tickets, setTickets] = useState([])
   const [selectedTicketId, setSelectedTicketId] = useState(null)
   const [showCreateForm, setShowCreateForm] = useState(initialOpenCreate || createOnly)
   const [priorityFilter, setPriorityFilter] = useState('ALL')
   const [rooms, setRooms] = useState([])
-  const [assets, setAssets] = useState([])
   const [ticketDraft, setTicketDraft] = useState({ judul: '', deskripsi: '' })
   const [suggestionDismissed, setSuggestionDismissed] = useState(false)
   
@@ -491,6 +487,14 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
     setSuggestionDismissed(false)
     onCloseCreate?.()
   }
+  const handleSuggestionResolved = () => {
+    if (!inlineCreate) {
+      closeCreateForm()
+      return
+    }
+    setTicketDraft({ judul: '', deskripsi: '' })
+    setSuggestionDismissed(true)
+  }
 
   const loadTickets = async () => {
     if (!token) return
@@ -508,7 +512,6 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
     try {
       const res = await api('/tickets/meta/options', { token })
       setRooms(res.data?.rooms || [])
-      setAssets(res.data?.assets || [])
     } catch (err) {
       console.error('Failed to load meta options', err)
       setRooms([])
@@ -540,7 +543,6 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
           kategori: form.get('kategori'),
           ruangan: form.get('ruangan'),
           deskripsi: form.get('deskripsi'),
-          asset_ids: form.getAll('asset_ids')
         }
       })
       setShowCreateForm(false)
@@ -616,28 +618,27 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
   if (createOnly) {
     return showCreateForm ? (
       <div
-        className="modal-backdrop"
+        className={inlineCreate ? 'ticket-inline-create' : 'modal-backdrop'}
         onClick={closeCreateForm}
-        style={{ zIndex: 1100 }}
+        style={inlineCreate ? undefined : { zIndex: 1100 }}
       >
         <form
-          className="ticket-form"
+          className={`ticket-form${inlineCreate ? ' ticket-form-inline' : ''}`}
           onClick={(event) => event.stopPropagation()}
           onSubmit={handleCreateTicket}
         >
-          <button
+          {!inlineCreate && <button
             type="button"
             className="close-ticket-form"
             onClick={closeCreateForm}
             aria-label="Tutup form tiket"
-          >×</button>
-          <h2>Buat Tiket Baru</h2>
+          >×</button>}
+          <h2>{inlineCreate ? 'Laporkan Kendala IT' : 'Buat Tiket Baru'}</h2>
           <label>Judul Kendala<input name="judul" required value={ticketDraft.judul} onChange={updateDraft('judul')} placeholder="Contoh: Printer Rusak" /></label>
           <label>Kategori<select name="kategori"><option value="Hardware">Hardware</option><option value="Software">Software</option><option value="Jaringan">Jaringan</option><option value="Lainnya">Lainnya</option></select></label>
           <label>Lokasi / Ruangan<select name="ruangan" required defaultValue=""><option value="" disabled>-- Pilih Ruangan --</option>{rooms.map((room) => <option key={room.id} value={room.id}>{room.ruangan}</option>)}</select></label>
-          <label>Aset terkait (opsional)<select name="asset_ids" multiple size="4" aria-label="Pilih aset terkait tiket" style={{ minHeight: '96px' }}>{assets.map((asset) => <option key={asset.id_asset} value={asset.id_asset}>{asset.asset_code}{asset.brand_model ? ` · ${asset.brand_model}` : ''}</option>)}</select><small>Pilih satu atau beberapa aset yang mengalami kendala.</small></label>
           <label>Deskripsi Masalah<textarea name="deskripsi" required value={ticketDraft.deskripsi} onChange={updateDraft('deskripsi')} placeholder="Jelaskan kendala secara rinci..." rows="3" /></label>
-          {!suggestionDismissed && <SmartKnowledgeSuggestion articles={suggestions} onResolved={closeCreateForm} onContinue={() => setSuggestionDismissed(true)} onOpenArticle={(article) => { closeCreateForm(); onOpenArticle?.(article) }} />}
+          {!suggestionDismissed && <SmartKnowledgeSuggestion articles={suggestions} onResolved={handleSuggestionResolved} onContinue={() => setSuggestionDismissed(true)} onOpenArticle={(article) => { closeCreateForm(); onOpenArticle?.(article) }} />}
           <button type="submit">Kirim Laporan Tiket</button>
         </form>
       </div>

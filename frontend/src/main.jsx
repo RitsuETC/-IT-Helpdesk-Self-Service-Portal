@@ -727,7 +727,25 @@ function App() {
                 </p>
               </div>
 
-              <button
+              {session?.user.role === 'user' ? (
+                <Tickets
+                  token={session.token}
+                  user={session.user}
+                  articles={articles}
+                  createOnly
+                  inlineCreate
+                  onError={setNotice}
+                  onOpenArticle={(article) => {
+                    setSelectedArticle(article)
+                    setPage('knowledge')
+                  }}
+                  onRequireLogin={() => {
+                    setLoginError('')
+                    setShowPassword(false)
+                    setShowLoginModal(true)
+                  }}
+                />
+              ) : <button
                 style={{
                   width: '100%',
                   padding: '14px',
@@ -773,7 +791,7 @@ function App() {
                 }}
               >
                 + Buat Tiket Sekarang
-              </button>
+              </button>}
             </div>
 
             <div

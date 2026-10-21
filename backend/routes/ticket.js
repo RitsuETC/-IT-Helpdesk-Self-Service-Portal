@@ -594,18 +594,6 @@ router.get("/:id", verifyToken, async (req, res) => {
             LEFT JOIN sparepart s ON s.id = m.id_sparepart
           WHERE m.id_tiket = t.id
         ), '[]'::json) AS maintenance
-        ,COALESCE((
-          SELECT json_agg(json_build_object(
-            'id_asset', a.id_asset,
-            'asset_code', a.asset_code,
-            'brand_model', a.brand_model,
-            'status', a.status,
-            'condition', a.condition
-          ) ORDER BY a.asset_code)
-          FROM ticket_asset ta
-          JOIN asset a ON a.id_asset = ta.id_asset
-          WHERE ta.id_tiket = t.id
-        ), '[]'::json) AS related_assets
       FROM tiket t
       JOIN unit u ON u.id = t.ruangan
       JOIN knowledge_kategori k ON k.id = t.categori
@@ -755,12 +743,6 @@ router.post("/", verifyToken, async (req, res) => {
       prioritas,
       deskripsi,
     } = req.body;
-    const rawAssetIds = req.body.asset_ids ?? [];
-    if (!Array.isArray(rawAssetIds) || rawAssetIds.some((id) => !/^\d+$/.test(String(id)) || Number(id) < 1)) {
-      return res.status(400).json({ message: "Daftar aset tiket tidak valid" });
-    }
-    const assetIds = [...new Set(rawAssetIds.map(Number))];
-
     const room = ruangan ?? lokasi;
 
     if (
@@ -824,16 +806,6 @@ router.post("/", verifyToken, async (req, res) => {
     `);
     const assignedTechnician = technicianResult.rows[0] || null;
 
-    if (assetIds.length) {
-      const selectedAssets = await client.query(
-        'SELECT id_asset FROM asset WHERE id_asset = ANY($1::int[])',
-        [assetIds]
-      );
-      if (selectedAssets.rowCount !== assetIds.length) {
-        return res.status(400).json({ message: "Satu atau lebih aset tidak ditemukan" });
-      }
-    }
-
     await client.query('BEGIN');
     ticketTransactionOpen = true;
     const { rows } = await client.query(
@@ -874,12 +846,6 @@ router.post("/", verifyToken, async (req, res) => {
         assignedTechnician ? 'ASSIGNED' : 'NEW',
       ]
     );
-    for (const assetId of assetIds) {
-      await client.query(
-        'INSERT INTO ticket_asset (id_tiket, id_asset) VALUES ($1, $2)',
-        [rows[0].id, assetId]
-      );
-    }
     await client.query('COMMIT');
     ticketTransactionOpen = false;
 

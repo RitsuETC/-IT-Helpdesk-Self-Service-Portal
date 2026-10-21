@@ -40,6 +40,7 @@ function Admin({ token, articles, onChanged, onError, user }) {
     role: 'user'
   })
   const [userQuery, setUserQuery] = useState('')
+  const [adminPage, setAdminPage] = useState('knowledge')
 
   // State baru untuk Langkah Dinamis (Step-by-Step Generator)
   const [stepsList, setStepsList] = useState([''])
@@ -421,8 +422,20 @@ function Admin({ token, articles, onChanged, onError, user }) {
         </div>
       </header>
 
+      <nav aria-label="Halaman panel admin" style={{ display: 'flex', gap: '8px', overflowX: 'auto', borderBottom: '1px solid #cbd5e1', marginBottom: '20px' }}>
+        {[
+          { id: 'knowledge', label: 'Knowledge Base' },
+          ...(user?.role === 'admin' ? [{ id: 'setup', label: 'Pengaturan Sistem' }] : []),
+          { id: 'users', label: 'Pengguna' }
+        ].map((item) => (
+          <button key={item.id} type="button" onClick={() => setAdminPage(item.id)} aria-current={adminPage === item.id ? 'page' : undefined} style={{ flex: '0 0 auto', padding: '11px 16px', border: 0, borderBottom: adminPage === item.id ? '3px solid #047857' : '3px solid transparent', background: 'transparent', color: adminPage === item.id ? '#065f46' : '#64748b', fontWeight: 700, cursor: 'pointer' }}>
+            {item.label}
+          </button>
+        ))}
+      </nav>
+
       {/* KNOWLEDGE SECTION */}
-      <section className="admin-section">
+      {adminPage === 'knowledge' && <section className="admin-section">
         <div className="admin-section-heading">
           <div>
             <h3>Knowledge Base</h3>
@@ -688,10 +701,10 @@ function Admin({ token, articles, onChanged, onError, user }) {
             </div>
           </section>
         </div>
-      </section>
+      </section>}
 
       {/* SYSTEM SETUP */}
-      {user && user.role === 'admin' && (
+      {adminPage === 'setup' && user?.role === 'admin' && (
         <section className="admin-section">
           <div className="admin-section-heading">
             <div>
@@ -828,7 +841,7 @@ function Admin({ token, articles, onChanged, onError, user }) {
       )}
 
       {/* USER MANAGEMENT */}
-      <section className="admin-section">
+      {adminPage === 'users' && <section className="admin-section">
         <div className="admin-section-heading">
           <div>
             <h3>Kelola Role Pengguna</h3>
@@ -909,7 +922,7 @@ function Admin({ token, articles, onChanged, onError, user }) {
             ))}
           </div>
         </section>
-      </section>
+      </section>}
     </section>
   )
 }
