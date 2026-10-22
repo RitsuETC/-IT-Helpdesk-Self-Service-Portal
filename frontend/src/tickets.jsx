@@ -18,7 +18,12 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   const [commentText, setCommentText] = useState('')
   const [ratingValue, setRatingValue] = useState(5)
   const [ratingComment, setRatingComment] = useState('')
+  const [maintenanceOptions, setMaintenanceOptions] = useState({ assets: [], spareparts: [] })
+  const [showMaintenanceForm, setShowMaintenanceForm] = useState(false)
+  const [maintenanceDraft, setMaintenanceDraft] = useState({ id_asset: '', id_sparepart: '', sparepart_quantity: '1', maintenance_type: 'Corrective', status: 'in_progress', start_date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16), complaint: '', action: '', result: '', cost: '0', notes: '' })
   const now = useCurrentTime()
+  const userRole = String(user?.role || '').trim().toLowerCase()
+  const isStaff = userRole === 'admin' || userRole === 'teknisi'
 
   const loadDetail = async () => {
     if (!ticketId) return
@@ -79,6 +84,13 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   }, [token])
 
   useEffect(() => {
+    if (!isStaff) return
+    Promise.all([api('/inventory/assets', { token }), api('/inventory/spareparts', { token })])
+      .then(([assetsResult, sparepartsResult]) => setMaintenanceOptions({ assets: assetsResult.data || [], spareparts: sparepartsResult.data || [] }))
+      .catch((error) => setActionNotice(error.message))
+  }, [token, isStaff])
+
+  useEffect(() => {
     if (ticket?.status) setSelectedStatus(ticket.status)
   }, [ticket?.status])
 
@@ -92,6 +104,30 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
 
   const sendComment = async (event) => { event.preventDefault(); try { await api(`/tickets/${ticketId}/comments`, { token, method: 'POST', body: { message: commentText } }); setCommentText(''); loadCollaboration() } catch (error) { setActionNotice(error.message) } }
   const saveRating = async (event) => { event.preventDefault(); try { await api(`/tickets/${ticketId}/rating`, { token, method: 'POST', body: { rating: Number(ratingValue), comment: ratingComment } }); setActionNotice('Terima kasih atas penilaian Anda.'); loadCollaboration() } catch (error) { setActionNotice(error.message) } }
+  const saveMaintenance = async (event) => {
+    event.preventDefault()
+    try {
+      await api('/inventory/maintenance', {
+        token,
+        method: 'POST',
+        body: {
+          ...maintenanceDraft,
+          id_asset: maintenanceDraft.id_asset || null,
+          id_sparepart: maintenanceDraft.id_sparepart || null,
+          sparepart_quantity: Number(maintenanceDraft.sparepart_quantity || 1),
+          id_tiket: Number(ticketId),
+          cost: Number(maintenanceDraft.cost || 0),
+          end_date: null,
+        },
+      })
+      setActionNotice('Maintenance berhasil dicatat pada tiket ini.')
+      setShowMaintenanceForm(false)
+      await loadDetail()
+      loadCollaboration()
+    } catch (error) {
+      setActionNotice(error.message)
+    }
+  }
 
   const handleUpdateStatus = async (e) => {
     e.preventDefault()
@@ -173,7 +209,6 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   if (loading) return <div className="tickets-page"><p className="empty-tickets">Memuat detail tiket...</p></div>
   if (!ticket) return null
 
-  const isStaff = user?.role === 'admin' || user?.role === 'teknisi'
   const maintenanceRecords = Array.isArray(ticket.maintenance) ? ticket.maintenance : []
 
   return (
@@ -181,7 +216,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
       
       {isStaff && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#022c22', color: '#ffffff', padding: '14px 20px', borderRadius: '14px', marginBottom: '22px', fontSize: '13px', fontWeight: '800', boxShadow: '0 6px 16px rgba(2, 44, 34, 0.3)' }}>
-          <span style={{ letterSpacing: '0.02em' }}>Panel Kontrol {user?.role === 'admin' ? 'Admin' : 'Teknisi'}</span>
+          <span style={{ letterSpacing: '0.02em' }}>Panel Kontrol {userRole === 'admin' ? 'Admin' : 'Teknisi'}</span>
           <span style={{ backgroundColor: '#059669', padding: '5px 12px', borderRadius: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', boxShadow: '0 2px 6px rgba(5, 150, 105, 0.4)' }}>Mode Staff Aktif</span>
         </div>
       )}
@@ -262,7 +297,37 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
       </div>
 
       <section style={{ marginTop: '16px', background: '#ffffff', border: '1px solid #a7f3d0', borderRadius: '14px', padding: '16px' }}>
-        <h3 style={{ margin: '0 0 12px', color: '#065f46', fontSize: '15px' }}>Riwayat Maintenance</h3>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
+          <h3 style={{ margin: 0, color: '#065f46', fontSize: '15px' }}>Riwayat Maintenance</h3>
+          {isStaff && <button type="button" className="primary-button" onClick={() => setShowMaintenanceForm((visible) => !visible)}>{showMaintenanceForm ? 'Tutup Form' : '+ Catat Maintenance'}</button>}
+        </div>
+        {isStaff && showMaintenanceForm && (
+          <form onSubmit={saveMaintenance} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', padding: '14px', marginBottom: '14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px' }}>
+            <label style={{ display: 'grid', gap: '5px', fontSize: '12px', fontWeight: 700 }}>Aset
+              <select required={!maintenanceDraft.id_sparepart} value={maintenanceDraft.id_asset} onChange={(event) => setMaintenanceDraft((draft) => ({ ...draft, id_asset: event.target.value }))} style={{ padding: '9px', border: '1px solid #cbd5e1', borderRadius: '7px' }}>
+                <option value="">Pilih aset</option>{maintenanceOptions.assets.map((asset) => <option key={asset.id_asset} value={asset.id_asset}>{asset.asset_code}{asset.brand_model ? ` · ${asset.brand_model}` : ''}</option>)}
+              </select>
+            </label>
+            <label style={{ display: 'grid', gap: '5px', fontSize: '12px', fontWeight: 700 }}>Sparepart
+              <select required={!maintenanceDraft.id_asset} value={maintenanceDraft.id_sparepart} onChange={(event) => setMaintenanceDraft((draft) => ({ ...draft, id_sparepart: event.target.value }))} style={{ padding: '9px', border: '1px solid #cbd5e1', borderRadius: '7px' }}>
+                <option value="">Pilih sparepart</option>{maintenanceOptions.spareparts.map((part) => <option key={part.id} value={part.id}>{part.name} · stok {part.stock}</option>)}
+              </select>
+            </label>
+            {maintenanceDraft.id_sparepart && <label style={{ display: 'grid', gap: '5px', fontSize: '12px', fontWeight: 700 }}>Jumlah sparepart<input type="number" min="1" step="1" required value={maintenanceDraft.sparepart_quantity} onChange={(event) => setMaintenanceDraft((draft) => ({ ...draft, sparepart_quantity: event.target.value }))} style={{ padding: '9px', border: '1px solid #cbd5e1', borderRadius: '7px' }} /></label>}
+            <label style={{ display: 'grid', gap: '5px', fontSize: '12px', fontWeight: 700 }}>Jenis maintenance
+              <select required value={maintenanceDraft.maintenance_type} onChange={(event) => setMaintenanceDraft((draft) => ({ ...draft, maintenance_type: event.target.value }))} style={{ padding: '9px', border: '1px solid #cbd5e1', borderRadius: '7px' }}><option>Corrective</option><option>Preventive</option><option>Inspection</option></select>
+            </label>
+            <label style={{ display: 'grid', gap: '5px', fontSize: '12px', fontWeight: 700 }}>Tanggal mulai<input type="datetime-local" required value={maintenanceDraft.start_date} onChange={(event) => setMaintenanceDraft((draft) => ({ ...draft, start_date: event.target.value }))} style={{ padding: '9px', border: '1px solid #cbd5e1', borderRadius: '7px' }} /></label>
+            <label style={{ display: 'grid', gap: '5px', fontSize: '12px', fontWeight: 700 }}>Status
+              <select value={maintenanceDraft.status} onChange={(event) => setMaintenanceDraft((draft) => ({ ...draft, status: event.target.value }))} style={{ padding: '9px', border: '1px solid #cbd5e1', borderRadius: '7px' }}><option value="scheduled">Terjadwal</option><option value="in_progress">Berjalan</option><option value="completed">Selesai</option></select>
+            </label>
+            <label style={{ display: 'grid', gap: '5px', fontSize: '12px', fontWeight: 700 }}>Biaya<input type="number" min="0" value={maintenanceDraft.cost} onChange={(event) => setMaintenanceDraft((draft) => ({ ...draft, cost: event.target.value }))} style={{ padding: '9px', border: '1px solid #cbd5e1', borderRadius: '7px' }} /></label>
+            <label style={{ display: 'grid', gap: '5px', fontSize: '12px', fontWeight: 700 }}>Keluhan<textarea rows="2" value={maintenanceDraft.complaint} onChange={(event) => setMaintenanceDraft((draft) => ({ ...draft, complaint: event.target.value }))} style={{ padding: '9px', border: '1px solid #cbd5e1', borderRadius: '7px' }} /></label>
+            <label style={{ display: 'grid', gap: '5px', fontSize: '12px', fontWeight: 700 }}>Tindakan<textarea rows="2" value={maintenanceDraft.action} onChange={(event) => setMaintenanceDraft((draft) => ({ ...draft, action: event.target.value }))} style={{ padding: '9px', border: '1px solid #cbd5e1', borderRadius: '7px' }} /></label>
+            <label style={{ display: 'grid', gap: '5px', fontSize: '12px', fontWeight: 700 }}>Hasil<textarea rows="2" value={maintenanceDraft.result} onChange={(event) => setMaintenanceDraft((draft) => ({ ...draft, result: event.target.value }))} style={{ padding: '9px', border: '1px solid #cbd5e1', borderRadius: '7px' }} /></label>
+            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end' }}><button type="submit" className="primary-button">Simpan Maintenance</button></div>
+          </form>
+        )}
         {maintenanceRecords.length === 0 ? (
           <p style={{ margin: 0, color: '#64748b', fontSize: '12px' }}>Belum ada aset yang dihubungkan ke tiket ini.</p>
         ) : (
