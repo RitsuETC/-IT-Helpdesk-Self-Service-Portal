@@ -299,7 +299,47 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
       <section style={{ marginTop: '16px', background: '#ffffff', border: '1px solid #a7f3d0', borderRadius: '14px', padding: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
           <h3 style={{ margin: 0, color: '#065f46', fontSize: '15px' }}>Riwayat Maintenance</h3>
-          {isStaff && <button type="button" className="primary-button" onClick={() => setShowMaintenanceForm((visible) => !visible)}>{showMaintenanceForm ? 'Tutup Form' : '+ Catat Maintenance'}</button>}
+          {isStaff && (
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => setShowMaintenanceForm((visible) => !visible)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                minHeight: '38px',
+                padding: '10px 16px',
+                background: '#065f46',
+                backgroundColor: '#065f46',
+                color: '#ffffff',
+                border: '1px solid #065f46',
+                borderRadius: '8px',
+                fontSize: '12px',
+                fontWeight: 700,
+                lineHeight: 1.2,
+                opacity: 1,
+                visibility: 'visible',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 4px 10px rgba(6, 95, 70, 0.2)',
+                transition: 'background-color 0.2s ease, box-shadow 0.2s ease'
+              }}
+              onMouseEnter={(event) => {
+                event.currentTarget.style.backgroundColor = '#047857'
+                event.currentTarget.style.borderColor = '#047857'
+                event.currentTarget.style.boxShadow = '0 6px 14px rgba(6, 95, 70, 0.28)'
+              }}
+              onMouseLeave={(event) => {
+                event.currentTarget.style.backgroundColor = '#065f46'
+                event.currentTarget.style.borderColor = '#065f46'
+                event.currentTarget.style.boxShadow = '0 4px 10px rgba(6, 95, 70, 0.2)'
+              }}
+            >
+              {showMaintenanceForm ? 'Tutup Form' : '+ Catat Maintenance'}
+            </button>
+          )}
         </div>
         {isStaff && showMaintenanceForm && (
           <form onSubmit={saveMaintenance} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', padding: '14px', marginBottom: '14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px' }}>
