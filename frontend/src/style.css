@@ -3156,9 +3156,25 @@ td {
   box-shadow: 0 4px 10px rgba(7, 83, 51, .14);
 }
 
-.primary-button:hover {
-  background: linear-gradient(135deg, #06462c, #096d43);
-  box-shadow: 0 7px 16px rgba(7, 83, 51, .19);
+.ticket-maintenance-toggle,
+.ticket-maintenance-submit {
+  background: #065f46 !important;
+  background-color: #065f46 !important;
+  border-color: #065f46 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(6, 95, 70, 0.2) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+}
+
+.primary-button:hover,
+.ticket-maintenance-toggle:hover,
+.ticket-maintenance-submit:hover {
+  background: linear-gradient(135deg, #06462c, #096d43) !important;
+  background-color: #047857 !important;
+  border-color: #047857 !important;
+  box-shadow: 0 7px 16px rgba(7, 83, 51, .19) !important;
   transform: translateY(-1px);
 }
 

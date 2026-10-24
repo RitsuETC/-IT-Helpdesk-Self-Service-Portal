@@ -302,40 +302,8 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           {isStaff && (
             <button
               type="button"
-              className="primary-button"
+              className="primary-button ticket-maintenance-toggle"
               onClick={() => setShowMaintenanceForm((visible) => !visible)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                minHeight: '38px',
-                padding: '10px 16px',
-                background: '#065f46',
-                backgroundColor: '#065f46',
-                color: '#ffffff',
-                border: '1px solid #065f46',
-                borderRadius: '8px',
-                fontSize: '12px',
-                fontWeight: 700,
-                lineHeight: 1.2,
-                opacity: 1,
-                visibility: 'visible',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                boxShadow: '0 4px 10px rgba(6, 95, 70, 0.2)',
-                transition: 'background-color 0.2s ease, box-shadow 0.2s ease'
-              }}
-              onMouseEnter={(event) => {
-                event.currentTarget.style.backgroundColor = '#047857'
-                event.currentTarget.style.borderColor = '#047857'
-                event.currentTarget.style.boxShadow = '0 6px 14px rgba(6, 95, 70, 0.28)'
-              }}
-              onMouseLeave={(event) => {
-                event.currentTarget.style.backgroundColor = '#065f46'
-                event.currentTarget.style.borderColor = '#065f46'
-                event.currentTarget.style.boxShadow = '0 4px 10px rgba(6, 95, 70, 0.2)'
-              }}
             >
               {showMaintenanceForm ? 'Tutup Form' : '+ Catat Maintenance'}
             </button>
@@ -365,7 +333,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
             <label style={{ display: 'grid', gap: '5px', fontSize: '12px', fontWeight: 700 }}>Keluhan<textarea rows="2" value={maintenanceDraft.complaint} onChange={(event) => setMaintenanceDraft((draft) => ({ ...draft, complaint: event.target.value }))} style={{ padding: '9px', border: '1px solid #cbd5e1', borderRadius: '7px' }} /></label>
             <label style={{ display: 'grid', gap: '5px', fontSize: '12px', fontWeight: 700 }}>Tindakan<textarea rows="2" value={maintenanceDraft.action} onChange={(event) => setMaintenanceDraft((draft) => ({ ...draft, action: event.target.value }))} style={{ padding: '9px', border: '1px solid #cbd5e1', borderRadius: '7px' }} /></label>
             <label style={{ display: 'grid', gap: '5px', fontSize: '12px', fontWeight: 700 }}>Hasil<textarea rows="2" value={maintenanceDraft.result} onChange={(event) => setMaintenanceDraft((draft) => ({ ...draft, result: event.target.value }))} style={{ padding: '9px', border: '1px solid #cbd5e1', borderRadius: '7px' }} /></label>
-            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end' }}><button type="submit" className="primary-button">Simpan Maintenance</button></div>
+            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end' }}><button type="submit" className="primary-button ticket-maintenance-submit">Simpan Maintenance</button></div>
           </form>
         )}
         {maintenanceRecords.length === 0 ? (
