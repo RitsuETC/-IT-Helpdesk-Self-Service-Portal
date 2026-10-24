@@ -4113,3 +4113,115 @@ td {
   }
 }
 
+
+/* =========================================================
+   TICKET DETAIL — CLEANER, FLATTER VISUAL HIERARCHY
+   Scoped to .tickets-page only; no feature/logic changes.
+   ========================================================= */
+.tickets-page {
+  padding: 20px !important;
+  border: 1px solid #d8e8df !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+  background: #f8fbf9 !important;
+  color: #18382d !important;
+}
+
+/* Keep the staff banner clear, but remove the heavy floating-card effect. */
+.tickets-page > div:first-child {
+  box-shadow: none !important;
+}
+
+/* The two ticket overview panels become calm, flat information panels. */
+.tickets-page > div[style*="gridTemplateColumns"] {
+  gap: 14px !important;
+  margin-bottom: 20px !important;
+}
+.tickets-page > div[style*="gridTemplateColumns"] > div {
+  background: #ffffff !important;
+  background-image: none !important;
+  color: #18382d !important;
+  border: 1px solid #dce8e1 !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.tickets-page > div[style*="gridTemplateColumns"] > div b,
+.tickets-page > div[style*="gridTemplateColumns"] > div strong,
+.tickets-page > div[style*="gridTemplateColumns"] > div p {
+  color: #176b50 !important;
+}
+.tickets-page > div[style*="gridTemplateColumns"] > div > div {
+  color: #29483c !important;
+}
+
+/* Simplify maintenance, comments, rating, and timeline sections. */
+.tickets-page > section {
+  margin-top: 14px !important;
+  padding: 16px !important;
+  border: 1px solid #dce8e1 !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+.tickets-page > section h3 {
+  color: #176b50 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+
+/* Flatten the large staff workflow container and its three steps. */
+.tickets-page > div[style*="border: 2px solid"] {
+  margin-top: 14px !important;
+  padding: 18px !important;
+  border: 1px solid #dce8e1 !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  gap: 14px !important;
+}
+.tickets-page > div[style*="border: 2px solid"] > div[style*="backgroundColor"],
+.tickets-page > div[style*="border: 2px solid"] > div[style*="background-color"] {
+  padding: 14px !important;
+  border: 1px solid #e0ebe4 !important;
+  border-radius: 10px !important;
+  background: #f8fbf9 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.tickets-page > div[style*="border: 2px solid"] > div[style*="backgroundColor"]:hover,
+.tickets-page > div[style*="border: 2px solid"] > div[style*="background-color"]:hover {
+  box-shadow: none !important;
+}
+
+/* Remove ornamental shadows and excessive rounding inside this page only. */
+.tickets-page article,
+.tickets-page form,
+.tickets-page [style*="boxShadow"],
+.tickets-page [style*="box-shadow"] {
+  box-shadow: none !important;
+}
+.tickets-page article {
+  border-radius: 9px !important;
+}
+.tickets-page input,
+.tickets-page select,
+.tickets-page textarea {
+  border-radius: 8px !important;
+}
+.tickets-page button {
+  box-shadow: none !important;
+}
+
+@media (max-width: 680px) {
+  .tickets-page {
+    padding: 12px !important;
+    border-radius: 10px !important;
+  }
+  .tickets-page > div[style*="gridTemplateColumns"] > div,
+  .tickets-page > section,
+  .tickets-page > div[style*="border: 2px solid"] {
+    padding: 12px !important;
+  }
+}

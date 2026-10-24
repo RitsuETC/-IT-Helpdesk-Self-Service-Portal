@@ -212,19 +212,19 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
   const maintenanceRecords = Array.isArray(ticket.maintenance) ? ticket.maintenance : []
 
   return (
-    <div className="tickets-page" style={{ backgroundColor: '#f0fdf4', color: '#064e3b', padding: '28px', borderRadius: '20px', margin: '0 auto', maxWidth: '100%', boxShadow: '0 20px 40px rgba(4, 120, 87, 0.12)', border: isStaff ? '2px solid #059669' : '1px solid #a7f3d0' }}>
+    <div className="tickets-page ticket-detail-clean" style={{ backgroundColor: '#ffffff', color: '#173b30', padding: '12px', borderRadius: '8px', margin: '0 auto', maxWidth: '100%', boxShadow: 'none', border: 'none', gap: '12px' }}>
       
       {isStaff && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#022c22', color: '#ffffff', padding: '14px 20px', borderRadius: '14px', marginBottom: '22px', fontSize: '13px', fontWeight: '800', boxShadow: '0 6px 16px rgba(2, 44, 34, 0.3)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#064e3b', color: '#ffffff', padding: '12px 16px', borderRadius: '6px', marginBottom: '14px', fontSize: '13px', fontWeight: '700', boxShadow: 'none' }}>
           <span style={{ letterSpacing: '0.02em' }}>Panel Kontrol {userRole === 'admin' ? 'Admin' : 'Teknisi'}</span>
-          <span style={{ backgroundColor: '#059669', padding: '5px 12px', borderRadius: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', boxShadow: '0 2px 6px rgba(5, 150, 105, 0.4)' }}>Mode Staff Aktif</span>
+          <span style={{ backgroundColor: '#059669', padding: '5px 12px', borderRadius: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', boxShadow: 'none' }}>Mode Staff Aktif</span>
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
         <button 
           onClick={onBack} 
-          style={{ background: 'linear-gradient(135deg, #065f46 0%, #047857 100%)', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '12px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', boxShadow: '0 6px 16px rgba(4, 120, 87, 0.25)', transition: 'all 0.2s ease' }}
+          style={{ background: '#047857', color: '#ffffff', border: 'none', padding: '9px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', boxShadow: 'none' }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-2px)';
             e.currentTarget.style.boxShadow = '0 8px 22px rgba(4, 120, 87, 0.35)';
@@ -238,20 +238,20 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
         </button>
       </div>
       
-      <div className="tickets-toolbar" style={{ display: 'block', borderBottom: '2px solid #a7f3d0', paddingBottom: '16px', marginBottom: '24px' }}>
-        <h2 className="tickets-heading" style={{ color: '#022c22', fontSize: '24px', marginBottom: '6px', fontWeight: '800', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{ticket.judul}</h2>
+      <div className="tickets-toolbar" style={{ display: 'block', borderBottom: '1px solid #e5e7eb', paddingBottom: '12px', marginBottom: '16px' }}>
+        <h2 className="tickets-heading" style={{ color: '#064e3b', fontSize: '22px', marginBottom: '5px', fontWeight: '750', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{ticket.judul}</h2>
         <p className="history-description" style={{ color: '#047857', fontSize: '13px', fontWeight: '600', margin: 0 }}>Informasi lengkap dan pembaruan status laporan tiket sistem.</p>
       </div>
 
-      {actionNotice && <p style={{ color: '#065f46', fontWeight: '700', fontSize: '12px', marginBottom: '20px', background: '#d1fae5', border: '1px solid #34d399', padding: '12px 16px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(52, 211, 153, 0.2)' }}>{actionNotice}</p>}
+      {actionNotice && <p style={{ color: '#065f46', fontWeight: '700', fontSize: '12px', marginBottom: '14px', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '10px 12px', borderRadius: '6px', boxShadow: 'none' }}>{actionNotice}</p>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '28px' }}>
-        <div style={{ border: '1px solid #34d399', borderRadius: '16px', padding: '20px', background: 'linear-gradient(135deg, #022c22 0%, #064e3b 100%)', color: '#ffffff', boxShadow: '0 12px 28px rgba(2, 44, 34, 0.25)', transition: 'transform 0.2s ease' }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px', marginBottom: '18px' }}>
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '14px', background: '#ffffff', color: '#173b30', boxShadow: 'none', transition: 'none' }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'none' }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'none' }}
         >
-          <b style={{ display: 'block', marginBottom: '14px', color: '#6ee7b7', fontSize: '14px', borderBottom: '1px solid rgba(110, 231, 183, 0.2)', paddingBottom: '8px', letterSpacing: '0.03em' }}>Detail Laporan</b>
-          <div style={{ display: 'grid', gap: '10px', fontSize: '12px', color: '#f0fdf4' }}>
+          <b style={{ display: 'block', marginBottom: '14px', color: '#047857', fontSize: '14px', borderBottom: '1px solid #e5e7eb', paddingBottom: '8px', letterSpacing: '0.01em' }}>Detail Laporan</b>
+          <div style={{ display: 'grid', gap: '8px', fontSize: '12px', color: '#374151' }}>
             <div><strong>ID Tiket:</strong> HD-{ticket.id}</div>
             <div><strong>Pelapor:</strong> {ticket.pelapor_nama || ticket.pelapor || '-'}</div>
             <div><strong>Lokasi:</strong> {ticket.nama_ruangan || ticket.ruangan || ticket.lokasi || '-'}</div>
@@ -267,24 +267,24 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           </div>
         </div>
         
-        <div style={{ border: '1px solid #34d399', borderRadius: '16px', padding: '20px', background: 'linear-gradient(135deg, #022c22 0%, #064e3b 100%)', color: '#ffffff', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 12px 28px rgba(2, 44, 34, 0.25)', transition: 'transform 0.2s ease' }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '14px', background: '#ffffff', color: '#173b30', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: 'none', transition: 'none' }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'none' }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'none' }}
         >
           <div>
-            <b style={{ display: 'block', marginBottom: '8px', color: '#6ee7b7', fontSize: '14px', borderBottom: '1px solid rgba(110, 231, 183, 0.2)', paddingBottom: '8px', letterSpacing: '0.03em' }}>Masalah / Deskripsi</b>
-            <p style={{ margin: 0, fontSize: '12px', color: '#f0fdf4', lineHeight: '1.6', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{ticket.deskripsi}</p>
+            <b style={{ display: 'block', marginBottom: '8px', color: '#047857', fontSize: '14px', borderBottom: '1px solid #e5e7eb', paddingBottom: '8px', letterSpacing: '0.01em' }}>Masalah / Deskripsi</b>
+            <p style={{ margin: 0, fontSize: '12px', color: '#374151', lineHeight: '1.6', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{ticket.deskripsi}</p>
           </div>
 
           <div>
-            <b style={{ display: 'block', marginBottom: '8px', color: '#6ee7b7', fontSize: '14px', borderBottom: '1px solid rgba(110, 231, 183, 0.2)', paddingBottom: '8px', letterSpacing: '0.03em' }}>Tindakan / Hasil</b>
+            <b style={{ display: 'block', marginBottom: '8px', color: '#047857', fontSize: '14px', borderBottom: '1px solid #e5e7eb', paddingBottom: '8px', letterSpacing: '0.01em' }}>Tindakan / Hasil</b>
             {troublesLoading ? (
-              <p style={{ color: '#a7f3d0', margin: 0, fontSize: '12px' }}>Memuat tindakan...</p>
+              <p style={{ color: '#6b7280', margin: 0, fontSize: '12px' }}>Memuat tindakan...</p>
             ) : !trouble ? (
-              <p style={{ color: '#a7f3d0', margin: 0, fontSize: '12px' }}>Belum ada tindakan yang tercatat.</p>
+              <p style={{ color: '#6b7280', margin: 0, fontSize: '12px' }}>Belum ada tindakan yang tercatat.</p>
             ) : (
               <div style={{ display: 'grid', gap: 8, fontSize: '12px' }}>
-                <div style={{ padding: '14px', borderRadius: '12px', background: '#ffffff', color: '#022c22', border: '1px solid #34d399', boxShadow: '0 6px 16px rgba(0,0,0,0.1)', wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap' }}>
+                <div style={{ padding: '12px', borderRadius: '6px', background: '#f9fafb', color: '#173b30', border: '1px solid #e5e7eb', boxShadow: 'none', wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap' }}>
                   <div style={{ color: '#047857', fontWeight: 800, marginBottom: '4px' }}>Tindakan:</div>
                   <div style={{ color: '#1f2937', marginBottom: '8px' }}>{trouble.tindakan}</div>
                   <div style={{ color: '#047857', fontWeight: 800, marginBottom: '4px' }}>Hasil:</div>
@@ -296,7 +296,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
         </div>
       </div>
 
-      <section style={{ marginTop: '16px', background: '#ffffff', border: '1px solid #a7f3d0', borderRadius: '14px', padding: '16px' }}>
+      <section style={{ marginTop: '14px', background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
           <h3 style={{ margin: 0, color: '#065f46', fontSize: '15px' }}>Riwayat Maintenance</h3>
           {isStaff && (
@@ -373,7 +373,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
         ) : (
           <div style={{ display: 'grid', gap: '10px' }}>
             {maintenanceRecords.map((record) => (
-              <article key={record.id} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '12px', fontSize: '12px', color: '#1f2937' }}>
+              <article key={record.id} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px', padding: '10px', fontSize: '12px', color: '#1f2937' }}>
                 <strong style={{ color: '#065f46' }}>{record.asset_code ? `${record.asset_code}${record.brand_model ? ` — ${record.brand_model}` : ''}` : record.sparepart_name || 'Item maintenance'}</strong>
                 <div style={{ marginTop: '6px', display: 'grid', gap: '3px' }}>
                   {record.sparepart_name && <span><b>Sparepart:</b> {record.sparepart_name} · {record.sparepart_quantity || 1} unit</span>}
@@ -390,29 +390,29 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
         )}
       </section>
 
-      <section style={{ marginTop: '24px', background: '#fff', border: '1px solid #a7f3d0', borderRadius: '14px', padding: '16px' }}>
+      <section style={{ marginTop: '14px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px' }}>
         <h3 style={{ margin: '0 0 10px', color: '#065f46', fontSize: '15px' }}>Komentar & Pembaruan</h3>
         <div style={{ display: 'grid', gap: '9px', maxHeight: '230px', overflowY: 'auto', marginBottom: '12px' }}>
-          {comments.length ? comments.map((item) => <div key={item.id} style={{ background: '#f8fafc', padding: '9px', borderRadius: '8px', fontSize: '12px' }}><b>{item.author_name || 'Pengguna'} <small>({item.author_role || '-'})</small></b><div>{item.message}</div><small>{new Date(item.created_at).toLocaleString('id-ID')}</small></div>) : <small>Belum ada komentar.</small>}
+          {comments.length ? comments.map((item) => <div key={item.id} style={{ background: '#f9fafb', padding: '9px', borderRadius: '5px', fontSize: '12px' }}><b>{item.author_name || 'Pengguna'} <small>({item.author_role || '-'})</small></b><div>{item.message}</div><small>{new Date(item.created_at).toLocaleString('id-ID')}</small></div>) : <small>Belum ada komentar.</small>}
         </div>
         <form onSubmit={sendComment} style={{ display: 'grid', gap: '8px' }}>
           <textarea required value={commentText} onChange={(event) => setCommentText(event.target.value)} rows="2" placeholder="Tulis komentar atau informasi tambahan..." style={{ width: '100%', boxSizing: 'border-box', padding: '9px', borderRadius: '8px', border: '1px solid #cbd5e1' }} />
-          <button type="submit" className="primary-button" style={{ marginTop: '7px', minHeight: '40px', background: '#047857', border: '1px solid #047857', color: '#ffffff', boxShadow: '0 4px 10px rgba(7, 83, 51, 0.18)', opacity: 1, visibility: 'visible' }}>Kirim komentar</button>
+          <button type="submit" className="primary-button" style={{ marginTop: '7px', minHeight: '40px', background: '#047857', border: '1px solid #047857', color: '#ffffff', boxShadow: 'none', opacity: 1, visibility: 'visible' }}>Kirim komentar</button>
         </form>
         <div style={{ marginTop: '18px', paddingTop: '14px', borderTop: '1px solid #d1fae5' }}>
           <h3 style={{ margin: '0 0 10px', color: '#065f46', fontSize: '15px' }}>Timeline Tiket</h3>
           <div style={{ display: 'grid', gap: '9px', maxHeight: '300px', overflowY: 'auto' }}>
-            {timeline.length ? timeline.map((item, index) => <div key={`${item.created_at}-${index}`} style={{ borderLeft: '3px solid #34d399', paddingLeft: '10px', fontSize: '12px' }}><b>{item.detail}</b><br /><small>{item.actor_name} · {new Date(item.created_at).toLocaleString('id-ID')}</small></div>) : <small>Timeline akan muncul setelah aktivitas dicatat.</small>}
+            {timeline.length ? timeline.map((item, index) => <div key={`${item.created_at}-${index}`} style={{ borderLeft: '2px solid #10b981', paddingLeft: '9px', fontSize: '12px' }}><b>{item.detail}</b><br /><small>{item.actor_name} · {new Date(item.created_at).toLocaleString('id-ID')}</small></div>) : <small>Timeline akan muncul setelah aktivitas dicatat.</small>}
           </div>
         </div>
       </section>
 
-      {user?.role === 'user' && ['RESOLVED', 'CLOSED'].includes(ticket.status) && <section style={{ marginTop: '16px', background: '#90f556', border: '1px solid #f1f0eb', borderRadius: '14px', padding: '16px' }}><h3 style={{ margin: '0 0 8px', color: '#92400e', fontSize: '15px' }}>Penilaian Layanan IT</h3>{rating ? <p style={{ margin: 0 }}>Rating Anda: {'★'.repeat(rating.rating)}{'☆'.repeat(5 - rating.rating)} {rating.comment && `— ${rating.comment}`}</p> : <form onSubmit={saveRating} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}><select value={ratingValue} onChange={(event) => setRatingValue(event.target.value)}>{[5, 4, 3, 2, 1].map((value) => <option key={value} value={value}>{'★'.repeat(value)} ({value}/5)</option>)}</select><input value={ratingComment} onChange={(event) => setRatingComment(event.target.value)} placeholder="Komentar (opsional)" /><button type="submit" className="primary-button">Kirim rating</button></form>}</section>}
+      {user?.role === 'user' && ['RESOLVED', 'CLOSED'].includes(ticket.status) && <section style={{ marginTop: '16px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px' }}><h3 style={{ margin: '0 0 8px', color: '#92400e', fontSize: '15px' }}>Penilaian Layanan IT</h3>{rating ? <p style={{ margin: 0 }}>Rating Anda: {'★'.repeat(rating.rating)}{'☆'.repeat(5 - rating.rating)} {rating.comment && `— ${rating.comment}`}</p> : <form onSubmit={saveRating} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}><select value={ratingValue} onChange={(event) => setRatingValue(event.target.value)}>{[5, 4, 3, 2, 1].map((value) => <option key={value} value={value}>{'★'.repeat(value)} ({value}/5)</option>)}</select><input value={ratingComment} onChange={(event) => setRatingComment(event.target.value)} placeholder="Komentar (opsional)" /><button type="submit" className="primary-button">Kirim rating</button></form>}</section>}
 
       {isStaff && (
-        <div style={{ border: '2px solid #059669', borderRadius: '20px', padding: '26px', background: '#ffffff', color: '#022c22', display: 'flex', flexDirection: 'column', gap: '22px', boxShadow: '0 16px 36px rgba(5, 150, 105, 0.15)', width: '100%', boxSizing: 'border-box' }}>
+        <div style={{ border: 'none', borderTop: '1px solid #e5e7eb', borderRadius: '0', padding: '14px 0 0', background: '#ffffff', color: '#173b30', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: 'none', width: '100%', boxSizing: 'border-box' }}>
           
-          <div style={{ borderBottom: '2px solid #e6f4ed', paddingBottom: '14px' }}>
+          <div style={{ borderBottom: '1px solid #e5ece8', paddingBottom: '10px' }}>
             <span style={{ fontSize: '16px', fontWeight: '900', color: '#022c22', display: 'block', letterSpacing: '0.01em' }}>
               Panduan Alur Kerja Penanganan Tiket
             </span>
@@ -422,25 +422,25 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           </div>
           
           {/* LANGKAH 1 */}
-          <div style={{ backgroundColor: '#f0fdf4', padding: '20px', borderRadius: '16px', border: '1px solid #86efac', boxShadow: '0 4px 12px rgba(4, 120, 87, 0.05)', transition: 'all 0.2s ease' }}
-            onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 6px 16px rgba(4, 120, 87, 0.12)'}
-            onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(4, 120, 87, 0.05)'}
+          <div style={{ backgroundColor: '#ffffff', padding: '12px 0', borderRadius: '0', border: 'none', borderBottom: '1px solid #e5e7eb', boxShadow: 'none', transition: 'none' }}
+            onMouseEnter={(e) => e.currentTarget.style.boxShadow = 'none'}
+            onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-              <span style={{ backgroundColor: '#059669', color: '#ffffff', width: '26px', height: '26px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '900', boxShadow: '0 2px 6px rgba(5, 150, 105, 0.4)' }}>1</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '9px' }}>
+              <span style={{ backgroundColor: '#059669', color: '#ffffff', width: '24px', height: '24px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '900', boxShadow: 'none' }}>1</span>
               <span style={{ fontSize: '14px', fontWeight: '800', color: '#022c22' }}>
                 Tentukan Prioritas Tiket Terlebih Dahulu
               </span>
             </div>
             <form onSubmit={handleUpdatePriority} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <select name="prioritas" defaultValue={ticket.prioritas} style={{ height: '42px', padding: '0 14px', borderRadius: '10px', border: '1px solid #34d399', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#022c22', fontWeight: '600', boxSizing: 'border-box', outline: 'none' }}>
+              <select name="prioritas" defaultValue={ticket.prioritas} style={{ height: '42px', padding: '0 14px', borderRadius: '6px', border: '1px solid #d1d5db', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#022c22', fontWeight: '600', boxSizing: 'border-box', outline: 'none' }}>
                 <option value="level_1">Level 1 (High)</option>
                 <option value="level_2">Level 2 (Medium)</option>
                 <option value="level_3">Level 3 (Low)</option>
               </select>
               <button 
                 type="submit" 
-                style={{ height: '40px', padding: '0 18px', backgroundColor: '#059669', color: '#ffffff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', fontSize: '12px', boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)', width: '100%', transition: 'all 0.2s ease' }}
+                style={{ height: '40px', padding: '0 18px', backgroundColor: '#059669', color: '#ffffff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', boxShadow: 'none', width: '100%', transition: 'all 0.2s ease' }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = '#047857';
                   e.currentTarget.style.transform = 'translateY(-1px)';
@@ -456,12 +456,12 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           </div>
 
           {/* LANGKAH 2 */}
-          <div style={{ backgroundColor: '#f0fdf4', padding: '20px', borderRadius: '16px', border: '1px solid #86efac', boxShadow: '0 4px 12px rgba(4, 120, 87, 0.05)', transition: 'all 0.2s ease' }}
-            onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 6px 16px rgba(4, 120, 87, 0.12)'}
-            onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(4, 120, 87, 0.05)'}
+          <div style={{ backgroundColor: '#ffffff', padding: '12px 0', borderRadius: '0', border: 'none', borderBottom: '1px solid #e5e7eb', boxShadow: 'none', transition: 'none' }}
+            onMouseEnter={(e) => e.currentTarget.style.boxShadow = 'none'}
+            onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-              <span style={{ backgroundColor: '#059669', color: '#ffffff', width: '26px', height: '26px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '900', boxShadow: '0 2px 6px rgba(5, 150, 105, 0.4)' }}>2</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '9px' }}>
+              <span style={{ backgroundColor: '#059669', color: '#ffffff', width: '24px', height: '24px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '900', boxShadow: 'none' }}>2</span>
               <span style={{ fontSize: '14px', fontWeight: '800', color: '#022c22' }}>
                 Perbarui Status & Tugaskan Teknisi Penanggung Jawab
               </span>
@@ -471,7 +471,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
                 name="status"
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                style={{ height: '42px', padding: '0 14px', borderRadius: '10px', border: '1px solid #34d399', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#022c22', fontWeight: '600', boxSizing: 'border-box', outline: 'none' }}
+                style={{ height: '42px', padding: '0 14px', borderRadius: '6px', border: '1px solid #d1d5db', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#022c22', fontWeight: '600', boxSizing: 'border-box', outline: 'none' }}
               >
                 <option value="NEW">NEW (Baru)</option>
                 <option value="ASSIGNED">ASSIGNED (Ditugaskan)</option>
@@ -487,7 +487,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
                   <select
                     name="teknisi"
                     defaultValue={ticket.teknisi ?? ''}
-                    style={{ height: '42px', padding: '0 14px', borderRadius: '10px', border: '1px solid #34d399', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#022c22', fontWeight: '600', boxSizing: 'border-box', outline: 'none' }}
+                    style={{ height: '42px', padding: '0 14px', borderRadius: '6px', border: '1px solid #d1d5db', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#022c22', fontWeight: '600', boxSizing: 'border-box', outline: 'none' }}
                     required
                   >
                     <option value="">-- Pilih Teknisi --</option>
@@ -500,7 +500,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
 
               <button 
                 type="submit" 
-                style={{ height: '40px', padding: '0 18px', backgroundColor: '#059669', color: '#ffffff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', fontSize: '12px', boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)', width: '100%', transition: 'all 0.2s ease' }}
+                style={{ height: '40px', padding: '0 18px', backgroundColor: '#059669', color: '#ffffff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', boxShadow: 'none', width: '100%', transition: 'all 0.2s ease' }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = '#047857';
                   e.currentTarget.style.transform = 'translateY(-1px)';
@@ -516,21 +516,21 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           </div>
 
           {/* LANGKAH 3 */}
-          <div style={{ backgroundColor: '#f0fdf4', padding: '20px', borderRadius: '16px', border: '1px solid #86efac', boxShadow: '0 4px 12px rgba(4, 120, 87, 0.05)', transition: 'all 0.2s ease' }}
-            onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 6px 16px rgba(4, 120, 87, 0.12)'}
-            onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(4, 120, 87, 0.05)'}
+          <div style={{ backgroundColor: '#ffffff', padding: '12px 0', borderRadius: '0', border: 'none', borderBottom: '1px solid #e5e7eb', boxShadow: 'none', transition: 'none' }}
+            onMouseEnter={(e) => e.currentTarget.style.boxShadow = 'none'}
+            onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-              <span style={{ backgroundColor: '#059669', color: '#ffffff', width: '26px', height: '26px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '900', boxShadow: '0 2px 6px rgba(5, 150, 105, 0.4)' }}>3</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '9px' }}>
+              <span style={{ backgroundColor: '#059669', color: '#ffffff', width: '24px', height: '24px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '900', boxShadow: 'none' }}>3</span>
               <span style={{ fontSize: '14px', fontWeight: '800', color: '#022c22' }}>
                 Catat Solusi / Penyelesaian Akhir Kendala
               </span>
             </div>
             <form onSubmit={handleResolve} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ padding: '12px', background: '#ecfdf5', border: '1px solid #86efac', borderRadius: '10px' }}>
+              <div style={{ padding: '10px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px' }}>
                 <span style={{ display: 'block', color: '#047857', fontSize: '11px', fontWeight: 800, marginBottom: '8px' }}>⚡ Balasan cepat</span>
                 <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
-                  {CANNED_RESPONSES.map((response) => <button key={response.label} type="button" onClick={() => { setTindakanVal(response.tindakan); setHasilVal(response.hasil) }} style={{ border: '1px solid #34d399', background: '#fff', color: '#047857', borderRadius: '7px', padding: '7px 9px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>{response.label}</button>)}
+                  {CANNED_RESPONSES.map((response) => <button key={response.label} type="button" onClick={() => { setTindakanVal(response.tindakan); setHasilVal(response.hasil) }} style={{ border: '1px solid #d1d5db', background: '#fff', color: '#047857', borderRadius: '5px', padding: '7px 9px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>{response.label}</button>)}
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px', width: '100%' }}>
@@ -545,7 +545,7 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
               </div>
               <button 
                 type="submit" 
-                style={{ width: '100%', height: '44px', backgroundColor: '#059669', color: '#ffffff', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '13px', cursor: 'pointer', boxShadow: '0 6px 18px rgba(5, 150, 105, 0.35)', transition: 'all 0.2s ease' }}
+                style={{ width: '100%', height: '44px', backgroundColor: '#059669', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', boxShadow: 'none', transition: 'all 0.2s ease' }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = '#047857';
                   e.currentTarget.style.transform = 'translateY(-1px)';
@@ -756,7 +756,7 @@ export default function Tickets({ token, user, articles = [], onError, onRequire
       <p className="history-description" style={{ color: '#64748b', fontSize: '13px', margin: '0 0 20px 0' }}>Kelola dan pantau seluruh laporan kendala IT Anda di sini.</p>
 
       {/* TOOLBAR */}
-      <div className="tickets-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '20px' }}>
+      <div className="tickets-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '12px' }}>
         <label className="priority-filter" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: '600', color: '#334155' }}>
           Filter Prioritas:
           <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor: '#ffffff', outline: 'none' }}>
