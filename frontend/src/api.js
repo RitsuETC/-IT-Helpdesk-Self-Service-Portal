@@ -1,9 +1,18 @@
 function resolveApiUrl() {
   const configuredUrl = import.meta.env.VITE_API_URL?.trim()
-  if (configuredUrl) return configuredUrl.replace(/\/+$/, '')
+  if (configuredUrl) {
+    const normalized = configuredUrl.replace(/\/+$/, '')
+    if (normalized.includes('localhost') || normalized.includes('127.0.0.1') || normalized.includes('0.0.0.0')) {
+      return normalized
+    }
+    return normalized
+  }
 
   if (import.meta.env.DEV && typeof window !== 'undefined') {
-    return `${window.location.protocol}//${window.location.hostname}:5000/api`
+    const host = ['localhost', '127.0.0.1', '0.0.0.0', '[::1]'].includes(window.location.hostname)
+      ? 'localhost'
+      : window.location.hostname
+    return `${window.location.protocol}//${host}:5000/api`
   }
 
   return '/api'

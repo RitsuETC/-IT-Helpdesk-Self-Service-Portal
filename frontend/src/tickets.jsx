@@ -129,80 +129,56 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
     }
   }
 
-  const handleUpdateStatus = async (e) => {
-    e.preventDefault()
-    const form = new FormData(e.currentTarget)
-    const nextStatus = form.get('status')
-    const nextTeknisi = form.get('teknisi')
+  const handleWorkUpdate = async (event) => {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    const action = event.nativeEvent.submitter?.value || 'save'
+    const tindakan = String(form.get('tindakan') || '').trim()
+    const hasilAkhir = String(form.get('hasil_akhir') || '').trim()
+
+    if (action === 'finish' && (!tindakan || !hasilAkhir)) {
+      setActionNotice('Isi tindakan dan hasil akhir sebelum menyelesaikan tiket.')
+      return
+    }
 
     try {
+      await api(`/tickets/${ticketId}/priority`, {
+        token,
+        method: 'PATCH',
+        body: { prioritas: form.get('prioritas') },
+      })
+
+      if (action === 'finish') {
+        if (form.get('status') === 'ASSIGNED') {
+          await api(`/tickets/${ticketId}/status`, {
+            token,
+            method: 'PATCH',
+            body: { status: 'ASSIGNED', teknisi: form.get('teknisi') },
+          })
+        }
+        const result = await api(`/tickets/${ticketId}/resolve`, {
+          token,
+          method: 'PATCH',
+          body: { tindakan, hasil_akhir: hasilAkhir },
+        })
+        setActionNotice(result.message || 'Tiket berhasil diselesaikan.')
+        await Promise.all([loadDetail(), loadTroubleshooting()])
+        return
+      }
+
+      const nextStatus = form.get('status')
       await api(`/tickets/${ticketId}/status`, {
         token,
         method: 'PATCH',
         body: {
           status: nextStatus,
-          ...(nextStatus === 'ASSIGNED' ? { teknisi: nextTeknisi } : {})
-        }
+          ...(nextStatus === 'ASSIGNED' ? { teknisi: form.get('teknisi') } : {}),
+        },
       })
-      setActionNotice('Status berhasil diperbarui!')
-      loadDetail()
-    } catch (err) {
-      setActionNotice(err.message)
-    }
-  }
-
-  const handleUpdatePriority = async (e) => {
-    e.preventDefault()
-    const form = new FormData(e.currentTarget)
-    try {
-      await api(`/tickets/${ticketId}/priority`, {
-        token,
-        method: 'PATCH',
-        body: { prioritas: form.get('prioritas') }
-      })
-      setActionNotice('Prioritas berhasil diperbarui!')
-      loadDetail()
-    } catch (err) {
-      setActionNotice(err.message)
-    }
-  }
-
-  const handleResolve = async (e) => {
-    e.preventDefault()
-    const form = new FormData(e.currentTarget)
-    const tindakan = form.get('tindakan')
-    const hasilAkhir = form.get('hasil_akhir')
-    
-    try {
-      await api(`/tickets/${ticketId}/resolve`, {
-        token,
-        method: 'PATCH',
-        body: { 
-          solusi: `Tindakan: ${tindakan} | Hasil Akhir: ${hasilAkhir}` 
-        }
-      })
-    } catch (err) {
-      setActionNotice(err.message)
-      return
-    }
-
-    try {
-      const res = await api('/troubleshooting', {
-        token,
-        method: 'POST',
-        body: {
-          id_tiket: ticketId,
-          tindakan: tindakan,
-          hasil_akhir: hasilVal,
-        }
-      })
-
-      setActionNotice(res.message || 'Penyelesaian berhasil disimpan!')
-      setTrouble(res.data || null)
-      loadDetail()
-      loadTroubleshooting()
-    } catch (err) {
-      setActionNotice(err.message)
+      setActionNotice('Prioritas dan status berhasil diperbarui.')
+      await loadDetail()
+    } catch (error) {
+      setActionNotice(error.message)
     }
   }
 
@@ -382,151 +358,75 @@ export function TicketDetail({ token, user, ticketId, onBack, onError }) {
           
           <div style={{ borderBottom: '1px solid #e5ece8', paddingBottom: '10px' }}>
             <span style={{ fontSize: '16px', fontWeight: '900', color: '#022c22', display: 'block', letterSpacing: '0.01em' }}>
-              Panduan Alur Kerja Penanganan Tiket
+              Panduan & Alat Kerja Penanganan Tiket
             </span>
             <span style={{ fontSize: '12px', color: '#047857', fontWeight: '600' }}>
-              Selesaikan proses secara berurutan mulai dari langkah pertama hingga selesai.
+              Atur prioritas dan status, catat solusi, lalu selesaikan tiket dari satu panel.
             </span>
           </div>
           
-          {/* LANGKAH 1 */}
-          <div style={{ backgroundColor: '#ffffff', padding: '12px 0', borderRadius: '0', border: 'none', borderBottom: '1px solid #e5e7eb', boxShadow: 'none', transition: 'none' }}
-            onMouseEnter={(e) => e.currentTarget.style.boxShadow = 'none'}
-            onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '9px' }}>
-              <span style={{ backgroundColor: '#059669', color: '#ffffff', width: '24px', height: '24px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '900', boxShadow: 'none' }}>1</span>
-              <span style={{ fontSize: '14px', fontWeight: '800', color: '#022c22' }}>
-                Tentukan Prioritas Tiket Terlebih Dahulu
-              </span>
-            </div>
-            <form onSubmit={handleUpdatePriority} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <select name="prioritas" defaultValue={ticket.prioritas} style={{ height: '42px', padding: '0 14px', borderRadius: '6px', border: '1px solid #d1d5db', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#022c22', fontWeight: '600', boxSizing: 'border-box', outline: 'none' }}>
-                <option value="level_1">Level 1 (High)</option>
-                <option value="level_2">Level 2 (Medium)</option>
-                <option value="level_3">Level 3 (Low)</option>
-              </select>
-              <button 
-                type="submit" 
-                style={{ height: '40px', padding: '0 18px', backgroundColor: '#059669', color: '#ffffff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', boxShadow: 'none', width: '100%', transition: 'all 0.2s ease' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#047857';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#059669';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-              >
-                Simpan Prioritas
-              </button>
-            </form>
-          </div>
-
-          {/* LANGKAH 2 */}
-          <div style={{ backgroundColor: '#ffffff', padding: '12px 0', borderRadius: '0', border: 'none', borderBottom: '1px solid #e5e7eb', boxShadow: 'none', transition: 'none' }}
-            onMouseEnter={(e) => e.currentTarget.style.boxShadow = 'none'}
-            onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '9px' }}>
-              <span style={{ backgroundColor: '#059669', color: '#ffffff', width: '24px', height: '24px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '900', boxShadow: 'none' }}>2</span>
-              <span style={{ fontSize: '14px', fontWeight: '800', color: '#022c22' }}>
-                Perbarui Status & Tugaskan Teknisi Penanggung Jawab
-              </span>
-            </div>
-            <form onSubmit={handleUpdateStatus} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <select
-                name="status"
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                style={{ height: '42px', padding: '0 14px', borderRadius: '6px', border: '1px solid #d1d5db', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#022c22', fontWeight: '600', boxSizing: 'border-box', outline: 'none' }}
-              >
-                <option value="NEW">NEW (Baru)</option>
-                <option value="ASSIGNED">ASSIGNED (Ditugaskan)</option>
-                <option value="IN_PROGRESS">IN_PROGRESS (Sedang Dikerjakan)</option>
-                <option value="WAITING">WAITING (Menunggu / Tertunda)</option>
-                <option value="RESOLVED">RESOLVED (Selesai)</option>
-                <option value="CLOSED">CLOSED (Ditutup)</option>
-              </select>
-
-              {selectedStatus === 'ASSIGNED' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '11px', color: '#047857', fontWeight: '700' }}>Pilih Teknisi Penanggung Jawab:</label>
-                  <select
-                    name="teknisi"
-                    defaultValue={ticket.teknisi ?? ''}
-                    style={{ height: '42px', padding: '0 14px', borderRadius: '6px', border: '1px solid #d1d5db', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#022c22', fontWeight: '600', boxSizing: 'border-box', outline: 'none' }}
-                    required
-                  >
-                    <option value="">-- Pilih Teknisi --</option>
-                    {technicians.map((tech) => (
-                      <option key={tech.id} value={tech.id}>{tech.nama}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <button 
-                type="submit" 
-                style={{ height: '40px', padding: '0 18px', backgroundColor: '#059669', color: '#ffffff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', boxShadow: 'none', width: '100%', transition: 'all 0.2s ease' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#047857';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#059669';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-              >
-                Simpan Status
-              </button>
-            </form>
-          </div>
-
-          {/* LANGKAH 3 */}
-          <div style={{ backgroundColor: '#ffffff', padding: '12px 0', borderRadius: '0', border: 'none', borderBottom: '1px solid #e5e7eb', boxShadow: 'none', transition: 'none' }}
-            onMouseEnter={(e) => e.currentTarget.style.boxShadow = 'none'}
-            onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '9px' }}>
-              <span style={{ backgroundColor: '#059669', color: '#ffffff', width: '24px', height: '24px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '900', boxShadow: 'none' }}>3</span>
-              <span style={{ fontSize: '14px', fontWeight: '800', color: '#022c22' }}>
-                Catat Solusi / Penyelesaian Akhir Kendala
-              </span>
-            </div>
-            <form onSubmit={handleResolve} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ padding: '10px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px' }}>
-                <span style={{ display: 'block', color: '#047857', fontSize: '11px', fontWeight: 800, marginBottom: '8px' }}>⚡ Balasan cepat</span>
-                <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
-                  {CANNED_RESPONSES.map((response) => <button key={response.label} type="button" onClick={() => { setTindakanVal(response.tindakan); setHasilVal(response.hasil) }} style={{ border: '1px solid #d1d5db', background: '#fff', color: '#047857', borderRadius: '5px', padding: '7px 9px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>{response.label}</button>)}
+          <form onSubmit={handleWorkUpdate} style={{ display: 'grid', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
+              <label style={{ display: 'grid', gap: '6px', color: '#047857', fontSize: '12px', fontWeight: 700 }}>
+                Prioritas tiket
+                <select name="prioritas" defaultValue={ticket.prioritas} style={{ height: '42px', padding: '0 12px', borderRadius: '6px', border: '1px solid #d1d5db', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#022c22', fontWeight: 600, boxSizing: 'border-box' }}>
+                  <option value="level_1">Level 1 (High)</option>
+                  <option value="level_2">Level 2 (Medium)</option>
+                  <option value="level_3">Level 3 (Low)</option>
+                </select>
+              </label>
+              <div style={{ display: 'grid', gap: '6px', color: '#047857', fontSize: '12px', fontWeight: 700 }}>
+                Status tiket
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
+                  {[
+                    { value: 'NEW', label: 'Baru' },
+                    { value: 'ASSIGNED', label: 'Ditugaskan' },
+                    { value: 'IN_PROGRESS', label: 'Dikerjakan' },
+                    { value: 'WAITING', label: 'Menunggu' },
+                    { value: 'RESOLVED', label: 'Selesai' },
+                    { value: 'CLOSED', label: 'Ditutup' },
+                  ].map((option) => (
+                    <label key={option.value} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 10px', border: selectedStatus === option.value ? '1px solid #059669' : '1px solid #d1d5db', borderRadius: '6px', background: selectedStatus === option.value ? '#ecfdf5' : '#ffffff', color: '#022c22', fontSize: '11px', cursor: 'pointer' }}>
+                      <input type="radio" name="status" value={option.value} checked={selectedStatus === option.value} onChange={(event) => setSelectedStatus(event.target.value)} style={{ accentColor: '#059669', margin: 0 }} />
+                      {option.label}
+                    </label>
+                  ))}
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px', width: '100%' }}>
-                <label style={{ fontSize: '12px', color: '#047857', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  Tindakan Perbaikan
-                  <textarea name="tindakan" rows="3" value={tindakanVal} onChange={(e) => setTindakanVal(e.target.value)} required style={{ width: '100%', padding: '12px', border: '1px solid #34d399', borderRadius: '10px', fontSize: '12px', backgroundColor: '#ffffff', color: '#022c22', resize: 'vertical', boxSizing: 'border-box', outline: 'none' }} placeholder="Tuliskan tindakan perbaikan yang dilakukan..."></textarea>
+            </div>
+
+            {selectedStatus === 'ASSIGNED' && (
+              <label style={{ display: 'grid', gap: '6px', color: '#047857', fontSize: '12px', fontWeight: 700 }}>
+                Teknisi penanggung jawab
+                <select name="teknisi" defaultValue={ticket.teknisi ?? ''} required style={{ height: '42px', padding: '0 12px', borderRadius: '6px', border: '1px solid #d1d5db', width: '100%', fontSize: '12px', backgroundColor: '#ffffff', color: '#022c22', boxSizing: 'border-box' }}>
+                  <option value="">Pilih teknisi</option>
+                  {technicians.map((tech) => <option key={tech.id} value={tech.id}>{tech.nama}</option>)}
+                </select>
+              </label>
+            )}
+
+            <div style={{ display: 'grid', gap: '10px' }}>
+              <strong style={{ color: '#047857', fontSize: '12px' }}>Panduan solusi cepat</strong>
+              <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
+                {CANNED_RESPONSES.map((response) => <button key={response.label} type="button" onClick={() => { setTindakanVal(response.tindakan); setHasilVal(response.hasil) }} style={{ border: '1px solid #d1d5db', background: '#fff', color: '#047857', borderRadius: '5px', padding: '7px 9px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>{response.label}</button>)}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+                <label style={{ display: 'grid', gap: '6px', color: '#047857', fontSize: '12px', fontWeight: 700 }}>
+                  Tindakan perbaikan
+                  <textarea name="tindakan" rows="3" value={tindakanVal} onChange={(event) => setTindakanVal(event.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '12px', color: '#022c22', resize: 'vertical', boxSizing: 'border-box' }} placeholder="Tuliskan tindakan yang dilakukan" />
                 </label>
-                <label style={{ fontSize: '12px', color: '#047857', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  Hasil Akhir
-                  <textarea name="hasil_akhir" rows="3" value={hasilVal} onChange={(e) => setHasilVal(e.target.value)} required style={{ width: '100%', padding: '12px', border: '1px solid #34d399', borderRadius: '10px', fontSize: '12px', backgroundColor: '#ffffff', color: '#022c22', resize: 'vertical', boxSizing: 'border-box', outline: 'none' }} placeholder="Tuliskan kondisi hasil akhir perangkat..."></textarea>
+                <label style={{ display: 'grid', gap: '6px', color: '#047857', fontSize: '12px', fontWeight: 700 }}>
+                  Hasil akhir
+                  <textarea name="hasil_akhir" rows="3" value={hasilVal} onChange={(event) => setHasilVal(event.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '12px', color: '#022c22', resize: 'vertical', boxSizing: 'border-box' }} placeholder="Tuliskan kondisi setelah penanganan" />
                 </label>
               </div>
-              <button 
-                type="submit" 
-                style={{ width: '100%', height: '44px', backgroundColor: '#059669', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', boxShadow: 'none', transition: 'all 0.2s ease' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#047857';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#059669';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-              >
-                Simpan & Selesaikan Tiket
-              </button>
-            </form>
-          </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', flexWrap: 'wrap', borderTop: '1px solid #e5e7eb', paddingTop: '12px' }}>
+              <button type="submit" name="action" value="save" className="secondary-button">Simpan Perubahan</button>
+              <button type="submit" name="action" value="finish" className="primary-button">Selesai</button>
+            </div>
+          </form>
 
         </div>
       )}
