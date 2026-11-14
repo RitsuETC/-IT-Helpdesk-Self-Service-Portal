@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, ChevronLeft, ChevronRight, Play, Search, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, ChevronLeft, ChevronRight, Play, Search } from 'lucide-react'
 import DOMPurify from 'dompurify'
 
 function youtubeThumbnail(url) {
@@ -138,16 +138,16 @@ function Knowledge({ articles = [], initialArticle }) {
 
   return (
     <section className="knowledge-page">
-      <header className="kb-heading-row">
+      {!selectedArticle && <header className="kb-heading-row">
         <div>
           <span className="kb-eyebrow"><BookOpen size={15} aria-hidden="true" /> PUSAT PANDUAN</span>
           <h2 className="knowledge-heading">Knowledge Base</h2>
           <p className="knowledge-subheading">Panduan praktis untuk menyelesaikan kendala IT dan kembali bekerja.</p>
         </div>
         <span className="kb-article-count">{visibleArticles.length} artikel</span>
-      </header>
+      </header>}
 
-      <div className="knowledge-filter kb-filter-bar">
+      {!selectedArticle && <div className="knowledge-filter kb-filter-bar">
         <div className="knowledge-search-wrapper">
           <Search size={18} aria-hidden="true" />
           <input 
@@ -183,9 +183,9 @@ function Knowledge({ articles = [], initialArticle }) {
             )
           })}
         </div>
-      </div>
+      </div>}
 
-      <div className="article-grid">
+      {!selectedArticle && <div className="article-grid">
         {paginatedArticles.length === 0 ? (
           <div className="knowledge-empty-state">
             <BookOpen size={24} aria-hidden="true" />
@@ -227,10 +227,10 @@ function Knowledge({ articles = [], initialArticle }) {
             </article>
           ))
         )}
-      </div>
+      </div>}
 
       {/* Kontrol Pagination */}
-      {visibleArticles.length > 0 && (
+      {!selectedArticle && visibleArticles.length > 0 && (
         <div className="kb-pagination">
           <div>
             Menampilkan {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, visibleArticles.length)} dari total {visibleArticles.length} artikel
@@ -247,19 +247,13 @@ function Knowledge({ articles = [], initialArticle }) {
         </div>
       )}
 
-      {/* Modal Detail Artikel */}
+      {/* Detail Artikel */}
       {selectedArticle && (
-        <div className="knowledge-modal-backdrop" onClick={() => setSelectedArticle(null)}>
-          <article className="knowledge-detail" role="dialog" aria-modal="true" aria-labelledby="knowledge-detail-title" onClick={(event) => event.stopPropagation()}>
-            <button 
-              className="knowledge-close-btn" 
-              onClick={() => setSelectedArticle(null)} 
-              aria-label="Tutup"
-              type="button"
-            >
-              <X size={18} aria-hidden="true" />
-            </button>
-
+        <div className="knowledge-article-page">
+          <button className="knowledge-back-btn" onClick={() => setSelectedArticle(null)} type="button">
+            <ArrowLeft size={17} aria-hidden="true" /> Kembali ke Knowledge Base
+          </button>
+          <article className="knowledge-detail" aria-labelledby="knowledge-detail-title">
             <div className="knowledge-detail-header">
               <div className="knowledge-detail-tags">
                 {(selectedArticle.tags || selectedArticle.nama_kategori || 'Umum').split(',').map((t, idx) => {

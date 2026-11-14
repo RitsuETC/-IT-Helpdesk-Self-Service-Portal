@@ -1443,50 +1443,34 @@ td {
   font-weight: 700;
 }
 
-/* Modal Popup Detail */
-.knowledge-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  background: rgba(15, 23, 42, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  backdrop-filter: blur(5px);
+/* Detail Artikel */
+.knowledge-article-page {
+  width: 100%;
+  margin: 0 auto 48px;
 }
 
 .knowledge-detail {
   position: relative;
-  width: min(95%, 850px);
+  width: 100%;
   background: #ffffff;
-  border-radius: 20px;
-  padding: 32px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid #dce5df;
+  border-radius: 10px;
+  padding: 28px;
   box-sizing: border-box;
 }
 
-.knowledge-close-btn {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: 2px solid #cbd5e1;
-  background: #f1f5f9;
-  color: #1e293b;
-  font-weight: bold;
+.knowledge-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: var(--k-primary);
+  font: inherit;
+  font-weight: 700;
   cursor: pointer;
-  display: grid;
-  place-items: center;
-  transition: all 0.2s;
-}
-
-.knowledge-close-btn:hover {
-  background: #fee2e2;
-  color: #dc2626;
-  border-color: #fca5a5;
 }
 
 .knowledge-detail-header {
@@ -4082,12 +4066,6 @@ td {
   border-radius: 8px;
   color: #687970;
   font-weight: 400;
-}
-
-.knowledge-detail[role="dialog"] {
-  max-height: min(90dvh, 900px);
-  overflow-y: auto;
-  border-radius: 10px;
 }
 
 @media (max-width: 900px) {
